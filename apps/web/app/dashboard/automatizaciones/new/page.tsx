@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Sparkles, BookOpen } from 'lucide-react'
+import { ArrowLeft, Sparkles, BookOpen, Sliders } from 'lucide-react'
 import { TemplateLibrary } from '@/components/dashboard/flows/TemplateLibrary'
 
 export default function NewFlowSelectorPage() {
@@ -27,7 +27,7 @@ export default function NewFlowSelectorPage() {
       </div>
 
       {!showTemplates ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Crear con IA */}
           <button
             onClick={() => router.push('/dashboard/automatizaciones/new/ia')}
@@ -45,6 +45,21 @@ export default function NewFlowSelectorPage() {
             <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Crear con IA</h3>
             <p className="text-sm text-slate-500 leading-relaxed">
               Descríbele a la IA lo que quieres que pase y ella construye el Flow por ti. Sin conocimientos técnicos.
+            </p>
+          </button>
+
+          {/* Crear manualmente */}
+          <button
+            onClick={() => router.push('/dashboard/automatizaciones/new/manual')}
+            className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 text-left hover:shadow-md hover:border-slate-300 transition-all"
+            data-testid="create-manual-btn"
+          >
+            <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+              <Sliders className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Crear manualmente</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Elige el disparador y las acciones paso a paso. Control total sobre cada detalle.
             </p>
           </button>
 

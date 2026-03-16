@@ -7,6 +7,7 @@ import { Play, Pause, Trash2, Loader2, CheckCircle2, Zap, BarChart2 } from 'luci
 import { AutomationFlow, FlowExecution, FLOW_STATUS_CONFIG, TriggerConfig, ActionConfig } from './flowTypes'
 import { FlowRecipeCard } from './FlowRecipeCard'
 import { FlowExecutionHistory } from './FlowExecutionHistory'
+import { FlowMetricsCharts } from './FlowMetricsCharts'
 
 interface Props {
   flow:       AutomationFlow & { executions?: FlowExecution[] }
@@ -169,11 +170,7 @@ export function FlowDetail({ flow: initialFlow }: Props) {
             </div>
           </div>
 
-          {executions.length === 0 && (
-            <p className="text-center text-sm text-slate-400 mt-8">
-              Este Flow aún no ha sido ejecutado.
-            </p>
-          )}
+          <FlowMetricsCharts executions={executions} />
         </TabsContent>
       </Tabs>
     </div>

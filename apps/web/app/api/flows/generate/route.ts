@@ -23,6 +23,13 @@ REGLAS:
 - Si el usuario menciona nueva persona o nuevo contacto → usa trigger contact_created
 - Si el usuario menciona donante o "quiere donar" → usa trigger canvass_result con result: "wants_to_donate"
 - Si el usuario menciona simpatizante o "cambio de simpatía" → usa trigger sympathy_change
+- Si el usuario menciona "responde", "contestó", "reply" → usa trigger contact_replied
+- Si el usuario menciona "antes del evento", "días antes de", "evento del calendario" → usa trigger calendar_date
+- Si el usuario menciona "esperar", "después de X días", "pausa" → usa acción wait
+- Si el usuario menciona "correo", "email" → usa acción send_email
+- Si el usuario menciona "SMS", "texto" → usa acción send_sms
+- Si el usuario menciona "crear evento", "agendar", "calendario" → usa acción create_calendar_event
+- Si el usuario menciona "cambiar simpatía", "actualizar nivel", "subir nivel" → usa acción change_sympathy
 - El campo clarifying_questions debe ser un array de strings con preguntas de aclaración en español si la descripción es ambigua (máximo 2 preguntas). Si la descripción es clara, devuelve un array vacío.
 
 FORMATO DE RESPUESTA (JSON puro):

@@ -12,6 +12,8 @@ const TABS: { key: FlowCategory | 'all'; label: string }[] = [
   { key: 'sympathy',   label: '📈 Simpatía' },
   { key: 'donations',  label: '💰 Donaciones' },
   { key: 'canvassing', label: '🚪 Canvassing' },
+  { key: 'comms',      label: '📣 Comunicaciones' },
+  { key: 'electoral',  label: '🗳️ Electoral' },
 ]
 
 export function TemplateLibrary() {

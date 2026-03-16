@@ -8,6 +8,8 @@ export type TriggerType =
   | 'canvass_result'
   | 'inactivity'
   | 'contact_created'
+  | 'contact_replied'
+  | 'calendar_date'
 
 export type ActionType =
   | 'send_whatsapp'
@@ -15,6 +17,11 @@ export type ActionType =
   | 'add_tag'
   | 'remove_tag'
   | 'notify_team'
+  | 'send_sms'
+  | 'send_email'
+  | 'change_sympathy'
+  | 'create_calendar_event'
+  | 'wait'
 
 export type FlowStatus =
   | 'draft'
@@ -74,12 +81,29 @@ export interface TriggerContactCreated {
   config: Record<string, never>
 }
 
+export interface TriggerContactReplied {
+  type: 'contact_replied'
+  config: {
+    channel: 'whatsapp' | 'sms' | 'any'
+  }
+}
+
+export interface TriggerCalendarDate {
+  type: 'calendar_date'
+  config: {
+    offset_days: number          // días de distancia al evento
+    direction:   'before' | 'after'
+  }
+}
+
 export type TriggerConfig =
   | TriggerDateField
   | TriggerSympathyChange
   | TriggerCanvassResult
   | TriggerInactivity
   | TriggerContactCreated
+  | TriggerContactReplied
+  | TriggerCalendarDate
 
 // ── Configuraciones de Acciones ────────────────────────────────
 
@@ -125,12 +149,54 @@ export interface ActionNotifyTeam {
   }
 }
 
+export interface ActionSendSms {
+  type: 'send_sms'
+  config: {
+    message: string
+  }
+}
+
+export interface ActionSendEmail {
+  type: 'send_email'
+  config: {
+    subject: string
+    body:    string
+  }
+}
+
+export interface ActionChangeSympathy {
+  type: 'change_sympathy'
+  config: {
+    level: 1 | 2 | 3 | 4 | 5
+  }
+}
+
+export interface ActionCreateCalendarEvent {
+  type: 'create_calendar_event'
+  config: {
+    title:       string
+    days_offset: number   // días después del trigger
+  }
+}
+
+export interface ActionWait {
+  type: 'wait'
+  config: {
+    days: number
+  }
+}
+
 export type ActionConfig =
   | ActionSendWhatsApp
   | ActionCreateTask
   | ActionAddTag
   | ActionRemoveTag
   | ActionNotifyTeam
+  | ActionSendSms
+  | ActionSendEmail
+  | ActionChangeSympathy
+  | ActionCreateCalendarEvent
+  | ActionWait
 
 // ── Filtro de contactos ────────────────────────────────────────
 
@@ -266,17 +332,32 @@ export const TRIGGER_CONFIG: Record<TriggerType, {
     label:       'Nuevo contacto creado',
     description: 'Cuando se agrega un nuevo contacto al CRM',
   },
+  contact_replied: {
+    icon:        '↩️',
+    label:       'Contacto responde un mensaje',
+    description: 'Cuando un contacto responde a un WhatsApp o SMS enviado por la campaña',
+  },
+  calendar_date: {
+    icon:        '🗓️',
+    label:       'Fecha relativa a evento del calendario',
+    description: 'X días antes o después de un evento del calendario de la campaña',
+  },
 }
 
 export const ACTION_CONFIG: Record<ActionType, {
   label: string
   icon:  string
 }> = {
-  send_whatsapp: { icon: '💬', label: 'Enviar WhatsApp personalizado' },
-  create_task:   { icon: '✅', label: 'Crear tarea para el equipo' },
-  add_tag:       { icon: '🏷️', label: 'Agregar tag al contacto' },
-  remove_tag:    { icon: '🗑️', label: 'Quitar tag al contacto' },
-  notify_team:   { icon: '🔔', label: 'Notificar a un miembro del equipo' },
+  send_whatsapp:         { icon: '💬', label: 'Enviar WhatsApp personalizado' },
+  create_task:           { icon: '✅', label: 'Crear tarea para el equipo' },
+  add_tag:               { icon: '🏷️', label: 'Agregar tag al contacto' },
+  remove_tag:            { icon: '🗑️', label: 'Quitar tag al contacto' },
+  notify_team:           { icon: '🔔', label: 'Notificar a un miembro del equipo' },
+  send_sms:              { icon: '📱', label: 'Enviar SMS al contacto' },
+  send_email:            { icon: '✉️', label: 'Enviar email al contacto' },
+  change_sympathy:       { icon: '📊', label: 'Cambiar nivel de simpatía' },
+  create_calendar_event: { icon: '📆', label: 'Crear evento en el calendario' },
+  wait:                  { icon: '⏳', label: 'Esperar X días' },
 }
 
 export const FLOW_STATUS_CONFIG: Record<FlowStatus, {
@@ -357,6 +438,14 @@ export function describeTrigger(trigger: TriggerConfig): string {
       return `Cuando un contacto lleva más de ${trigger.config.days} días sin ser visitado ni contactado.`
     case 'contact_created':
       return 'Cuando se agrega un nuevo contacto al CRM (por importación, campo o formulario).'
+    case 'contact_replied': {
+      const channelLabels = { whatsapp: 'WhatsApp', sms: 'SMS', any: 'WhatsApp o SMS' }
+      return `Cuando un contacto responde un mensaje de ${channelLabels[trigger.config.channel]}.`
+    }
+    case 'calendar_date': {
+      const dir = trigger.config.direction === 'before' ? 'antes de' : 'después de'
+      return `${trigger.config.offset_days} día(s) ${dir} un evento del calendario de la campaña.`
+    }
   }
 }
 
@@ -373,5 +462,17 @@ export function describeAction(action: ActionConfig): string {
       return `Se quitan los tags: ${action.config.tags.join(', ')}.`
     case 'notify_team':
       return `Se notifica al equipo: "${action.config.message}".`
+    case 'send_sms':
+      return 'Se envía un SMS personalizado al contacto.'
+    case 'send_email':
+      return `Se envía un email con asunto "${action.config.subject}".`
+    case 'change_sympathy': {
+      const levelLabels: Record<number, string> = { 1: 'Muy bajo', 2: 'Bajo', 3: 'Neutro', 4: 'Simpatizante', 5: 'Muy simpatizante' }
+      return `Se actualiza el nivel de simpatía a ${action.config.level} (${levelLabels[action.config.level] ?? action.config.level}).`
+    }
+    case 'create_calendar_event':
+      return `Se crea el evento "${action.config.title}" en el calendario ${action.config.days_offset} día(s) después.`
+    case 'wait':
+      return `El flow espera ${action.config.days} día(s) antes de continuar con la siguiente acción.`
   }
 }
