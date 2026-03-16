@@ -1,0 +1,146 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Upload, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import Papa from 'papaparse'
+
+interface ImportResult {
+  imported: number
+  skipped: number
+  errors: string[]
+}
+
+export default function ImportContactsPage() {
+  const [file, setFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<ImportResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  async function handleImport() {
+    if (!file) return
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const csv = e.target?.result as string
+
+      Papa.parse(csv, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (parsed) => {
+          try {
+            const res = await fetch('/api/import/contacts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ rows: parsed.data }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+            setResult(data)
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Error al importar')
+          } finally {
+            setLoading(false)
+          }
+        },
+        error: (err: Error) => {
+          setError(`Error al parsear CSV: ${err.message}`)
+          setLoading(false)
+        },
+      })
+    }
+    reader.readAsText(file)
+  }
+
+  return (
+    <div className="p-6 space-y-4 max-w-2xl">
+      <div className="flex items-center gap-3">
+        <Link href="/dashboard/contacts">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Volver
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Importar contactos</h1>
+          <p className="text-slate-500 text-sm">Sube un archivo CSV para importar contactos masivamente</p>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Formato del CSV</CardTitle>
+          <CardDescription>
+            El archivo debe incluir las columnas: <code className="bg-slate-100 px-1 rounded text-xs">first_name</code>, <code className="bg-slate-100 px-1 rounded text-xs">last_name</code>, y opcionalmente: <code className="bg-slate-100 px-1 rounded text-xs">email</code>, <code className="bg-slate-100 px-1 rounded text-xs">phone</code>, <code className="bg-slate-100 px-1 rounded text-xs">address</code>, <code className="bg-slate-100 px-1 rounded text-xs">city</code>, <code className="bg-slate-100 px-1 rounded text-xs">district</code>, <code className="bg-slate-100 px-1 rounded text-xs">status</code>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <label className="flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 rounded-lg p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+            <Upload className="h-8 w-8 text-slate-400" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-slate-700">
+                {file ? file.name : 'Haz clic para seleccionar un archivo CSV'}
+              </p>
+              {file && (
+                <p className="text-xs text-slate-400 mt-1">
+                  {(file.size / 1024).toFixed(1)} KB
+                </p>
+              )}
+            </div>
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={e => setFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+
+          {file && !result && (
+            <Button onClick={handleImport} disabled={loading} className="w-full">
+              {loading ? 'Importando...' : `Importar ${file.name}`}
+            </Button>
+          )}
+
+          {error && (
+            <div className="flex items-start gap-2 p-4 bg-red-50 rounded-lg text-red-700">
+              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {result && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 p-4 bg-green-50 rounded-lg text-green-700">
+                <CheckCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">Importación completada</p>
+                  <p className="text-sm mt-1">
+                    {result.imported} contactos importados · {result.skipped} omitidos (duplicados)
+                  </p>
+                </div>
+              </div>
+              {result.errors.length > 0 && (
+                <div className="p-3 bg-orange-50 rounded-lg">
+                  <p className="text-xs font-medium text-orange-700 mb-1">Errores ({result.errors.length}):</p>
+                  {result.errors.slice(0, 5).map((e, i) => (
+                    <p key={i} className="text-xs text-orange-600">{e}</p>
+                  ))}
+                </div>
+              )}
+              <Button onClick={() => router.push('/dashboard/contacts')} className="w-full">
+                Ver contactos importados
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

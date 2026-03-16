@@ -1,0 +1,3673 @@
+{
+  "metadata": {
+    "descripcion": "Datos geográficos detallados de Colombia hasta nivel de barrio para las principales ciudades",
+    "fuentes": [
+      "Datos Abiertos Bogotá (datos.bogota.gov.co)",
+      "Medata Medellín (medata.gov.co)",
+      "Datos Abiertos Cali",
+      "DANE - Marco Geoestadístico Nacional",
+      "Portales de datos abiertos municipales"
+    ],
+    "version": "1.0",
+    "fecha": "2026",
+    "ciudades_incluidas": [
+      "Bogotá D.C.",
+      "Medellín",
+      "Cali",
+      "Barranquilla",
+      "Bucaramanga",
+      "Cartagena de Indias",
+      "Cúcuta",
+      "Pereira",
+      "Ibagué",
+      "Manizales",
+      "Villavicencio",
+      "Armenia",
+      "Rionegro"
+    ],
+    "nota_barrios_faltantes": "Para municipios no incluidos en este archivo, los barrios, veredas y sectores deben ser creados manualmente por el Campaign Manager desde la interfaz de territorios de CivicOS, o importados mediante archivo GeoJSON.",
+    "estructura": {
+      "bogota": "localidad > upz > barrios",
+      "medellin": "comuna > barrios + corregimientos > veredas",
+      "cali": "comuna > barrios + corregimientos > veredas",
+      "barranquilla": "localidad > barrios",
+      "otras_ciudades": "comuna > barrios"
+    },
+    "total_barrios_aprox": 1447,
+    "total_ciudades": 13
+  },
+  "ciudades": [
+    {
+      "municipio_codigo": "11001",
+      "municipio_nombre": "Bogotá D.C.",
+      "departamento_codigo": "11",
+      "tipo_division_urbana": "localidad",
+      "localidades": [
+        {
+          "codigo": "01",
+          "nombre": "Usaquén",
+          "upz": [
+            {
+              "codigo": "09",
+              "nombre": "Verbenal",
+              "barrios": [
+                "Verbenal",
+                "La Uribe",
+                "El Prado",
+                "Barrancas",
+                "San Cristóbal Norte",
+                "Horizontes",
+                "El Toberin",
+                "Los Cedros Oriental"
+              ]
+            },
+            {
+              "codigo": "10",
+              "nombre": "La Uribe",
+              "barrios": [
+                "La Uribe",
+                "El Barrancal",
+                "Cerro Norte",
+                "Soratama",
+                "Buenavista",
+                "Patios"
+              ]
+            },
+            {
+              "codigo": "11",
+              "nombre": "San Cristóbal Norte",
+              "barrios": [
+                "San Cristóbal Norte",
+                "La Cita",
+                "Jardín Norteno",
+                "Codito",
+                "El Codito",
+                "Mirador del Norte"
+              ]
+            },
+            {
+              "codigo": "12",
+              "nombre": "Toberín",
+              "barrios": [
+                "Toberín",
+                "La Cita",
+                "Paseo de los Libertadores",
+                "Arrayanes",
+                "Buena Vista",
+                "Santa Bárbara Oriental"
+              ]
+            },
+            {
+              "codigo": "13",
+              "nombre": "Los Cedros",
+              "barrios": [
+                "Los Cedros",
+                "Cedros Norte",
+                "Cedros Oriental",
+                "Santa Barbara Occidental",
+                "Batan",
+                "El Contador",
+                "Colina Campestre"
+              ]
+            },
+            {
+              "codigo": "14",
+              "nombre": "Usaquén",
+              "barrios": [
+                "Usaquén",
+                "Santa Bárbara",
+                "Cedritos",
+                "Andes Norte",
+                "La Calleja",
+                "Bosque de Pinos",
+                "Bella Suiza"
+              ]
+            },
+            {
+              "codigo": "15",
+              "nombre": "Country Club",
+              "barrios": [
+                "Country Club",
+                "La Cabrera",
+                "El Nogal",
+                "Chicó Norte",
+                "Chicó Lago",
+                "Virrey",
+                "Antiguo Country"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Chapinero",
+          "upz": [
+            {
+              "codigo": "88",
+              "nombre": "El Refugio",
+              "barrios": [
+                "El Refugio",
+                "Chicó Norte II",
+                "Chicó Norte III",
+                "La Cabrera",
+                "El Nogal",
+                "Rosales"
+              ]
+            },
+            {
+              "codigo": "89",
+              "nombre": "San Isidro Patios",
+              "barrios": [
+                "San Isidro",
+                "Los Patios",
+                "La Sureña",
+                "Bosque Calderon Tejada",
+                "El Paraíso"
+              ]
+            },
+            {
+              "codigo": "90",
+              "nombre": "Pardo Rubio",
+              "barrios": [
+                "Pardo Rubio",
+                "Sucre",
+                "Bello Horizonte",
+                "El Paraíso",
+                "Mariscal Sucre",
+                "Granada"
+              ]
+            },
+            {
+              "codigo": "97",
+              "nombre": "Chico Lago",
+              "barrios": [
+                "Chicó",
+                "Chicó Lago",
+                "Chicó Lago Occidental",
+                "El Lago",
+                "La Merced",
+                "El Retiro"
+              ]
+            },
+            {
+              "codigo": "99",
+              "nombre": "Chapinero",
+              "barrios": [
+                "Chapinero Central",
+                "Chapinero Norte",
+                "Chapinero Alto",
+                "Palermo",
+                "Marly",
+                "Quinta Camacho",
+                "Cundinamarca"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Santa Fe",
+          "upz": [
+            {
+              "codigo": "91",
+              "nombre": "Sagrado Corazón",
+              "barrios": [
+                "Sagrado Corazón",
+                "La Macarena",
+                "Armenia",
+                "Marly",
+                "Bosque Izquierdo"
+              ]
+            },
+            {
+              "codigo": "92",
+              "nombre": "La Macarena",
+              "barrios": [
+                "La Macarena",
+                "Germania",
+                "Bosque Izquierdo",
+                "San Diego"
+              ]
+            },
+            {
+              "codigo": "93",
+              "nombre": "Las Nieves",
+              "barrios": [
+                "Las Nieves",
+                "La Alameda",
+                "La Capuchina",
+                "Santa Inés",
+                "Egipto",
+                "San Bernardo"
+              ]
+            },
+            {
+              "codigo": "94",
+              "nombre": "La Candelaria",
+              "barrios": [
+                "La Candelaria",
+                "Belén",
+                "Las Aguas",
+                "Centro Administrativo"
+              ]
+            },
+            {
+              "codigo": "95",
+              "nombre": "Las Cruces",
+              "barrios": [
+                "Las Cruces",
+                "El Guavio",
+                "Lourdes",
+                "Ramajal",
+                "Balcones de Vista Hermosa"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "San Cristóbal",
+          "upz": [
+            {
+              "codigo": "32",
+              "nombre": "San Blas",
+              "barrios": [
+                "San Blas",
+                "Altamira",
+                "Los Alpes",
+                "Los Puentes",
+                "La Gloria",
+                "La Victoria"
+              ]
+            },
+            {
+              "codigo": "33",
+              "nombre": "Sosiego",
+              "barrios": [
+                "Sosiego",
+                "La Perseverancia",
+                "El Triunfo",
+                "Primero de Mayo",
+                "Villa Javier"
+              ]
+            },
+            {
+              "codigo": "34",
+              "nombre": "20 de Julio",
+              "barrios": [
+                "20 de Julio",
+                "Los Libertadores",
+                "San Pedro",
+                "Villa del Cerro",
+                "Montebello"
+              ]
+            },
+            {
+              "codigo": "50",
+              "nombre": "La Gloria",
+              "barrios": [
+                "La Gloria",
+                "Los Alpes",
+                "Las Colinas",
+                "Las Lomas",
+                "Juan Rey",
+                "El Mochuelo"
+              ]
+            },
+            {
+              "codigo": "51",
+              "nombre": "Los Libertadores",
+              "barrios": [
+                "Los Libertadores",
+                "San Isidro",
+                "El Paraíso",
+                "Quindío",
+                "Santa Rita"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Usme",
+          "upz": [
+            {
+              "codigo": "52",
+              "nombre": "La Flora",
+              "barrios": [
+                "La Flora",
+                "La Requilina",
+                "Chuniza",
+                "La Andrea",
+                "Fiscala"
+              ]
+            },
+            {
+              "codigo": "56",
+              "nombre": "Danubio",
+              "barrios": [
+                "Danubio",
+                "Villa Alemana",
+                "Gran Yomasa",
+                "Las Violetas",
+                "El Bosque"
+              ]
+            },
+            {
+              "codigo": "57",
+              "nombre": "Gran Yomasa",
+              "barrios": [
+                "Gran Yomasa",
+                "El Portal",
+                "Villa Claudia",
+                "Marichuela",
+                "El Triangulo"
+              ]
+            },
+            {
+              "codigo": "58",
+              "nombre": "Comuneros",
+              "barrios": [
+                "Comuneros",
+                "Barranquillita",
+                "Marruecos",
+                "El Tuno",
+                "La Esperanza Sur"
+              ]
+            },
+            {
+              "codigo": "59",
+              "nombre": "Alfonso López",
+              "barrios": [
+                "Alfonso López",
+                "Virgen del Carmen",
+                "Los Olivos",
+                "Monteblanco",
+                "San Agustín"
+              ]
+            },
+            {
+              "codigo": "60",
+              "nombre": "Parque Entrenubes",
+              "barrios": [
+                "Parque Entre Nubes",
+                "El Triangulo Sur",
+                "Tocaimita",
+                "La Fiscala Alta"
+              ]
+            },
+            {
+              "codigo": "61",
+              "nombre": "Ciudad Usme",
+              "barrios": [
+                "Ciudad Usme",
+                "Usme Pueblo",
+                "Chuniza",
+                "El Refugio",
+                "San Juan Bautista"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "Tunjuelito",
+          "upz": [
+            {
+              "codigo": "42",
+              "nombre": "Venecia",
+              "barrios": [
+                "Venecia",
+                "El Indalecio",
+                "San Vicente",
+                "Madelena",
+                "Tunjuelito",
+                "Samore"
+              ]
+            },
+            {
+              "codigo": "62",
+              "nombre": "Tunjuelito",
+              "barrios": [
+                "Tunjuelito",
+                "Fátima",
+                "Villa Ximena",
+                "Abraham Lincoln",
+                "San Benito"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Bosa",
+          "upz": [
+            {
+              "codigo": "49",
+              "nombre": "Apogeo",
+              "barrios": [
+                "Apogeo",
+                "Potrerillo",
+                "El Corzo",
+                "Palmeras",
+                "La Independencia"
+              ]
+            },
+            {
+              "codigo": "84",
+              "nombre": "Bosa Occidental",
+              "barrios": [
+                "Bosa Occidental",
+                "San Diego",
+                "José Antonio Galán",
+                "El Porvenir",
+                "Las Margaritas"
+              ]
+            },
+            {
+              "codigo": "85",
+              "nombre": "Bosa Central",
+              "barrios": [
+                "Bosa Central",
+                "San Bernardino",
+                "Laureles",
+                "El Libertador",
+                "Metrovivienda"
+              ]
+            },
+            {
+              "codigo": "86",
+              "nombre": "El Porvenir",
+              "barrios": [
+                "El Porvenir",
+                "La Estancia",
+                "Villa Emilia",
+                "San Pablo",
+                "Naranjos"
+              ]
+            },
+            {
+              "codigo": "87",
+              "nombre": "Tintal Norte",
+              "barrios": [
+                "Tintal Norte",
+                "El Tintal",
+                "Ciudadela El Recreo",
+                "La Castaña"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Kennedy",
+          "upz": [
+            {
+              "codigo": "44",
+              "nombre": "Américas",
+              "barrios": [
+                "Américas",
+                "Marsella",
+                "El Recuerdo",
+                "Carvajal",
+                "Las Américas",
+                "Floralia"
+              ]
+            },
+            {
+              "codigo": "45",
+              "nombre": "Carvajal",
+              "barrios": [
+                "Carvajal",
+                "Olaya",
+                "San Eusebio",
+                "Perpetuo Socorro",
+                "Bavaria"
+              ]
+            },
+            {
+              "codigo": "46",
+              "nombre": "Castilla",
+              "barrios": [
+                "Castilla",
+                "Banderas",
+                "El Tintal",
+                "Mandalay",
+                "Kennedy Central"
+              ]
+            },
+            {
+              "codigo": "47",
+              "nombre": "Kennedy Central",
+              "barrios": [
+                "Kennedy Central",
+                "El Amparo",
+                "Gran Britalia",
+                "Primavera",
+                "Villa de las Américas"
+              ]
+            },
+            {
+              "codigo": "48",
+              "nombre": "Timiza",
+              "barrios": [
+                "Timiza",
+                "Ciudad Kennedy",
+                "Valladolid",
+                "Canaima",
+                "Techo"
+              ]
+            },
+            {
+              "codigo": "78",
+              "nombre": "Tintal Sur",
+              "barrios": [
+                "Tintal Sur",
+                "Ciudadela Colsubsidio",
+                "Patio Bonito",
+                "Las Margaritas"
+              ]
+            },
+            {
+              "codigo": "79",
+              "nombre": "Calandaima",
+              "barrios": [
+                "Calandaima",
+                "Bosa La Libertad",
+                "El Recreo",
+                "Ciudad Verde"
+              ]
+            },
+            {
+              "codigo": "80",
+              "nombre": "Corabastos",
+              "barrios": [
+                "Corabastos",
+                "El Vergel",
+                "Primero de Agosto",
+                "Bavaria"
+              ]
+            },
+            {
+              "codigo": "81",
+              "nombre": "Gran Britalia",
+              "barrios": [
+                "Gran Britalia",
+                "Britalia",
+                "El Amparo",
+                "San Joaquín del Vaticano"
+              ]
+            },
+            {
+              "codigo": "82",
+              "nombre": "Patio Bonito",
+              "barrios": [
+                "Patio Bonito",
+                "Cárdenas Sur",
+                "El Amparo",
+                "Hipotecho"
+              ]
+            },
+            {
+              "codigo": "83",
+              "nombre": "Las Margaritas",
+              "barrios": [
+                "Las Margaritas",
+                "Hipódromo",
+                "La Igualdad",
+                "Villa Gloria"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Fontibón",
+          "upz": [
+            {
+              "codigo": "75",
+              "nombre": "Fontibón",
+              "barrios": [
+                "Fontibón",
+                "San Pablo",
+                "Versalles",
+                "El Refugio",
+                "Kasandra"
+              ]
+            },
+            {
+              "codigo": "76",
+              "nombre": "Fontibón San Pablo",
+              "barrios": [
+                "San Pablo",
+                "Fontibón Centro",
+                "La Cabaña",
+                "Bello Horizonte"
+              ]
+            },
+            {
+              "codigo": "77",
+              "nombre": "Zona Franca",
+              "barrios": [
+                "Zona Franca",
+                "Capellanía",
+                "Ciudad Salitre",
+                "Montevideo"
+              ]
+            },
+            {
+              "codigo": "110",
+              "nombre": "Ciudad Salitre Occidental",
+              "barrios": [
+                "Ciudad Salitre Occidental",
+                "El Cuadrado",
+                "Modelia",
+                "El Triunfo"
+              ]
+            },
+            {
+              "codigo": "112",
+              "nombre": "Granjas de Techo",
+              "barrios": [
+                "Granjas de Techo",
+                "Ferrocali",
+                "Alsacia",
+                "El Dorado"
+              ]
+            },
+            {
+              "codigo": "113",
+              "nombre": "Bavaria",
+              "barrios": [
+                "Bavaria",
+                "La Aldea",
+                "Villemar",
+                "Puerta de Teja"
+              ]
+            },
+            {
+              "codigo": "114",
+              "nombre": "Aeropuerto El Dorado",
+              "barrios": [
+                "El Dorado",
+                "Engativá",
+                "Garcés Navas"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "Engativá",
+          "upz": [
+            {
+              "codigo": "26",
+              "nombre": "Las Ferias",
+              "barrios": [
+                "Las Ferias",
+                "Granja",
+                "El Cortijo",
+                "Las Palmitas",
+                "La Española"
+              ]
+            },
+            {
+              "codigo": "29",
+              "nombre": "Robinhood",
+              "barrios": [
+                "Robinhood",
+                "Quirigua",
+                "Bolivia",
+                "La Serena",
+                "Garcés Navas"
+              ]
+            },
+            {
+              "codigo": "30",
+              "nombre": "Boyacá Real",
+              "barrios": [
+                "Boyacá Real",
+                "Santa Helenita",
+                "San Marcos",
+                "Villa Luz",
+                "Patria"
+              ]
+            },
+            {
+              "codigo": "31",
+              "nombre": "Santa Cecilia",
+              "barrios": [
+                "Santa Cecilia",
+                "París",
+                "Bonanza",
+                "Normandía",
+                "Garcés Navas"
+              ]
+            },
+            {
+              "codigo": "72",
+              "nombre": "Bolivia",
+              "barrios": [
+                "Bolivia",
+                "La Española",
+                "Quirigua",
+                "Garcés Navas Norte"
+              ]
+            },
+            {
+              "codigo": "73",
+              "nombre": "Garcés Navas",
+              "barrios": [
+                "Garcés Navas",
+                "Florencia",
+                "Paloblanco",
+                "Las Orquídeas"
+              ]
+            },
+            {
+              "codigo": "74",
+              "nombre": "Engativá",
+              "barrios": [
+                "Engativá",
+                "Álamos",
+                "Vegas",
+                "Jardín Botánico",
+                "Cortijo"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "Suba",
+          "upz": [
+            {
+              "codigo": "17",
+              "nombre": "San José de Bavaria",
+              "barrios": [
+                "San José de Bavaria",
+                "Mazurén",
+                "Los Arrayanes",
+                "Niza Sur"
+              ]
+            },
+            {
+              "codigo": "18",
+              "nombre": "Britalia",
+              "barrios": [
+                "Britalia",
+                "El Prado",
+                "Sabana Grande",
+                "Villa del Prado"
+              ]
+            },
+            {
+              "codigo": "19",
+              "nombre": "El Prado",
+              "barrios": [
+                "El Prado",
+                "Lombardía",
+                "Niza",
+                "Atabanza",
+                "Julio Flórez"
+              ]
+            },
+            {
+              "codigo": "20",
+              "nombre": "La Academia",
+              "barrios": [
+                "La Academia",
+                "Tuna Alta",
+                "Tuna Baja",
+                "El Rincón",
+                "Ciudad Jardín Norte"
+              ]
+            },
+            {
+              "codigo": "23",
+              "nombre": "Casa Blanca Suba",
+              "barrios": [
+                "Casa Blanca",
+                "Suba",
+                "Tibabuyes",
+                "El Rincón",
+                "Bilbao"
+              ]
+            },
+            {
+              "codigo": "24",
+              "nombre": "Niza",
+              "barrios": [
+                "Niza",
+                "Niza Norte",
+                "La Colina",
+                "Santa Bárbara Alta"
+              ]
+            },
+            {
+              "codigo": "25",
+              "nombre": "La Floresta",
+              "barrios": [
+                "La Floresta",
+                "Alhambra",
+                "Suba Urbano",
+                "Arrayanes"
+              ]
+            },
+            {
+              "codigo": "27",
+              "nombre": "Suba",
+              "barrios": [
+                "Suba Centro",
+                "Lisboa",
+                "Bilbao",
+                "El Rincón",
+                "La Gaitana"
+              ]
+            },
+            {
+              "codigo": "28",
+              "nombre": "El Rincón",
+              "barrios": [
+                "El Rincón",
+                "Morisco",
+                "Ciudad Hunza",
+                "Compartir",
+                "Iberia"
+              ]
+            },
+            {
+              "codigo": "71",
+              "nombre": "Tibabuyes",
+              "barrios": [
+                "Tibabuyes",
+                "Ciudadela Cafam",
+                "La Gaitana",
+                "San Pedro",
+                "Tuna"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "12",
+          "nombre": "Barrios Unidos",
+          "upz": [
+            {
+              "codigo": "21",
+              "nombre": "Los Andes",
+              "barrios": [
+                "Los Andes",
+                "Doce de Octubre",
+                "José Martí",
+                "Rionegro",
+                "Simón Bolívar"
+              ]
+            },
+            {
+              "codigo": "22",
+              "nombre": "Doce de Octubre",
+              "barrios": [
+                "Doce de Octubre",
+                "Andes Norte",
+                "La Patria",
+                "Benjamín Herrera"
+              ]
+            },
+            {
+              "codigo": "98",
+              "nombre": "Los Alcázares",
+              "barrios": [
+                "Los Alcázares",
+                "Polo Club",
+                "San Fernando",
+                "Las Orquídeas"
+              ]
+            },
+            {
+              "codigo": "103",
+              "nombre": "Parque Salitre",
+              "barrios": [
+                "Parque Salitre",
+                "El Salitre",
+                "Ciudad Salitre Oriental"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "13",
+          "nombre": "Teusaquillo",
+          "upz": [
+            {
+              "codigo": "100",
+              "nombre": "Galerías",
+              "barrios": [
+                "Galerías",
+                "Teusaquillo",
+                "Nicolás de Federmán",
+                "La Soledad"
+              ]
+            },
+            {
+              "codigo": "101",
+              "nombre": "Parque Simón Bolívar",
+              "barrios": [
+                "Parque Simón Bolívar",
+                "La Esmeralda",
+                "Ciudad Universitaria",
+                "El Campín"
+              ]
+            },
+            {
+              "codigo": "102",
+              "nombre": "La Esmeralda",
+              "barrios": [
+                "La Esmeralda",
+                "Palermo",
+                "Quinta Paredes",
+                "Macarena"
+              ]
+            },
+            {
+              "codigo": "104",
+              "nombre": "Marsella",
+              "barrios": [
+                "Marsella",
+                "Palermo",
+                "Cundinamarca",
+                "Emilio Cifuentes"
+              ]
+            },
+            {
+              "codigo": "107",
+              "nombre": "Quinta Paredes",
+              "barrios": [
+                "Quinta Paredes",
+                "Ciudad Universitaria",
+                "Palermo"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "14",
+          "nombre": "Los Mártires",
+          "upz": [
+            {
+              "codigo": "37",
+              "nombre": "Santa Isabel",
+              "barrios": [
+                "Santa Isabel",
+                "Restrepo",
+                "Eduardo Santos",
+                "Ricaurte",
+                "La Favorita"
+              ]
+            },
+            {
+              "codigo": "38",
+              "nombre": "Restrepo",
+              "barrios": [
+                "Restrepo",
+                "Policarpa",
+                "San Antonio",
+                "El Vergel",
+                "Voto Nacional"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "15",
+          "nombre": "Antonio Nariño",
+          "upz": [
+            {
+              "codigo": "35",
+              "nombre": "Ciudad Jardín Sur",
+              "barrios": [
+                "Ciudad Jardín Sur",
+                "Consuelo",
+                "Bravo Páez",
+                "La Fragua"
+              ]
+            },
+            {
+              "codigo": "36",
+              "nombre": "San José",
+              "barrios": [
+                "San José",
+                "Centenario",
+                "Antonio Nariño",
+                "Quiroga"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "16",
+          "nombre": "Puente Aranda",
+          "upz": [
+            {
+              "codigo": "40",
+              "nombre": "Ciudad Montes",
+              "barrios": [
+                "Ciudad Montes",
+                "Salazar Gómez",
+                "Colseguros",
+                "Muzú"
+              ]
+            },
+            {
+              "codigo": "41",
+              "nombre": "Muzú",
+              "barrios": [
+                "Muzú",
+                "Puente Aranda",
+                "Cundinamarca",
+                "Ospina Pérez"
+              ]
+            },
+            {
+              "codigo": "108",
+              "nombre": "Zona Industrial",
+              "barrios": [
+                "Zona Industrial",
+                "Pensilvania",
+                "La Pradera",
+                "San Rafael"
+              ]
+            },
+            {
+              "codigo": "109",
+              "nombre": "Puente Aranda",
+              "barrios": [
+                "Puente Aranda",
+                "Galán",
+                "Conquistadores",
+                "Las Américas"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "17",
+          "nombre": "La Candelaria",
+          "upz": [
+            {
+              "codigo": "94",
+              "nombre": "La Candelaria",
+              "barrios": [
+                "La Candelaria",
+                "Las Aguas",
+                "Belén",
+                "Centro Histórico",
+                "Santa Bárbara"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "18",
+          "nombre": "Rafael Uribe Uribe",
+          "upz": [
+            {
+              "codigo": "53",
+              "nombre": "Marco Fidel Suárez",
+              "barrios": [
+                "Marco Fidel Suárez",
+                "El Consuelo",
+                "El Libertador",
+                "La Picota"
+              ]
+            },
+            {
+              "codigo": "54",
+              "nombre": "Marruecos",
+              "barrios": [
+                "Marruecos",
+                "San Agustín",
+                "Molinos Norte",
+                "El Inglés"
+              ]
+            },
+            {
+              "codigo": "55",
+              "nombre": "Diana Turbay",
+              "barrios": [
+                "Diana Turbay",
+                "El Rubí",
+                "Arrayanal",
+                "El Triunfo"
+              ]
+            },
+            {
+              "codigo": "56",
+              "nombre": "Quiroga",
+              "barrios": [
+                "Quiroga",
+                "Olaya Herrera",
+                "La Picota",
+                "San Jorge"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "19",
+          "nombre": "Ciudad Bolívar",
+          "upz": [
+            {
+              "codigo": "63",
+              "nombre": "El Tesoro",
+              "barrios": [
+                "El Tesoro",
+                "Lucero Alto",
+                "Lucero Medio",
+                "Lucero Bajo"
+              ]
+            },
+            {
+              "codigo": "64",
+              "nombre": "Monteblanco",
+              "barrios": [
+                "Monteblanco",
+                "Sierra Morena",
+                "La Esperanza Norte",
+                "Jerusalem"
+              ]
+            },
+            {
+              "codigo": "65",
+              "nombre": "Arborizadora",
+              "barrios": [
+                "Arborizadora Alta",
+                "Arborizadora Baja",
+                "Vista Hermosa",
+                "La Casona"
+              ]
+            },
+            {
+              "codigo": "66",
+              "nombre": "San Francisco",
+              "barrios": [
+                "San Francisco",
+                "Ismael Perdomo",
+                "Juan José Rondón",
+                "México"
+              ]
+            },
+            {
+              "codigo": "67",
+              "nombre": "Lucero",
+              "barrios": [
+                "Lucero",
+                "El Paraíso",
+                "El Recuerdo Sur",
+                "Naciones Unidas"
+              ]
+            },
+            {
+              "codigo": "68",
+              "nombre": "El Tesoro",
+              "barrios": [
+                "El Tesoro",
+                "Juan Pablo II",
+                "Cordillera",
+                "Los Alpes"
+              ]
+            },
+            {
+              "codigo": "69",
+              "nombre": "Ismael Perdomo",
+              "barrios": [
+                "Ismael Perdomo",
+                "Compartir",
+                "Potosí",
+                "El Paraíso"
+              ]
+            },
+            {
+              "codigo": "70",
+              "nombre": "Jerusalem",
+              "barrios": [
+                "Jerusalem",
+                "Candelaria La Nueva",
+                "Verona",
+                "Nueva Colombia"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "20",
+          "nombre": "Sumapaz",
+          "upz": [
+            {
+              "codigo": "001",
+              "nombre": "Sumapaz Rural",
+              "barrios": [
+                "Nazareth",
+                "Betania",
+                "San Juan",
+                "Taquecitos",
+                "Las Vegas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "05001",
+      "municipio_nombre": "Medellín",
+      "departamento_codigo": "05",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Popular",
+          "barrios": [
+            "Popular",
+            "El Compromiso",
+            "Granizal",
+            "Moscú Nº2",
+            "Villa del Socorro",
+            "Villa Niza",
+            "Mirador del Doce",
+            "La Avanzada",
+            "La Esperanza",
+            "El Playón de los Comuneros",
+            "Aldea Pablo VI",
+            "La Esperanza Nº2",
+            "Nuevo Horizonte",
+            "El Jardín",
+            "Moscú Nº1",
+            "Santo Domingo Savio Nº1",
+            "Santo Domingo Savio Nº2",
+            "Pablo VI"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Santa Cruz",
+          "barrios": [
+            "Santa Cruz",
+            "La Isla",
+            "Palermo",
+            "La Francia",
+            "Villa del Socorro",
+            "Andalucía",
+            "La Rosa",
+            "El Pinal",
+            "Moscú",
+            "Versalles Nº1",
+            "Versalles Nº2",
+            "La Frontera",
+            "La Mansión",
+            "San Pablo",
+            "Urquita",
+            "Facultad de Minas"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Manrique",
+          "barrios": [
+            "Manrique Central Nº1",
+            "Manrique Central Nº2",
+            "Manrique Oriental",
+            "La Cruz",
+            "El Raizal",
+            "El Pomar",
+            "Bello Oriente",
+            "La Salle",
+            "Versalles",
+            "Oriente",
+            "Las Granjas",
+            "Boston",
+            "Trece de Noviembre",
+            "El Compromiso",
+            "Campo Valdés Nº1",
+            "Campo Valdés Nº2",
+            "María Cano-Carambolas",
+            "San José La Cima Nº1",
+            "San José La Cima Nº2"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Aranjuez",
+          "barrios": [
+            "Aranjuez",
+            "Berlín",
+            "San Isidro",
+            "Moravia",
+            "Palermo",
+            "Bermejal-Los Álamos",
+            "La Piñuela",
+            "Las Esmeraldas",
+            "Sevilla",
+            "Santa Cruz Norte",
+            "Brasilia",
+            "El Bosque",
+            "Jardín Botánico",
+            "Pérez",
+            "El Raizal",
+            "Cesar Uribe Piedrahita",
+            "Miranda"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Castilla",
+          "barrios": [
+            "Castilla",
+            "El Progreso",
+            "Toscana",
+            "Tejelo",
+            "Boyacá",
+            "Florencia",
+            "Francisco Antonio Zea",
+            "Belalcázar",
+            "Girardot",
+            "Alfonso López",
+            "Caribe",
+            "Tricentenario",
+            "El Diamante",
+            "El Pedregal",
+            "La Esperanza",
+            "Nuestro Hogares",
+            "Cucaracho"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "Doce de Octubre",
+          "barrios": [
+            "Doce de Octubre Nº1",
+            "Doce de Octubre Nº2",
+            "Picacho",
+            "Picachito",
+            "Mirador de Calasanz",
+            "La Esperanza",
+            "Kennedy",
+            "Pedregal",
+            "López de Mesa",
+            "El Triunfo",
+            "San Martín de Porres",
+            "La Iguana",
+            "El Salado"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Robledo",
+          "barrios": [
+            "Robledo",
+            "Altamira",
+            "El Diamante",
+            "Aures Nº1",
+            "Aures Nº2",
+            "Bello Horizonte",
+            "Blanquizal",
+            "La Aldea",
+            "La Cumbre",
+            "Monteclaro",
+            "Olímpico",
+            "Pajarito",
+            "Palenque",
+            "Pradomar",
+            "San Germán",
+            "Santa Margarita",
+            "Fuente Clara",
+            "El Volador",
+            "Córdoba",
+            "López de Mesa"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Villa Hermosa",
+          "barrios": [
+            "Villa Hermosa",
+            "La Mansión",
+            "San Miguel",
+            "La Ladera",
+            "Batallón Girardot",
+            "Llanaditas",
+            "Los Mangos",
+            "Enciso",
+            "Sucre",
+            "El Pinal",
+            "Triste",
+            "La Salle",
+            "El Vergel",
+            "Caicedo",
+            "Villatina"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Buenos Aires",
+          "barrios": [
+            "Buenos Aires",
+            "Alejandro Echavarría",
+            "Barrio Colón",
+            "Loreto",
+            "La Milagrosa",
+            "Gerona",
+            "El Salvador",
+            "Miraflores",
+            "Cataluña",
+            "Villa Tina",
+            "San Luis",
+            "Palermo",
+            "Córdoba",
+            "Caicedo",
+            "Cerro El Volador"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "La Candelaria",
+          "barrios": [
+            "Centro",
+            "Guayaquil",
+            "Jesús Nazareno",
+            "La Alpujarra",
+            "La Candelaria",
+            "La Estrella",
+            "La Mansión",
+            "Las Palmas",
+            "Las Victorias",
+            "Los Ángeles",
+            "Perpetuo Socorro",
+            "San Benito",
+            "San Diego",
+            "San Juan de Dios",
+            "Sector San Pedro",
+            "Villa Nueva",
+            "Villa de Guadalupe",
+            "Chagualo"
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "Laureles-Estadio",
+          "barrios": [
+            "Laureles",
+            "Las Acacias",
+            "La Castellana",
+            "Lorena",
+            "El Velódromo",
+            "Estadio",
+            "Los Colores",
+            "Suramericana",
+            "Naranjal",
+            "Florida Nueva",
+            "Calasanz",
+            "Calasanz Parte Alta"
+          ]
+        },
+        {
+          "codigo": "12",
+          "nombre": "La América",
+          "barrios": [
+            "La América",
+            "Barrio Cristóbal",
+            "Barrio Danubio",
+            "Barrio Santa Mónica",
+            "El Danubio",
+            "La Floresta",
+            "La Pradera",
+            "Los Pinos",
+            "Simón Bolívar",
+            "Tránsito",
+            "Vizcaya",
+            "Calasanz",
+            "Ferrini"
+          ]
+        },
+        {
+          "codigo": "13",
+          "nombre": "San Javier",
+          "barrios": [
+            "San Javier",
+            "El Salado",
+            "La Quiebra",
+            "Los Alcázares",
+            "Metropolitano",
+            "Nuevos Conquistadores",
+            "Veinte de Julio",
+            "Eduardo Santos",
+            "Rodeo Alto",
+            "El Corazón",
+            "El Socorro",
+            "La Gabriela",
+            "Las Independencias",
+            "Belencito",
+            "Betania"
+          ]
+        },
+        {
+          "codigo": "14",
+          "nombre": "El Poblado",
+          "barrios": [
+            "El Poblado",
+            "Astorga",
+            "Alejandría",
+            "Alto de Las Palmas",
+            "Manila",
+            "Lalinde",
+            "Los Balsos Nº1",
+            "Los Balsos Nº2",
+            "Castropol",
+            "Aguacatala",
+            "El Diamante Nº2",
+            "El Tesoro",
+            "La Florida",
+            "Las Lomas Nº1",
+            "Las Lomas Nº2",
+            "Naranjal",
+            "La Aguacatala",
+            "Patio Bonito",
+            "Provenza",
+            "Santa María de Los Ángeles",
+            "Villa Carlota"
+          ]
+        },
+        {
+          "codigo": "15",
+          "nombre": "Guayabal",
+          "barrios": [
+            "Guayabal",
+            "Barrio Colón",
+            "Campo Amor",
+            "Cristóbal",
+            "El Rodeo",
+            "El Vergel",
+            "La Colina",
+            "Parque Juan Pablo II",
+            "Trinidad",
+            "La Independencia",
+            "Tenche"
+          ]
+        },
+        {
+          "codigo": "16",
+          "nombre": "Belén",
+          "barrios": [
+            "Belén",
+            "El Rincón",
+            "Fátima",
+            "La Mota",
+            "La Palma",
+            "La Hondonada",
+            "La Loma de los Bernal",
+            "La Nubia",
+            "Las Playas",
+            "Loma de los Bernal",
+            "Los Alpes",
+            "Miravalle",
+            "Nogal",
+            "Rosales",
+            "San Bernardo",
+            "Versalles",
+            "Zúñiga",
+            "Altavista",
+            "Belén Centro"
+          ]
+        }
+      ],
+      "corregimientos": [
+        {
+          "codigo": "50",
+          "nombre": "San Sebastián de Palmitas",
+          "veredas": [
+            "La Sucia",
+            "La Aldea",
+            "Urquitá",
+            "Palmitas Central",
+            "Volcana-Guayabala",
+            "Potrera-Miserenga"
+          ]
+        },
+        {
+          "codigo": "60",
+          "nombre": "San Cristóbal",
+          "veredas": [
+            "La Cuchilla",
+            "El Patio",
+            "La Palma",
+            "La Loma",
+            "San Cristóbal Central",
+            "Pedregal Alto",
+            "Boquerón",
+            "La Ilusión"
+          ]
+        },
+        {
+          "codigo": "70",
+          "nombre": "Altavista",
+          "veredas": [
+            "Altavista Central",
+            "El Morro",
+            "Buga",
+            "San Pablo",
+            "La Perla",
+            "Aguas Frías"
+          ]
+        },
+        {
+          "codigo": "80",
+          "nombre": "San Antonio de Prado",
+          "veredas": [
+            "San Antonio de Prado Central",
+            "La Verde",
+            "El Astillero",
+            "Yarumalito",
+            "Montañita",
+            "El Salado",
+            "Potrerito",
+            "Olivares"
+          ]
+        },
+        {
+          "codigo": "90",
+          "nombre": "Santa Elena",
+          "veredas": [
+            "Santa Elena Central",
+            "El Placer",
+            "El Plan",
+            "Barro Blanco",
+            "Madera",
+            "Piedras Blancas",
+            "Pantanillo",
+            "Perico"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "76001",
+      "municipio_nombre": "Cali",
+      "departamento_codigo": "76",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Sucre",
+          "barrios": [
+            "Sucre",
+            "Belisario Caicedo",
+            "República de Israel",
+            "Piloto",
+            "Terrón Colorado"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Santa Rosa",
+          "barrios": [
+            "Santa Rosa",
+            "Peñón",
+            "Granada",
+            "Santa Teresita",
+            "Centenario",
+            "Versalles",
+            "San Vicente"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Libertad",
+          "barrios": [
+            "Libertad",
+            "Siete de Agosto",
+            "Las Delicias",
+            "El Troncal",
+            "Aranjuez",
+            "Fátima",
+            "Primitivo Crespo"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Fray Luis Amigó",
+          "barrios": [
+            "Fray Luis Amigó",
+            "Bretaña",
+            "Ignacio Rengifo",
+            "Santa Cecilia",
+            "El Sena",
+            "Berlín",
+            "La Isla"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Guabal",
+          "barrios": [
+            "Guabal",
+            "Junín",
+            "Colón",
+            "San Bosco",
+            "La Base",
+            "El Lido",
+            "Alfonso López"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "San Pedro Claver",
+          "barrios": [
+            "San Pedro Claver",
+            "El Estadio",
+            "Tequendama",
+            "Santa Isabel",
+            "Champagnat",
+            "Los Robles",
+            "La Campiña"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Alcázares",
+          "barrios": [
+            "Alcázares",
+            "Nicolás de Federmán",
+            "Mariano Ramos",
+            "Meléndez",
+            "Vista Hermosa",
+            "La Selva",
+            "Las Palmas"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Terrón Colorado",
+          "barrios": [
+            "Terrón Colorado",
+            "Alto Jordán",
+            "Tierra Blanca",
+            "El Cortijo",
+            "La Quiebra",
+            "Alto Nápoles",
+            "Polvorines"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Los Andes",
+          "barrios": [
+            "Los Andes",
+            "El Triunfo",
+            "Valle del Lili",
+            "La Sirena",
+            "La Cascada",
+            "Niza",
+            "Ciudad Córdoba"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "Libertadores",
+          "barrios": [
+            "Libertadores",
+            "El Vallado",
+            "La Paz",
+            "Mojica",
+            "El Morichal",
+            "Sardi",
+            "Charco Azul"
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "San Nicolás",
+          "barrios": [
+            "San Nicolás",
+            "San Cayetano",
+            "El Diamante",
+            "La Victoria",
+            "Calimío",
+            "Cauquita",
+            "Agua Blanca"
+          ]
+        },
+        {
+          "codigo": "12",
+          "nombre": "Obrero",
+          "barrios": [
+            "Obrero",
+            "Salomia",
+            "Saavedra Galindo",
+            "San Luis",
+            "El Rodeo",
+            "Popular",
+            "Porvenir"
+          ]
+        },
+        {
+          "codigo": "13",
+          "nombre": "El Guabal",
+          "barrios": [
+            "El Guabal",
+            "Olímpico",
+            "Jorge Eliecer Gaitán",
+            "Fortaleza",
+            "El Vergel",
+            "La Selva",
+            "Urbanización Caldas"
+          ]
+        },
+        {
+          "codigo": "14",
+          "nombre": "Ladera",
+          "barrios": [
+            "El Refugio",
+            "Los Farallones",
+            "Siloé",
+            "Lleras Camargo",
+            "Cuarteles Nápoles",
+            "El Cortijo",
+            "Belén",
+            "Bello Horizonte",
+            "Corea"
+          ]
+        },
+        {
+          "codigo": "15",
+          "nombre": "Unión de Vivienda Popular",
+          "barrios": [
+            "Unión de Vivienda Popular",
+            "La Floresta",
+            "Marroquín I",
+            "Marroquín II",
+            "Marroquín III",
+            "La Playa",
+            "El Retiro"
+          ]
+        },
+        {
+          "codigo": "16",
+          "nombre": "Lourdes",
+          "barrios": [
+            "Lourdes",
+            "Andrés Sanín",
+            "El Refugio",
+            "Julio Rincón",
+            "Nuestro Bogotá",
+            "Los Lagos",
+            "El Poblado I",
+            "El Poblado II"
+          ]
+        },
+        {
+          "codigo": "17",
+          "nombre": "Suerte Amparo",
+          "barrios": [
+            "Suerte Amparo",
+            "La Independencia",
+            "VillaBlanca",
+            "Ciudadela Comfandi",
+            "El Diamante",
+            "Compartir"
+          ]
+        },
+        {
+          "codigo": "18",
+          "nombre": "Oriente",
+          "barrios": [
+            "Petecuy I",
+            "Petecuy II",
+            "Petecuy III",
+            "El Pondaje",
+            "Navarro",
+            "La Playa",
+            "El Vallado"
+          ]
+        },
+        {
+          "codigo": "19",
+          "nombre": "Ciudad Jardín",
+          "barrios": [
+            "Ciudad Jardín",
+            "Pance",
+            "El Jordán",
+            "El Ingenio I",
+            "El Ingenio II",
+            "El Ingenio III",
+            "Los Portales"
+          ]
+        },
+        {
+          "codigo": "20",
+          "nombre": "Antonio Nariño",
+          "barrios": [
+            "Antonio Nariño",
+            "El Caney",
+            "Quintas del Bosque",
+            "Calimío",
+            "Nueva Floresta",
+            "Floralia"
+          ]
+        },
+        {
+          "codigo": "21",
+          "nombre": "Pance",
+          "barrios": [
+            "Pance",
+            "Los Farallones",
+            "La Vorágine",
+            "Alto de Los Mangos",
+            "Ciudad Campestre",
+            "El Bosque Municipal"
+          ]
+        },
+        {
+          "codigo": "22",
+          "nombre": "El Cali",
+          "barrios": [
+            "Aguablanca",
+            "El Pondaje",
+            "Ricardo Balcázar",
+            "El Vergel",
+            "Poblado I",
+            "Poblado II",
+            "Ciudad Córdoba",
+            "Desepaz"
+          ]
+        }
+      ],
+      "corregimientos": [
+        {
+          "codigo": "01",
+          "nombre": "La Buitrera",
+          "veredas": [
+            "La Buitrera",
+            "La Castellana",
+            "El Pedregal",
+            "Los Andes"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Felidia",
+          "veredas": [
+            "Felidia",
+            "Bajo Felidia",
+            "La Leonera",
+            "Pichancho"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "El Saladito",
+          "veredas": [
+            "El Saladito",
+            "Alto del Rey",
+            "Pico de Águila"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "La Elvira",
+          "veredas": [
+            "La Elvira",
+            "La Castilla",
+            "El Rosario"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "La Vorágine",
+          "veredas": [
+            "La Vorágine",
+            "La Meseta",
+            "El Pichindé"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "Montebello",
+          "veredas": [
+            "Montebello",
+            "Las Brisas",
+            "El Encanto"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Navarro",
+          "veredas": [
+            "Navarro",
+            "El Vallado",
+            "La Choclona"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Pance",
+          "veredas": [
+            "Pance",
+            "El Peñón",
+            "Los Tanques",
+            "La Sirena"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Pichindé",
+          "veredas": [
+            "Pichindé",
+            "Las Nieves",
+            "La Luisa"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "Golondrinas",
+          "veredas": [
+            "Golondrinas",
+            "Altos de Golondrinas"
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "La Castilla",
+          "veredas": [
+            "La Castilla",
+            "Los Naranjos"
+          ]
+        },
+        {
+          "codigo": "12",
+          "nombre": "Los Andes",
+          "veredas": [
+            "Los Andes",
+            "Quebrada Seca"
+          ]
+        },
+        {
+          "codigo": "13",
+          "nombre": "Villacarmelo",
+          "veredas": [
+            "Villacarmelo",
+            "El Paraíso",
+            "El Arenillo"
+          ]
+        },
+        {
+          "codigo": "14",
+          "nombre": "Hormiguero",
+          "veredas": [
+            "Hormiguero",
+            "El Carmelo",
+            "El Rosario"
+          ]
+        },
+        {
+          "codigo": "15",
+          "nombre": "El Ocaso",
+          "veredas": [
+            "El Ocaso",
+            "Los Mangos",
+            "El Jardín"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "08001",
+      "municipio_nombre": "Barranquilla",
+      "departamento_codigo": "08",
+      "tipo_division_urbana": "localidad",
+      "localidades": [
+        {
+          "codigo": "01",
+          "nombre": "Norte Centro Histórico",
+          "barrios": [
+            "El Prado",
+            "Manga",
+            "Boston",
+            "Alto Prado",
+            "Bellavista",
+            "Country",
+            "Los Nogales",
+            "Villa Country",
+            "El Golf",
+            "Ciudad Jardín",
+            "El Limoncito",
+            "Villa Santos",
+            "Altos del Limón",
+            "Villa Campestre",
+            "Los Alpes",
+            "Las Delicias",
+            "Centro",
+            "Barrio Abajo",
+            "Chiquinquirá",
+            "El Boliche",
+            "Betania"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Sur Occidente",
+          "barrios": [
+            "Las Flores",
+            "San Felipe",
+            "El Bosque",
+            "Ciudadela 20 de Julio",
+            "La Manga",
+            "Las Malvinas",
+            "Cuchilla de Villate",
+            "Me Quejo",
+            "Los Pinos",
+            "Lipaya",
+            "El Santuario",
+            "Villate",
+            "Rebolo",
+            "La Luz",
+            "El Valle",
+            "Las Nieves"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Sur Oriente",
+          "barrios": [
+            "Simón Bolívar",
+            "La Pradera",
+            "San Roque",
+            "Primero de Mayo",
+            "La Paz",
+            "El Silencio",
+            "Santo Domingo de Guzmán",
+            "Carrizal",
+            "Los Olivos",
+            "Barrio Jesús",
+            "Santa María",
+            "7 de Agosto",
+            "El Ferry",
+            "El Pueblo",
+            "La Sierra",
+            "Portal del Genovés",
+            "San Salvador"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Riomar",
+          "barrios": [
+            "La Playa",
+            "El Recreo",
+            "Riomar",
+            "Villa Estadio",
+            "Los Alpes",
+            "Nuevo Horizonte",
+            "La Campiña",
+            "Paraíso",
+            "Las Américas",
+            "El Tabor",
+            "La Victoria",
+            "Ciudadela Metropolitana",
+            "El Carmen",
+            "San José"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Metropolitan",
+          "barrios": [
+            "Soledad",
+            "Ciudadela Portal de Génova",
+            "Villa Caracolí",
+            "El Porvenir",
+            "Las Palmas",
+            "El Prado Industrial",
+            "Siape",
+            "Barrio Cevillar",
+            "Buena Esperanza",
+            "San Isidro",
+            "La Playa Industrial",
+            "Barranquillita"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "68001",
+      "municipio_nombre": "Bucaramanga",
+      "departamento_codigo": "68",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Norte",
+          "barrios": [
+            "Cabecera del Llano",
+            "La Concordia",
+            "Bolarquí",
+            "Puerta del Sol",
+            "El Prado",
+            "Provenza",
+            "Álamos"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Nororiental",
+          "barrios": [
+            "Kennedy",
+            "La Paz",
+            "La Cumbre",
+            "El Porvenir",
+            "Toscana",
+            "El Jardín"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "San Francisco",
+          "barrios": [
+            "San Francisco",
+            "La Campiña",
+            "La Joya",
+            "El Cristal",
+            "El Bosque"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Occidental",
+          "barrios": [
+            "Girón",
+            "El Progreso",
+            "Los Pinares",
+            "Colsag",
+            "Niza"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "García Rovira",
+          "barrios": [
+            "García Rovira",
+            "El Reposo",
+            "La Sultana",
+            "Villa del Rey",
+            "Álamos Norte"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "La Ciudadela",
+          "barrios": [
+            "La Ciudadela",
+            "Lagos",
+            "Diamante I",
+            "Diamante II",
+            "Morado Azul"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Oriental",
+          "barrios": [
+            "Oriental",
+            "Betania",
+            "Miradores",
+            "San Ignacio",
+            "Mutis"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Sur Occidente",
+          "barrios": [
+            "Sur Occidente",
+            "Zapamanga I",
+            "Zapamanga II",
+            "Barrio Colombia",
+            "Rincón de Girón"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Morrorrico",
+          "barrios": [
+            "Morrorrico",
+            "La Flora",
+            "Los Laureles",
+            "Villa Luz",
+            "El Diamante"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "Centro",
+          "barrios": [
+            "Centro",
+            "La Aurora",
+            "Conucos",
+            "Tercer Milenio",
+            "La Pedregosa"
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "Bolivariano",
+          "barrios": [
+            "Bolivariano",
+            "Mutis",
+            "Quebrada Seca",
+            "San Alonso",
+            "La Esperanza"
+          ]
+        },
+        {
+          "codigo": "12",
+          "nombre": "Sur",
+          "barrios": [
+            "El Rocío",
+            "Provenza",
+            "Urbanización Nuevo Sotomayor",
+            "La Joya",
+            "El Portal"
+          ]
+        },
+        {
+          "codigo": "13",
+          "nombre": "Lagos del Cacique",
+          "barrios": [
+            "Lagos del Cacique",
+            "La Palma",
+            "Floridablanca",
+            "Villa Estadio",
+            "San Eduardo"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "13001",
+      "municipio_nombre": "Cartagena de Indias",
+      "departamento_codigo": "13",
+      "tipo_division_urbana": "localidad",
+      "localidades": [
+        {
+          "codigo": "01",
+          "nombre": "Histórica y del Caribe Norte",
+          "barrios": [
+            "El Centro",
+            "Getsemaní",
+            "San Diego",
+            "La Matuna",
+            "Bocagrande",
+            "Castillogrande",
+            "El Laguito",
+            "Manga",
+            "Pie de la Popa",
+            "La Popa",
+            "Crespo",
+            "El Bosque",
+            "Libertad",
+            "Los Almendros",
+            "Lomas del Peyé",
+            "El Pozón",
+            "Olaya Herrera"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "De la Virgen y Turística",
+          "barrios": [
+            "La Boquilla",
+            "Manzanillo del Mar",
+            "Punta Canoa",
+            "Arroyo de Piedra",
+            "Bayunca",
+            "Clemencia",
+            "Santa Rosa de Lima",
+            "Pasacaballos",
+            "Barú",
+            "Isla Grande",
+            "Ararca"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Industrial de la Bahía",
+          "barrios": [
+            "Mamonal",
+            "Ceballos",
+            "Albornoz",
+            "Ternera",
+            "La Esperanza",
+            "San Fernando",
+            "Blas de Lezo",
+            "Henequén",
+            "Boston",
+            "Los Calamares",
+            "Tesca"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "54001",
+      "municipio_nombre": "Cúcuta",
+      "departamento_codigo": "54",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Centro",
+          "barrios": [
+            "Centro",
+            "Avenida Quinta",
+            "Caobos",
+            "La Playa",
+            "El Llano"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Oriente",
+          "barrios": [
+            "Oriente",
+            "La Libertad",
+            "Popular",
+            "Comuneros",
+            "Antonia Santos"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Suroriental",
+          "barrios": [
+            "Juan Atalaya",
+            "El Contento",
+            "Chapinero",
+            "La Fortaleza",
+            "Prados del Norte"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Norte",
+          "barrios": [
+            "El Progreso",
+            "Belén",
+            "Los Comuneros",
+            "El Bosque",
+            "San Carlos"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Nororiental",
+          "barrios": [
+            "Doce de Octubre",
+            "Juan Xxiii",
+            "San Martín",
+            "La Esperanza"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "Occidental",
+          "barrios": [
+            "Las Américas",
+            "Nuevo Horizonte",
+            "San Luis",
+            "La Riviera",
+            "Los Álamos"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Sur Occidental",
+          "barrios": [
+            "Colsag",
+            "La Merced",
+            "El Salado",
+            "Panamá",
+            "La Garita"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Sur",
+          "barrios": [
+            "Palmira",
+            "El Prado",
+            "San Rafael",
+            "Atalaya",
+            "Los Pinos"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Suroriente",
+          "barrios": [
+            "Quinta Oriental",
+            "Villa Rosario",
+            "La Ceiba",
+            "San Pedro",
+            "El Diamante"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "Especial",
+          "barrios": [
+            "Villa del Rosario",
+            "Los Patios",
+            "El Zulia",
+            "Aguaclara"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "66001",
+      "municipio_nombre": "Pereira",
+      "departamento_codigo": "66",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Villavicencio",
+          "barrios": [
+            "Villavicencio",
+            "Colinas",
+            "El Tigre",
+            "La Unión",
+            "Las Brisas"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "El Oso",
+          "barrios": [
+            "El Oso",
+            "La Florida",
+            "Berlín",
+            "Los Alpes",
+            "El Jardín"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "San Joaquín",
+          "barrios": [
+            "San Joaquín",
+            "El Libertador",
+            "La Marina",
+            "Pinares",
+            "Las Mercedes"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "El Poblado",
+          "barrios": [
+            "El Poblado",
+            "La Primavera",
+            "Las Palmas",
+            "Portal de la Villa",
+            "Normandía"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Universidad",
+          "barrios": [
+            "La Universidad",
+            "El Paraíso",
+            "El Bosque",
+            "La Julita",
+            "Circunvalar"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "El Rocío",
+          "barrios": [
+            "El Rocío",
+            "Galicia",
+            "Veracruz",
+            "Santa Elena",
+            "Tokio"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Boston",
+          "barrios": [
+            "Boston",
+            "Olímpico",
+            "Miraflores",
+            "Gamma",
+            "Ciudad Boquia"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Cuba",
+          "barrios": [
+            "Cuba",
+            "Villa del Café",
+            "Los Molinos",
+            "El Remanso",
+            "Nueva Cuba"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Consota",
+          "barrios": [
+            "Consota",
+            "La Laguna",
+            "San Camilo",
+            "Caracol La Curva",
+            "Alfonso López"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "Centro",
+          "barrios": [
+            "Centro",
+            "San Nicolás",
+            "Avenida del Río",
+            "La Churria",
+            "Av. Las Américas"
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "Del Café",
+          "barrios": [
+            "Del Café",
+            "La Isla",
+            "Ciudad Jardín",
+            "Belmonte Bajo",
+            "Belmonte Alto"
+          ]
+        },
+        {
+          "codigo": "12",
+          "nombre": "Río Otún",
+          "barrios": [
+            "Río Otún",
+            "El Dorado",
+            "La Playita",
+            "Nacederos",
+            "El Plumón"
+          ]
+        },
+        {
+          "codigo": "13",
+          "nombre": "San Gregorio",
+          "barrios": [
+            "San Gregorio",
+            "Cerritos",
+            "Mercasa",
+            "Cuba Nuevo",
+            "Villa del Prado"
+          ]
+        },
+        {
+          "codigo": "14",
+          "nombre": "Perla del Otún",
+          "barrios": [
+            "Perla del Otún",
+            "La Platanera",
+            "El Danubio",
+            "Otún",
+            "El Progreso"
+          ]
+        },
+        {
+          "codigo": "15",
+          "nombre": "Ferrocarril",
+          "barrios": [
+            "Ferrocarril",
+            "El Sinaí",
+            "La Churria",
+            "Plaza de la Libertad",
+            "Nacederos"
+          ]
+        },
+        {
+          "codigo": "16",
+          "nombre": "Olímpica",
+          "barrios": [
+            "Olímpica",
+            "Coliseo",
+            "Maracay",
+            "El Jardín",
+            "Panorama"
+          ]
+        },
+        {
+          "codigo": "17",
+          "nombre": "El Jardín",
+          "barrios": [
+            "El Jardín",
+            "Rincón de la Paz",
+            "El Paraíso",
+            "La Sultana",
+            "Laureles"
+          ]
+        },
+        {
+          "codigo": "18",
+          "nombre": "San José",
+          "barrios": [
+            "San José",
+            "La Mariana",
+            "San Jorge",
+            "La Platanera",
+            "Los Conquistadores"
+          ]
+        },
+        {
+          "codigo": "19",
+          "nombre": "Villa Santana",
+          "barrios": [
+            "Villa Santana",
+            "Comuneros",
+            "El Danubio",
+            "Los Cristales",
+            "Ciudad Boquía"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "73001",
+      "municipio_nombre": "Ibagué",
+      "departamento_codigo": "73",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "San Isidro",
+          "barrios": [
+            "San Isidro",
+            "Ricaurte",
+            "El Jardín",
+            "Santa Bárbara",
+            "La Cabaña"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "San Bernardo",
+          "barrios": [
+            "San Bernardo",
+            "El Porvenir",
+            "Calambeo",
+            "La Pradera",
+            "El Vergel"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Santa Helena",
+          "barrios": [
+            "Santa Helena",
+            "Jaime Pardo Leal",
+            "El Tejar",
+            "La Cima",
+            "Los Túneles"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "La Libertad",
+          "barrios": [
+            "La Libertad",
+            "El Palmar",
+            "Jordán",
+            "El Bosque",
+            "Kennedy"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Centro",
+          "barrios": [
+            "Centro",
+            "Belén",
+            "La Pola",
+            "Armenia",
+            "Hipódromo"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "Picaleña",
+          "barrios": [
+            "Picaleña",
+            "Los Comuneros",
+            "El Salado",
+            "Albania",
+            "Gaitán"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "La Castellana",
+          "barrios": [
+            "La Castellana",
+            "Miraflores",
+            "Ambalá",
+            "Villa Café",
+            "Las Acacias"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Calambeo",
+          "barrios": [
+            "Calambeo",
+            "La Vega",
+            "Panorama",
+            "El Cañón",
+            "Villa María"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "El Salado",
+          "barrios": [
+            "El Salado",
+            "La Gaviota",
+            "Buenos Aires",
+            "Villa Claudia",
+            "La Sultana"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "Cañaveralejo",
+          "barrios": [
+            "Cañaveralejo",
+            "Bochica",
+            "Las Brisas",
+            "El Bosque",
+            "La Floresta"
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "Boqueron",
+          "barrios": [
+            "Boquerón",
+            "Topacio",
+            "Ambalá Campestre",
+            "La Ermita",
+            "Prados del Norte"
+          ]
+        },
+        {
+          "codigo": "12",
+          "nombre": "Combeima",
+          "barrios": [
+            "Combeima",
+            "El Vergel",
+            "La Unión",
+            "San Simón",
+            "Gaitán Durán"
+          ]
+        },
+        {
+          "codigo": "13",
+          "nombre": "Briseño",
+          "barrios": [
+            "Briseño",
+            "El Triunfo",
+            "La Colombia",
+            "El Edén",
+            "Estación Villa"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "17001",
+      "municipio_nombre": "Manizales",
+      "departamento_codigo": "17",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Atardeceres",
+          "barrios": [
+            "La Cumbre",
+            "El Aserrío",
+            "San Peregrino",
+            "Atardeceres",
+            "La Eslava"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "San José",
+          "barrios": [
+            "San José",
+            "La Francesa",
+            "La Cabaña",
+            "Las Palmas",
+            "Las Colinas"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Cumanday",
+          "barrios": [
+            "Centro",
+            "Los Fundadores",
+            "Palermo",
+            "Bellavista",
+            "Sancancio"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Ciudadela del Norte",
+          "barrios": [
+            "Ciudadela del Norte",
+            "La Enea",
+            "El Bosque",
+            "Lusitania",
+            "Las Acacias"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "Ecoturístico Cerro de Oro",
+          "barrios": [
+            "Cerro de Oro",
+            "Marmato",
+            "La Aurora",
+            "El Parque",
+            "Villa Pilar"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "La Fuente",
+          "barrios": [
+            "La Fuente",
+            "El Cable",
+            "Palogrande",
+            "Versalles",
+            "Las Estancias"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Tesorito",
+          "barrios": [
+            "Tesorito",
+            "El Bosque",
+            "Viveros",
+            "La Habana",
+            "Villamaría"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Universitaria",
+          "barrios": [
+            "La Universidad",
+            "El Tablazo",
+            "Cementos",
+            "Villa Del Pilar",
+            "Siderúrgica"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "Nuestra Señora de los Ángeles",
+          "barrios": [
+            "Nuestra Señora de los Ángeles",
+            "El Reposo",
+            "El Porvenir",
+            "Santa Helena",
+            "La Exposición"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "La Macarena",
+          "barrios": [
+            "La Macarena",
+            "El Trébol",
+            "Fátima",
+            "San Ignacio",
+            "Miraflores"
+          ]
+        },
+        {
+          "codigo": "11",
+          "nombre": "Palogrande",
+          "barrios": [
+            "Palogrande",
+            "La Sultana",
+            "Aranjuez",
+            "La Asunción",
+            "El Nevado"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "50001",
+      "municipio_nombre": "Villavicencio",
+      "departamento_codigo": "50",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Centro Oriente",
+          "barrios": [
+            "Centro",
+            "El Barzal",
+            "Barzal Alto",
+            "La Salle",
+            "Montecarlo"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Centro",
+          "barrios": [
+            "Centro",
+            "Sierra Morena",
+            "Manzanares",
+            "El Triunfo",
+            "Antonio Ricaurte"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Primero de Mayo",
+          "barrios": [
+            "Primero de Mayo",
+            "El Jardín",
+            "Los Pinos",
+            "El Recreo",
+            "La Vega"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Kirpas-Pinilla-La Paz",
+          "barrios": [
+            "Kirpas",
+            "Pinilla",
+            "La Paz",
+            "El Portal",
+            "La Alborada"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "La Esperanza",
+          "barrios": [
+            "La Esperanza",
+            "El Progreso",
+            "Villaflora",
+            "Los Rosales",
+            "El Porvenir"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "Sucre",
+          "barrios": [
+            "Sucre",
+            "La Serranía",
+            "Ciudad Porfía",
+            "Bello Horizonte",
+            "El Palmar"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Villanueva",
+          "barrios": [
+            "Villanueva",
+            "Catumare",
+            "Nueva Granada",
+            "Los Samanes",
+            "San Pablo"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Bello Horizonte",
+          "barrios": [
+            "Bello Horizonte",
+            "Gaitán Durán",
+            "La Nohora",
+            "Los Balsos",
+            "La Ceiba"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "63001",
+      "municipio_nombre": "Armenia",
+      "departamento_codigo": "63",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "El Bosque",
+          "barrios": [
+            "El Bosque",
+            "La Granja",
+            "Bello Horizonte",
+            "La Cecilia",
+            "Santander"
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "El Caimo",
+          "barrios": [
+            "El Caimo",
+            "El Limonar",
+            "San Judas",
+            "La Isabela",
+            "Las Colinas"
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Centenario",
+          "barrios": [
+            "Centenario",
+            "El Panteón",
+            "El Paraíso",
+            "La Milagrosa",
+            "San Juan de Dios"
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Libertadores",
+          "barrios": [
+            "Libertadores",
+            "La Española",
+            "El Edén",
+            "San Camilo",
+            "Quindío"
+          ]
+        },
+        {
+          "codigo": "05",
+          "nombre": "La Fachada",
+          "barrios": [
+            "La Fachada",
+            "El Triángulo",
+            "Los Sauces",
+            "La Américas",
+            "Maracay"
+          ]
+        },
+        {
+          "codigo": "06",
+          "nombre": "Bella Vista",
+          "barrios": [
+            "Bella Vista",
+            "Versalles",
+            "Los Naranjos",
+            "La Patria",
+            "Los Álamos"
+          ]
+        },
+        {
+          "codigo": "07",
+          "nombre": "Veinte de Julio",
+          "barrios": [
+            "Veinte de Julio",
+            "Simón Bolívar",
+            "Coonalser",
+            "Nueva Armenia",
+            "Los Sauces"
+          ]
+        },
+        {
+          "codigo": "08",
+          "nombre": "Las Colinas",
+          "barrios": [
+            "Las Colinas",
+            "Santa Rita",
+            "Villa del Café",
+            "El Cafetal",
+            "Laureles"
+          ]
+        },
+        {
+          "codigo": "09",
+          "nombre": "El Cafetero",
+          "barrios": [
+            "El Cafetero",
+            "El Triunfo",
+            "La Unión",
+            "El Palmar",
+            "La Castellana"
+          ]
+        },
+        {
+          "codigo": "10",
+          "nombre": "El Estadio",
+          "barrios": [
+            "El Estadio",
+            "Las Américas",
+            "Las Palmas",
+            "Los Fundadores",
+            "El Portal"
+          ]
+        }
+      ]
+    },
+    {
+      "municipio_codigo": "05615",
+      "municipio_nombre": "Rionegro",
+      "departamento_codigo": "05",
+      "tipo_division_urbana": "comuna",
+      "comunas": [
+        {
+          "codigo": "01",
+          "nombre": "Comuna 1 Liborio Mejía",
+          "barrios": [
+            {
+              "nombre": "Centro",
+              "sectores": [
+                "Bazar de la Construcción",
+                "Centro",
+                "Consumo",
+                "Galería",
+                "Instituto",
+                "La Mina",
+                "La Pola",
+                "Las Playas",
+                "Pepalfa",
+                "Rionegro Plaza"
+              ]
+            },
+            {
+              "nombre": "Hospital",
+              "sectores": [
+                "Alto de la Mosca",
+                "Altos del Lago",
+                "Belén - El Campín",
+                "Bello Horizonte",
+                "Cámara de Comercio - Cornare",
+                "Campo Santander",
+                "Edificio La Candelaria",
+                "El Lago - Horizonte",
+                "Kennedy - La Henriada",
+                "La Herradura - Laureles",
+                "Olivar - Parque Empresarial",
+                "Quebrada Arriba - Hospital",
+                "San Juan de Laureles",
+                "Senderos San Sebastián",
+                "Torreón Los Laureles"
+              ]
+            },
+            {
+              "nombre": "Alto del Medio",
+              "sectores": [
+                "Bosques del Norte",
+                "Casas del Mar",
+                "Guillermo Gaviria Córdoba",
+                "José María Córdoba",
+                "La Inmaculada",
+                "La Inmaculada Rafael Reinoso",
+                "Las Margaritas",
+                "Mirador de San Nicolás",
+                "Quebrada Arriba"
+              ]
+            },
+            {
+              "nombre": "Belchite",
+              "sectores": [
+                "Alto de la Capilla",
+                "Bomberos",
+                "El Hoyo",
+                "El Palmar",
+                "La Colina",
+                "La Esperanza",
+                "Los Sauces"
+              ]
+            },
+            {
+              "nombre": "Fontibón",
+              "sectores": [
+                "Alejandría",
+                "Arándanos",
+                "Arrayanes",
+                "La Fortuna",
+                "Los Cerezos",
+                "Manzanillos",
+                "Nawa",
+                "Río Campestre",
+                "Riovivo",
+                "Veleros"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "02",
+          "nombre": "Comuna 2 San Antonio",
+          "barrios": [
+            {
+              "nombre": "San Antonio",
+              "sectores": [
+                "Barcelona",
+                "Bosques de la Pereira",
+                "Cabañas de Tabatinga",
+                "Canelia",
+                "Canto",
+                "Corporación Provivienda",
+                "Ébano",
+                "Edificio San Tomás PH",
+                "El Caney",
+                "El Recinto",
+                "Ipanema",
+                "Jardines de San Antonio",
+                "Kuna",
+                "La Campiña",
+                "La Margarita",
+                "La Pradera",
+                "Los Alpes",
+                "Los Juncos",
+                "Los Libertadores",
+                "Los Remansos I",
+                "Los Remansos II",
+                "Loteo - San Antonio",
+                "Medieval",
+                "Mirasol",
+                "Nuvica",
+                "Pietra Santa",
+                "Pietrasanta Campestre",
+                "Portal del Caney",
+                "Portón de Gualanday PH",
+                "Quirama",
+                "Reserva de Llanogrande",
+                "San Antonio",
+                "San Bartolo I",
+                "San Bartolo II",
+                "San Miguel",
+                "San Simón",
+                "Santa María Campestre",
+                "Santafé",
+                "Santillana",
+                "Sidney",
+                "Valle de los Santos",
+                "Villas de San Antonio"
+              ]
+            },
+            {
+              "nombre": "Gualanday",
+              "sectores": [
+                "Quintas de Gualanday",
+                "Terragrande",
+                "Villas de Gualanday I",
+                "Villas de Gualanday II",
+                "Villas de Gualanday III",
+                "Condominio Privado Gualanday IV"
+              ]
+            },
+            {
+              "nombre": "El Faro",
+              "sectores": [
+                "La Flauta Mágica",
+                "La María",
+                "San Cayetano",
+                "Sendai",
+                "Somer"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "03",
+          "nombre": "Comuna 3 Monseñor Alfonso Uribe Jaramillo",
+          "barrios": [
+            {
+              "nombre": "Santa Ana",
+              "sectores": [
+                "Balcones I - Balcones II",
+                "Cantabria - Casas del Rosal",
+                "El Águila - Santa Ana",
+                "El Pinar",
+                "El Rosal - San Joaquín I Etapa 1 a 6",
+                "El Rosal - San Joaquín I Etapa 7",
+                "El Rosal - San Joaquín I UAU 4",
+                "Horizontes de la Católica Etapa 1",
+                "Horizontes de la Católica Etapa 2",
+                "La Rochela",
+                "Quintas de San Ángel",
+                "Resto - Santa Ana",
+                "Sámanes",
+                "Ventus",
+                "Villas del Rosal"
+              ]
+            },
+            {
+              "nombre": "Cuatro Esquinas",
+              "sectores": [
+                "Aldea La Macarena",
+                "Altos de Villa María",
+                "Asocor",
+                "Bosque Ceibal",
+                "Bosques de la Macarena",
+                "Cuatro Esquinas",
+                "El Águila - Cuatro Esquinas",
+                "El Oasis",
+                "Fondo Obrero",
+                "Jardines de las Cimarronas",
+                "Juan Antonio de Murillo",
+                "La Carmina",
+                "La Esmeralda",
+                "La Milagrosa",
+                "Manantiales",
+                "Nativa",
+                "Oasis del Sol",
+                "Panorama Austral",
+                "Pinares",
+                "Portal del Rosal",
+                "Portón del Tranvía",
+                "PP 10 El Tranvía",
+                "Senderos de Cimarronas",
+                "Tao",
+                "Torres de San Juan",
+                "Villa Camila",
+                "Villa Clemén",
+                "Villas de Rionegro",
+                "Villas del Sol"
+              ]
+            },
+            {
+              "nombre": "San Joaquín",
+              "sectores": [
+                "Aldea de San Joaquín",
+                "Altos de la Pereira",
+                "Altos de Santa Ana",
+                "Aqua",
+                "Encenillos",
+                "La Pereira",
+                "La Provincia - Mirador de la Pereira",
+                "Los Colegios",
+                "Monteverde",
+                "Ojo de Agua",
+                "Riogrande",
+                "San Joaquín",
+                "Serranías",
+                "Terra",
+                "Torre Portobello",
+                "Torres de Alcalá",
+                "Torres del Campo"
+              ]
+            }
+          ]
+        },
+        {
+          "codigo": "04",
+          "nombre": "Comuna 4 El Porvenir",
+          "barrios": [
+            {
+              "nombre": "El Porvenir",
+              "sectores": [
+                "Aguas de Rionegro",
+                "Albor",
+                "Boral",
+                "CC Reserva Plaza",
+                "Comando de Policía",
+                "El Laguito",
+                "El Llanito",
+                "El Nogal",
+                "La Alameda",
+                "La Mina - El Chucho",
+                "La Mota",
+                "La Presentación",
+                "Las Torres",
+                "Linda Granja",
+                "Los Corales",
+                "Los Cristales",
+                "Los Llanos",
+                "Madero del Lago",
+                "Mirador del Carretero",
+                "Mirador del Lago",
+                "Origen del Lago",
+                "Porvenir Primera Etapa",
+                "Porvenir Tercera Etapa",
+                "Porvenir Cuarta Etapa",
+                "Porvenir Quinta Etapa",
+                "Porvenir Sexta Etapa",
+                "Porvenir Séptima Etapa",
+                "Porvenir Octava Etapa",
+                "Puente Real",
+                "Río del Este",
+                "Santa Clara I",
+                "Santa Clara II",
+                "Santa Teresa del Porvenir",
+                "Savana",
+                "Solare",
+                "Vegas de la Calleja I",
+                "Villa Manuela",
+                "Villas de San Nicolás",
+                "Vivari"
+              ]
+            },
+            {
+              "nombre": "El Carretero",
+              "sectores": [
+                "El Carretero",
+                "FAS-IN S.A",
+                "La Alborada",
+                "La Cooperativa",
+                "La Florida",
+                "Piamonte",
+                "Quintas del Carretero I",
+                "Quintas del Carretero II",
+                "Tres Cantos"
+              ]
+            },
+            {
+              "nombre": "Barro Blanco",
+              "sectores": [
+                "Eucalipto",
+                "Cámbulo",
+                "Campus",
+                "El Guadual",
+                "Forest",
+                "Guayacán",
+                "Lotus",
+                "Makia",
+                "Nattura",
+                "Yarumo"
+              ]
+            }
+          ]
+        }
+      ],
+      "corregimientos": [
+        {
+          "codigo": "C01",
+          "nombre": "Corregimiento Centro Casimiro García",
+          "veredas": [
+            "Mampuesto",
+            "El Carmín",
+            "Cuchillas de San José",
+            "Abreito",
+            "Abreo",
+            "Chachafruto",
+            "Barro Blanco"
+          ]
+        },
+        {
+          "codigo": "C02",
+          "nombre": "Corregimiento Sur Gilberto Echeverri Mejía",
+          "veredas": [
+            "El Rosal",
+            "Santa Ana",
+            "Chipre",
+            "Tres Puertas",
+            "Guayabito",
+            "San Antonio",
+            "Vilachuaga",
+            "Cabeceras de Llanogrande",
+            "El Higuerón",
+            "Pontezuela",
+            "El Capiro",
+            "Santa Teresa"
+          ]
+        },
+        {
+          "codigo": "C03",
+          "nombre": "Corregimiento Occidental José María Córdova Muñoz",
+          "veredas": [
+            "La Mosquita",
+            "La Quiebra",
+            "Playa Rica - Ranchería",
+            "Yarumal",
+            "Aeropuerto",
+            "La Convención",
+            "El Tablazo",
+            "Tablacito"
+          ]
+        },
+        {
+          "codigo": "C04",
+          "nombre": "Corregimiento Norte Néstor Esteban Sanint",
+          "veredas": [
+            "San Luis",
+            "Río Abajo",
+            "La Mosca",
+            "Santa Bárbara",
+            "Los Pinos",
+            "Galicia",
+            "La Laja",
+            "Cimarronas"
+          ]
+        }
+      ]
+    }
+  ]
+}

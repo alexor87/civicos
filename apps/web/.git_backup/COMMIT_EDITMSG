@@ -1,0 +1,8 @@
+test: add unit tests for AISuggestionsPanel
+
+13 tests covering heading render, suggestion count subtitle, empty state,
+title/description render, priority grouping (critical/high), Aplicar/Descartar
+PATCH calls with list removal on success, error toast on failure, and all three
+tab states (Sugerencias, Agentes IA, Historial).
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>

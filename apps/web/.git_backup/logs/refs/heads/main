@@ -1,0 +1,21 @@
+0000000000000000000000000000000000000000 2a703ea62ec7ab04bdaa82973763b76d0680aeb1 user <user@users-MacBook-Pro.local> 1772944573 -0500	commit (initial): Initial commit from Create Next App
+2a703ea62ec7ab04bdaa82973763b76d0680aeb1 769084e054a63790092da86f5c2d7ba3a760c312 user <user@users-MacBook-Pro.local> 1772944640 -0500	commit: feat: initial commit
+769084e054a63790092da86f5c2d7ba3a760c312 6d68319c13e4429df96f1ede79dd8a87e36de4b9 user <user@users-MacBook-Pro.local> 1772997750 -0500	commit: feat: add AuthLayout split-screen component with tests
+6d68319c13e4429df96f1ede79dd8a87e36de4b9 1ec30c157ee804e880b03d61f4a6e444afd35a89 user <user@users-MacBook-Pro.local> 1772998311 -0500	commit: feat: redesign login page with split-screen AuthLayout
+1ec30c157ee804e880b03d61f4a6e444afd35a89 d986493191219ec82b782a60a54d31c49346c43d user <user@users-MacBook-Pro.local> 1772998937 -0500	commit: feat: redesign register page with 2-step split-screen form
+d986493191219ec82b782a60a54d31c49346c43d 30fe7423d17576f28f2ad47d4b1a7b2aa7c3387b user <user@users-MacBook-Pro.local> 1772999267 -0500	commit: fix: enforce step 1 form validation in RegisterPage
+30fe7423d17576f28f2ad47d4b1a7b2aa7c3387b 370e9ac263f25d4eabe574f3d50884c227897101 user <user@users-MacBook-Pro.local> 1773000122 -0500	commit: feat: add ContactProfile component with canvassing timeline
+370e9ac263f25d4eabe574f3d50884c227897101 1afef6ce6366590cc7f39b8312b33dd4afbae02a user <user@users-MacBook-Pro.local> 1773000317 -0500	commit: fix: null safety and type improvements in ContactProfile
+1afef6ce6366590cc7f39b8312b33dd4afbae02a 903668320aa5f6493fd8a3e51841ff254f4162ed user <user@users-MacBook-Pro.local> 1773000418 -0500	commit: feat: add contact profile page with canvassing history
+903668320aa5f6493fd8a3e51841ff254f4162ed 85c2be8c0a6f262ba3203cdb0694abcd0e7ed3e1 user <user@users-MacBook-Pro.local> 1773000581 -0500	commit: fix: auth redirect and error handling in contact profile page
+85c2be8c0a6f262ba3203cdb0694abcd0e7ed3e1 92531c0c7be2c81082c43c0c8286176a733489da user <user@users-MacBook-Pro.local> 1773001206 -0500	commit: feat: add webhook endpoint for agent-welcome-contact
+92531c0c7be2c81082c43c0c8286176a733489da ca8772943436898fde1d9eb43310ee5fa10ba131 user <user@users-MacBook-Pro.local> 1773002281 -0500	commit: fix: handle edge function failures and malformed JSON in contacts webhook
+ca8772943436898fde1d9eb43310ee5fa10ba131 9a42153bb7d2b3e93b0807bc01bb6e5de1a156b0 user <user@users-MacBook-Pro.local> 1773026527 -0500	commit: feat: add webhook endpoint for agent-canvass-followup
+9a42153bb7d2b3e93b0807bc01bb6e5de1a156b0 c017cbea46d9e8384d5cd1a3e0db175b94abeb89 user <user@users-MacBook-Pro.local> 1773026710 -0500	commit: fix: guard against null record in visits webhook
+c017cbea46d9e8384d5cd1a3e0db175b94abeb89 9989d5f65c1ccd32150985bb42b7e8a3eb42ad91 user <user@users-MacBook-Pro.local> 1773028444 -0500	commit: feat: add /api/dashboard/kpis endpoint for realtime refresh
+9989d5f65c1ccd32150985bb42b7e8a3eb42ad91 6334fe96458bd8da582f05b89fc8d3ff6aca679a user <user@users-MacBook-Pro.local> 1773028710 -0500	commit: fix: add campaign ownership check and DB error handling to kpis endpoint
+6334fe96458bd8da582f05b89fc8d3ff6aca679a f9a37f562a0990a0dd7c482d2e54af577e8fada5 user <user@users-MacBook-Pro.local> 1773029068 -0500	commit: feat: add RealtimeKPIs component with Supabase Realtime subscription
+f9a37f562a0990a0dd7c482d2e54af577e8fada5 4872adaf3d4eaa8a3bd083ff9c742ae25fa67fc7 user <user@users-MacBook-Pro.local> 1773029394 -0500	commit: fix: handle fetch exceptions in RealtimeKPIs refreshKPIs
+4872adaf3d4eaa8a3bd083ff9c742ae25fa67fc7 e2eec691aa19602db259ddb31f46fa787177ffd9 user <user@users-MacBook-Pro.local> 1773029464 -0500	commit: feat: wire RealtimeKPIs into dashboard page for live updates
+e2eec691aa19602db259ddb31f46fa787177ffd9 af2e6b1450f528cf6289ef47e85f912550cd9d66 user <user@users-MacBook-Pro.local> 1773030343 -0500	commit: test: add unit tests for /api/import/contacts
+af2e6b1450f528cf6289ef47e85f912550cd9d66 9442706d9b1a44afb0b7054732099870132f2118 user <user@users-MacBook-Pro.local> 1773030344 -0500	commit: test: add unit tests for AISuggestionsPanel
