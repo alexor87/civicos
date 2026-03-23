@@ -60,7 +60,8 @@ const STATUS_LABELS: Record<string, string> = {
   unknown:    'Desconocido',
 }
 
-export default async function SegmentDetailPage({ params }: { params: { id: string } }) {
+export default async function SegmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -77,7 +78,7 @@ export default async function SegmentDetailPage({ params }: { params: { id: stri
   const { data: segData } = await supabase
     .from('contact_segments')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!segData) {

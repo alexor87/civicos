@@ -5,8 +5,9 @@ import Anthropic from '@anthropic-ai/sdk'
 // GET /api/calendar/events/[id]/intelligence — CRM data for the event zone
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -14,7 +15,7 @@ export async function GET(
   const { data: event } = await supabase
     .from('calendar_events')
     .select('id, campaign_id, municipality_name, neighborhood_name, ai_briefing, intelligence_status, intelligence_updated_at')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
@@ -82,8 +83,9 @@ export async function GET(
 // POST /api/calendar/events/[id]/intelligence — generate AI briefing
 export async function POST(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: eventId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -91,7 +93,7 @@ export async function POST(
   const { data: event } = await supabase
     .from('calendar_events')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', eventId)
     .single()
 
   if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
@@ -100,7 +102,7 @@ export async function POST(
   await supabase
     .from('calendar_events')
     .update({ intelligence_status: 'generating', updated_at: new Date().toISOString() })
-    .eq('id', params.id)
+    .eq('id', eventId)
 
   // Fetch CRM data for the zone
   let contactQuery = supabase
@@ -167,14 +169,14 @@ Responde SOLO con el JSON, sin texto adicional.`
         intelligence_updated_at: new Date().toISOString(),
         updated_at:             new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', eventId)
 
     return NextResponse.json({ briefing, status: 'ready' })
   } catch (err) {
     await supabase
       .from('calendar_events')
       .update({ intelligence_status: 'error', updated_at: new Date().toISOString() })
-      .eq('id', params.id)
+      .eq('id', eventId)
 
     return NextResponse.json({ error: 'Error generando briefing' }, { status: 500 })
   }

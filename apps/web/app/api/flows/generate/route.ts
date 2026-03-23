@@ -52,10 +52,11 @@ export async function POST(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('campaign_id, tenant_id')
+      .select('campaign_ids, tenant_id')
       .eq('id', user.id)
       .single()
-    if (!profile?.campaign_id) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
+    const campaignId = profile?.campaign_ids?.[0]
+    if (!campaignId) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
 
     const { naturalLanguageInput } = await req.json()
     if (!naturalLanguageInput?.trim()) {
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     const { data: campaign } = await supabase
       .from('campaigns')
       .select('name, candidate_name')
-      .eq('id', profile.campaign_id)
+      .eq('id', campaignId)
       .single()
 
     const candidateName = (campaign as { candidate_name?: string } | null)?.candidate_name
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
     const { data: contacts } = await supabase
       .from('contacts')
       .select('id, full_name, neighborhood_name, municipality_name')
-      .eq('campaign_id', profile.campaign_id)
+      .eq('campaign_id', campaignId)
       .not('full_name', 'is', null)
       .limit(5)
 

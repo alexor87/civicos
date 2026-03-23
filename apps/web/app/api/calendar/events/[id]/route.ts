@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 // PATCH /api/calendar/events/[id]
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -26,7 +27,7 @@ export async function PATCH(
   const { data, error } = await supabase
     .from('calendar_events')
     .update(updates)
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single()
 
@@ -37,8 +38,9 @@ export async function PATCH(
 // DELETE /api/calendar/events/[id] — soft delete
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -54,7 +56,7 @@ export async function DELETE(
       cancellation_reason: reason,
       updated_at:          new Date().toISOString(),
     })
-    .eq('id', params.id)
+    .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })

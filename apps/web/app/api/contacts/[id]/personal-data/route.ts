@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-type Params = { params: { id: string } }
+type Params = { params: Promise<{ id: string }> }
 
 // ── GET — Export personal data ────────────────────────────────────────────────
 export async function GET(_req: NextRequest, { params }: Params) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -22,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { data: contact, error } = await supabase
     .from('contacts')
     .select('id, first_name, last_name, email, phone, address, city, district, document_type, document_number, birth_date, gender, department, municipality, commune, voting_place, voting_table, status, tags, notes, created_at, updated_at, campaign_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -36,7 +37,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { data: visits } = await supabase
     .from('canvass_visits')
     .select('id, created_at, result, status, notes')
-    .eq('contact_id', params.id)
+    .eq('contact_id', id)
     .order('created_at', { ascending: false })
 
   const payload = {
@@ -78,13 +79,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Content-Disposition': `attachment; filename="datos-personales-${params.id}.json"`,
+      'Content-Disposition': `attachment; filename="datos-personales-${id}.json"`,
     },
   })
 }
 
 // ── DELETE — Anonymize personal data ─────────────────────────────────────────
 export async function DELETE(_req: NextRequest, { params }: Params) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -107,7 +109,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const { data: contact } = await supabase
     .from('contacts')
     .select('id, campaign_id, metadata')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -134,7 +136,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       notes:           null,
       metadata:        { ...existingMeta, gdpr_anonymized_at: anonymizedAt },
     })
-    .eq('id', params.id)
+    .eq('id', id)
 
   if (updateError) {
     return NextResponse.json({ error: 'Failed to anonymize' }, { status: 500 })

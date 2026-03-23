@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 // POST /api/calendar/events/[id]/complete
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -22,7 +23,7 @@ export async function POST(
       post_event_rating:   body.post_event_rating ?? null,
       updated_at:          new Date().toISOString(),
     })
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single()
 

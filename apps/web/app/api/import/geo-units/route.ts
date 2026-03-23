@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
   // ── Batch insert via shared helper ────────────────────────────────────────────
   const adminSupabase = await createAdminClient()
-  const { imported, skipped } = await importGeoRows(adminSupabase, validRows, profile.tenant_id, campaignId)
+  const { imported, skipped } = await importGeoRows(adminSupabase, validRows as Parameters<typeof importGeoRows>[1], profile.tenant_id, campaignId)
 
   return NextResponse.json({ imported, skipped, errors: errors.slice(0, 20) })
 }
@@ -112,10 +112,10 @@ export async function DELETE(request: NextRequest) {
   if (confirm !== 'true') return NextResponse.json({ error: 'Requiere ?confirm=true' }, { status: 400 })
 
   const adminSupabase = await createAdminClient()
-  const { count } = await adminSupabase
-    .from('geo_units').delete().eq('campaign_id', campaignId).select('id', { count: 'exact', head: true })
+  const { data } = await adminSupabase
+    .from('geo_units').delete().eq('campaign_id', campaignId).select('id')
 
-  return NextResponse.json({ deleted: count ?? 0 })
+  return NextResponse.json({ deleted: data?.length ?? 0 })
 }
 
 // ── GET /api/import/geo-units — stats de la base actual ───────────────────────

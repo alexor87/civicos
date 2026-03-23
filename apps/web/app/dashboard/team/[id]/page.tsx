@@ -54,7 +54,8 @@ const VISIT_STATUS_LABELS: Record<string, string> = {
   rejected:  'Rechazada',
 }
 
-export default async function VolunteerProfilePage({ params }: { params: { id: string } }) {
+export default async function VolunteerProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -71,7 +72,7 @@ export default async function VolunteerProfilePage({ params }: { params: { id: s
   const { data: member } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!member) {
@@ -89,13 +90,13 @@ export default async function VolunteerProfilePage({ params }: { params: { id: s
   ] = await Promise.all([
     supabase.from('canvass_visits')
       .select('id, result, sympathy_level, status, created_at, contacts(first_name, last_name)')
-      .eq('volunteer_id', params.id)
+      .eq('volunteer_id', id)
       .eq('campaign_id', campaignId)
       .order('created_at', { ascending: false })
       .limit(20),
     supabase.from('territory_assignments')
       .select('*, territories(name, status, color)')
-      .eq('volunteer_id', params.id)
+      .eq('volunteer_id', id)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
   ])
