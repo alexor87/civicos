@@ -35,7 +35,7 @@ describe('createDefaultBlock', () => {
   it('creates a text block with correct defaults', () => {
     const block = createDefaultBlock('text') as TextBlock
     expect(block.type).toBe('text')
-    expect(block.props.fontSize).toBe('md')
+    expect(block.props.fontSize).toBe('16')
     expect(block.props.align).toBe('left')
   })
 

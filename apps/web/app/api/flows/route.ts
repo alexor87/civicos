@@ -1,27 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase      = await createClient()
+    const adminSupabase = await createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('campaign_id, tenant_id')
+      .select('campaign_ids, tenant_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.campaign_id) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
+    const campaignId = profile?.campaign_ids?.[0]
+    if (!campaignId) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
 
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
 
-    let query = supabase
+    let query = adminSupabase
       .from('automation_flows')
       .select('*')
-      .eq('campaign_id', profile.campaign_id)
+      .eq('campaign_id', campaignId)
       .neq('status', 'archived')
       .order('created_at', { ascending: false })
 
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest) {
     if (error) throw error
 
     // Contar ejecuciones por flow
-    const { data: execCounts } = await supabase
+    const { data: execCounts } = await adminSupabase
       .from('flow_executions')
       .select('flow_id')
       .in('flow_id', (flows ?? []).map(f => f.id))
@@ -45,7 +47,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Última ejecución por flow
-    const { data: lastExecs } = await supabase
+    const { data: lastExecs } = await adminSupabase
       .from('flow_executions')
       .select('flow_id, started_at')
       .in('flow_id', (flows ?? []).map(f => f.id))
@@ -74,17 +76,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase      = await createClient()
+    const adminSupabase = await createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('campaign_id, tenant_id')
+      .select('campaign_ids, tenant_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.campaign_id) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
+    const campaignId = profile?.campaign_ids?.[0]
+    if (!campaignId) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
 
     const body = await req.json()
     const {
@@ -111,7 +115,7 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString()
     const insertData: Record<string, unknown> = {
       tenant_id:       profile.tenant_id,
-      campaign_id:     profile.campaign_id,
+      campaign_id:     campaignId,
       created_by:      user.id,
       name,
       description:     description ?? null,
@@ -133,7 +137,7 @@ export async function POST(req: NextRequest) {
       insertData.activated_at = now
     }
 
-    const { data: flow, error } = await supabase
+    const { data: flow, error } = await adminSupabase
       .from('automation_flows')
       .insert(insertData)
       .select()

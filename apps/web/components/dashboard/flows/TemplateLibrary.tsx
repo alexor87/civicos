@@ -41,21 +41,24 @@ export function TemplateLibrary() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name:             template.name,
-          description:      template.description,
-          category:         template.category,
-          icon:             template.icon,
-          trigger_config:   template.trigger_config,
-          filter_config:    template.filter_config,
-          actions_config:   template.actions_config,
-          status:           'draft',
-          from_template_id: template.id,
-          ai_generated:     false,
+          name:           template.name,
+          description:    template.description,
+          category:       template.category,
+          icon:           template.icon,
+          trigger_config: template.trigger_config,
+          filter_config:  template.filter_config,
+          actions_config: template.actions_config,
+          status:         'draft',
+          ai_generated:   false,
         }),
       })
       if (res.ok) {
         const flow = await res.json()
         router.push(`/dashboard/automatizaciones/${flow.id}`)
+      } else {
+        const err = await res.json().catch(() => ({}))
+        console.error('[useTemplate] API error:', err)
+        alert('No se pudo crear el flow. Por favor intenta de nuevo.')
       }
     } finally {
       setCreating(null)

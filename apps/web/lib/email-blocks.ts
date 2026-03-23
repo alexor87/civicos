@@ -22,7 +22,7 @@ export interface TextBlock extends BaseBlock {
   type: 'text'
   props: {
     content: string
-    fontSize: 'sm' | 'md' | 'lg'
+    fontSize: string   // numeric string ('16') or legacy ('sm'|'md'|'lg')
     align: 'left' | 'center' | 'right'
     color: string
   }
@@ -123,7 +123,7 @@ export function createDefaultBlock(type: BlockType): EmailBlock {
         type: 'text',
         props: {
           content: 'Escribe aquí el contenido de tu mensaje. Puedes usar saltos de línea para separar párrafos.',
-          fontSize: 'md',
+          fontSize: '16',
           align: 'left',
           color: '#586069',
         },
@@ -176,34 +176,74 @@ export function createDefaultBlock(type: BlockType): EmailBlock {
 // ── HTML Renderers per block type ──────────────────────────────────────────────
 
 const PADDING_MAP = { sm: '20px 32px', md: '28px 40px', lg: '40px 48px' }
-const FONTSIZE_MAP = { sm: '14px', md: '16px', lg: '18px' }
 const BUTTON_PADDING_MAP = { sm: '10px 20px', md: '14px 28px', lg: '18px 36px' }
 const BUTTON_RADIUS_MAP = { none: '0', sm: '4px', full: '24px' }
 
+// Supports legacy 'sm'/'md'/'lg' and new numeric strings ('14', '24', etc.)
+export function resolveFontSize(fontSize: string): string {
+  const legacy: Record<string, string> = { sm: '14px', md: '16px', lg: '18px' }
+  return legacy[fontSize] ?? `${fontSize}px`
+}
+
+function processHeaderRichText(html: string, textColor: string): string {
+  return html
+    .replace(/<p>/g, `<p style="margin:0 0 10px 0;font-size:26px;font-weight:700;color:${textColor};line-height:1.3;">`)
+    .replace(/<strong>/g, `<strong style="font-weight:700;">`)
+    .replace(/<em>/g, `<em style="font-style:italic;">`)
+    .replace(/<u>/g, `<u style="text-decoration:underline;">`)
+    .replace(/<ul>/g, `<ul style="margin:0 0 10px 0;padding-left:20px;color:${textColor};">`)
+    .replace(/<ol>/g, `<ol style="margin:0 0 10px 0;padding-left:20px;color:${textColor};">`)
+    .replace(/<li>/g, `<li style="margin:0 0 4px 0;line-height:1.3;">`)
+    .replace(/<a /g, `<a style="color:#ffffff;text-decoration:underline;" `)
+}
+
 function renderHeaderRow(block: HeaderBlock): string {
   const padding = PADDING_MAP[block.props.padding]
+  const isHtml = block.props.text.trim().startsWith('<')
+  const textContent = isHtml
+    ? processHeaderRichText(block.props.text, block.props.textColor)
+    : `<h1 style="margin:0;font-size:26px;font-weight:700;color:${block.props.textColor};line-height:1.3;">${block.props.text}</h1>`
   return `
         <!-- Header Block -->
         <tr>
           <td style="background:${block.props.bgColor};padding:${padding};border-radius:4px 4px 0 0;">
             ${block.props.subtext ? `<p style="margin:0 0 10px 0;font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">${block.props.subtext}</p>` : ''}
-            <h1 style="margin:0;font-size:26px;font-weight:700;color:${block.props.textColor};line-height:1.3;">${block.props.text}</h1>
+            ${textContent}
           </td>
         </tr>`
 }
 
+function processRichTextForEmail(html: string, props: TextBlock['props']): string {
+  const fontSize = resolveFontSize(props.fontSize)
+  const baseStyle = `margin:0 0 14px 0;line-height:1.7;color:${props.color};font-size:${fontSize};text-align:${props.align};`
+  return html
+    .replace(/<p>/g, `<p style="${baseStyle}">`)
+    .replace(/<ul>/g, `<ul style="margin:0 0 14px 0;padding-left:20px;color:${props.color};font-size:${fontSize};">`)
+    .replace(/<ol>/g, `<ol style="margin:0 0 14px 0;padding-left:20px;color:${props.color};font-size:${fontSize};">`)
+    .replace(/<li>/g, `<li style="margin:0 0 6px 0;line-height:1.7;">`)
+    .replace(/<a /g, `<a style="color:#2262ec;text-decoration:underline;" `)
+    .replace(/<h1>/g, `<h1 style="margin:0 0 14px 0;font-size:22px;font-weight:700;color:${props.color};">`)
+    .replace(/<h2>/g, `<h2 style="margin:0 0 14px 0;font-size:18px;font-weight:700;color:${props.color};">`)
+    .replace(/<h3>/g, `<h3 style="margin:0 0 14px 0;font-size:16px;font-weight:600;color:${props.color};">`)
+}
+
 function renderTextRow(block: TextBlock): string {
-  const fontSize = FONTSIZE_MAP[block.props.fontSize]
-  const paragraphs = block.props.content
-    .split('\n')
-    .filter(p => p.trim())
-    .map(p => `<p style="margin:0 0 14px 0;line-height:1.7;color:${block.props.color};font-size:${fontSize};text-align:${block.props.align};">${p.trim()}</p>`)
-    .join('\n')
+  const fontSize = resolveFontSize(block.props.fontSize)
+  const isHtml = block.props.content.trim().startsWith('<')
+
+  const htmlContent = isHtml
+    ? processRichTextForEmail(block.props.content, block.props)
+    : block.props.content
+        .split('\n')
+        .filter(p => p.trim())
+        .map(p => `<p style="margin:0 0 14px 0;line-height:1.7;color:${block.props.color};font-size:${fontSize};text-align:${block.props.align};">${p.trim()}</p>`)
+        .join('\n')
+
   return `
         <!-- Text Block -->
         <tr>
           <td style="background:#ffffff;padding:12px 40px;">
-            ${paragraphs}
+            ${htmlContent}
           </td>
         </tr>`
 }

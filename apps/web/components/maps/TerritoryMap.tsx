@@ -40,6 +40,7 @@ interface TerritoryMapProps {
   defaultCenter?: [number, number]
   defaultZoom?: number
   colorMode?: ColorMode
+  onPointClick?: (point: ContactPoint) => void
 }
 
 // ── Colombia defaults ──────────────────────────────────────────────────────────
@@ -131,6 +132,7 @@ export function TerritoryMap({
   defaultCenter,
   defaultZoom = 13,
   colorMode = 'visit_result',
+  onPointClick,
 }: TerritoryMapProps) {
   const mapRef         = useRef<HTMLDivElement>(null)
   const leafletMapRef  = useRef<import('leaflet').Map | null>(null)
@@ -282,7 +284,7 @@ export function TerritoryMap({
       for (const pt of points) {
         const color   = getPointColor(pt, colorMode)
         const tooltip = getPointTooltip(pt, colorMode)
-        L.circleMarker([pt.lat, pt.lng], {
+        const marker = L.circleMarker([pt.lat, pt.lng], {
           radius:      6,
           fillColor:   color,
           color:       '#ffffff',
@@ -291,7 +293,10 @@ export function TerritoryMap({
           fillOpacity: 0.85,
         })
         .bindTooltip(tooltip, { permanent: false, direction: 'top', className: 'territory-tooltip' })
-        .addTo(layer)
+        if (onPointClick) {
+          marker.on('click', () => onPointClick(pt))
+        }
+        marker.addTo(layer)
         try { ptBounds.push(L.latLngBounds([pt.lat, pt.lng], [pt.lat, pt.lng])) } catch { /* skip */ }
       }
 
@@ -311,7 +316,7 @@ export function TerritoryMap({
       pendingMarkers.current = renderMarkers
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactPoints, colorMode])
+  }, [contactPoints, colorMode, onPointClick])
 
   return (
     <>

@@ -5,7 +5,7 @@ import { Plus, MapPin, FileText, AlertCircle, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { ExportButton } from '@/components/dashboard/ExportButton'
 import { TerritoryAnalysisPanel } from '@/components/dashboard/canvassing/TerritoryAnalysisPanel'
-import { ExpandableMap } from '@/components/maps/ExpandableMap'
+import { CanvassingMapWithPanel } from '@/components/dashboard/canvassing/CanvassingMapWithPanel'
 import { CanvassingVisitsTable } from '@/components/dashboard/canvassing/CanvassingVisitsTable'
 
 
@@ -53,7 +53,7 @@ export default async function CanvassingPage() {
       .eq('campaign_id', campaignId ?? '')
       .not('territory_id', 'is', null),
     supabase.from('canvass_visits')
-      .select('contact_id, result, vote_intention')
+      .select('id, contact_id, result, vote_intention')
       .eq('campaign_id', campaignId ?? '')
       .order('created_at', { ascending: false }),
     // Visits with GPS — used as fallback for contacts without geo
@@ -90,7 +90,7 @@ export default async function CanvassingPage() {
   }
 
   // Build contact points for the heat map
-  type VisitRow = { contact_id: string; result: string; vote_intention: string | null; geo?: string | null }
+  type VisitRow = { id: string; contact_id: string; result: string; vote_intention: string | null; geo?: string | null }
   const lastVisit = new Map<string, VisitRow>()
   for (const v of (allVisitResults ?? []) as VisitRow[]) {
     if (v.contact_id && !lastVisit.has(v.contact_id)) lastVisit.set(v.contact_id, v)
@@ -105,6 +105,7 @@ export default async function CanvassingPage() {
     id: string; lat: number; lng: number; last_result: string | null
     status: string | null; vote_intention: string | null
     campaign_role: string | null; electoral_priority: string | null; capture_source: string | null
+    visit_id?: string | null
   }
   const seenContactIds = new Set<string>()
   const mapContactPoints: ContactPoint[] = []
@@ -126,6 +127,7 @@ export default async function CanvassingPage() {
         campaign_role:      (c.campaign_role as string | null) ?? null,
         electoral_priority: (c.electoral_priority as string | null) ?? null,
         capture_source:     (c.capture_source as string | null) ?? null,
+        visit_id:           visit?.id ?? null,
       })
     }
   }
@@ -147,6 +149,7 @@ export default async function CanvassingPage() {
         campaign_role:      null,
         electoral_priority: null,
         capture_source:     null,
+        visit_id:           visit?.id ?? vGeo.id ?? null,
       })
     }
   }
@@ -238,7 +241,7 @@ export default async function CanvassingPage() {
                 </Link>
               </div>
             )}
-            <ExpandableMap
+            <CanvassingMapWithPanel
               territories={(territories ?? []).map(t => ({
                 id:     t.id,
                 name:   t.name,

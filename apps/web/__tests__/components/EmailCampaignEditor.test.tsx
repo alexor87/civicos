@@ -183,7 +183,7 @@ describe('EmailCampaignEditor (drag-and-drop builder)', () => {
     const editBtn = screen.getByTitle('Editar')
     fireEvent.click(editBtn)
     // Properties panel should show the text editor
-    expect(screen.getByText('Editar propiedades')).toBeInTheDocument()
+    expect(screen.getByText('Edición en el canvas')).toBeInTheDocument()
   })
 
   it('muestra recuento de destinatarios tras cargar', async () => {

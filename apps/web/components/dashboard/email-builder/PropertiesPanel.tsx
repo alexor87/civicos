@@ -3,12 +3,6 @@
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import type { EmailBlock } from '@/lib/email-blocks'
-import { HeaderBlockEditor } from './block-editors/HeaderBlockEditor'
-import { TextBlockEditor } from './block-editors/TextBlockEditor'
-import { ImageBlockEditor } from './block-editors/ImageBlockEditor'
-import { ButtonBlockEditor } from './block-editors/ButtonBlockEditor'
-import { DividerBlockEditor } from './block-editors/DividerBlockEditor'
-import { SpacerBlockEditor } from './block-editors/SpacerBlockEditor'
 
 const BLOCK_LABELS: Record<string, string> = {
   header: 'Encabezado',
@@ -33,7 +27,7 @@ export function PropertiesPanel({ block, onChange, onDelete }: Props) {
           <span className="text-xl">✏️</span>
         </div>
         <p className="text-sm font-medium text-foreground">Selecciona un bloque</p>
-        <p className="text-xs text-muted-foreground mt-1">Haz clic en cualquier bloque del canvas para editar sus propiedades</p>
+        <p className="text-xs text-muted-foreground mt-1">Haz clic en cualquier bloque del canvas para editarlo directamente</p>
       </div>
     )
   }
@@ -44,7 +38,7 @@ export function PropertiesPanel({ block, onChange, onDelete }: Props) {
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div>
           <p className="text-sm font-semibold">{BLOCK_LABELS[block.type]}</p>
-          <p className="text-xs text-muted-foreground">Editar propiedades</p>
+          <p className="text-xs text-muted-foreground">Edición en el canvas</p>
         </div>
         <Button
           variant="ghost"
@@ -57,26 +51,11 @@ export function PropertiesPanel({ block, onChange, onDelete }: Props) {
         </Button>
       </div>
 
-      {/* Editor */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {block.type === 'header' && (
-          <HeaderBlockEditor block={block} onChange={onChange} />
-        )}
-        {block.type === 'text' && (
-          <TextBlockEditor block={block} onChange={onChange} />
-        )}
-        {block.type === 'image' && (
-          <ImageBlockEditor block={block} onChange={onChange} />
-        )}
-        {block.type === 'button' && (
-          <ButtonBlockEditor block={block} onChange={onChange} />
-        )}
-        {block.type === 'divider' && (
-          <DividerBlockEditor block={block} onChange={onChange} />
-        )}
-        {block.type === 'spacer' && (
-          <SpacerBlockEditor block={block} onChange={onChange} />
-        )}
+      {/* Universal hint */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Haz clic en el bloque para editarlo directamente en el canvas
+        </p>
       </div>
     </div>
   )

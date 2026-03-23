@@ -6,6 +6,7 @@ import { Loader2, X, Plus, ChevronRight, Check } from 'lucide-react'
 import {
   TriggerConfig,
   ActionConfig,
+  AutomationFlow,
   TRIGGER_CONFIG,
   ACTION_CONFIG,
   TriggerType,
@@ -514,14 +515,23 @@ function ActionTypePicker({ onSelect }: { onSelect: (type: ActionType) => void }
 
 // ── Main component ────────────────────────────────────────────────
 
-export function VisualFlowEditor() {
-  const router = useRouter()
+interface VisualFlowEditorProps {
+  initialFlow?: AutomationFlow
+}
+
+export function VisualFlowEditor({ initialFlow }: VisualFlowEditorProps = {}) {
+  const router  = useRouter()
+  const isEdit  = !!initialFlow
 
   const [step, setStep]               = useState<1 | 2 | 3>(1)
-  const [trigger, setTrigger]         = useState<TriggerConfig | null>(null)
-  const [actions, setActions]         = useState<ActionConfig[]>([])
+  const [trigger, setTrigger]         = useState<TriggerConfig | null>(
+    (initialFlow?.trigger_config as TriggerConfig) ?? null
+  )
+  const [actions, setActions]         = useState<ActionConfig[]>(
+    (initialFlow?.actions_config as ActionConfig[]) ?? []
+  )
   const [showPicker, setShowPicker]   = useState(false)
-  const [flowName, setFlowName]       = useState('')
+  const [flowName, setFlowName]       = useState(initialFlow?.name ?? '')
   const [saving, setSaving]           = useState(false)
   const [saveError, setSaveError]     = useState<string | null>(null)
 
@@ -551,7 +561,11 @@ export function VisualFlowEditor() {
 
   function goToStep3() {
     if (actions.length === 0) return
-    setFlowName(trigger ? defaultFlowName(trigger) : 'Mi Flow')
+    // En modo creación, pre-llenar el nombre basado en el trigger
+    // En modo edición, conservar el nombre existente
+    if (!isEdit && !flowName) {
+      setFlowName(trigger ? defaultFlowName(trigger) : 'Mi Flow')
+    }
     setStep(3)
   }
 
@@ -560,8 +574,10 @@ export function VisualFlowEditor() {
     setSaving(true)
     setSaveError(null)
     try {
-      const res = await fetch('/api/flows', {
-        method:  'POST',
+      const url    = isEdit ? `/api/flows/${initialFlow!.id}` : '/api/flows'
+      const method = isEdit ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name:           flowName,
@@ -575,7 +591,8 @@ export function VisualFlowEditor() {
       })
       if (res.ok) {
         const flow = await res.json()
-        router.push(`/dashboard/automatizaciones/${flow.id}`)
+        const flowId = isEdit ? initialFlow!.id : flow.id
+        router.push(`/dashboard/automatizaciones/${flowId}`)
       } else {
         setSaveError('No se pudo guardar el flow. Intenta de nuevo.')
       }
@@ -589,6 +606,11 @@ export function VisualFlowEditor() {
 
   return (
     <div data-testid="visual-flow-editor" className="max-w-2xl mx-auto">
+      {isEdit && (
+        <div data-testid="edit-mode-indicator" className="mb-4 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg px-4 py-2 text-sm font-medium border border-amber-200 dark:border-amber-800">
+          <span>Editando flow: <strong>{initialFlow!.name}</strong></span>
+        </div>
+      )}
       <StepIndicator current={step} />
 
       {/* ── Paso 1: Trigger ── */}
@@ -761,7 +783,7 @@ export function VisualFlowEditor() {
               className={btnSecondary}
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Guardar como borrador
+              {isEdit ? 'Guardar cambios' : 'Guardar como borrador'}
             </button>
             <button
               data-testid="activate-btn"

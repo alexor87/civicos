@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 async function getFlowWithAuth(supabase: Awaited<ReturnType<typeof createClient>>, id: string, campaignId: string) {
   const { data, error } = await supabase
@@ -23,12 +23,13 @@ export async function GET(
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('campaign_id')
+      .select('campaign_ids')
       .eq('id', user.id)
       .single()
-    if (!profile?.campaign_id) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
+    const campaignId = profile?.campaign_ids?.[0]
+    if (!campaignId) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
 
-    const { data: flow, error } = await getFlowWithAuth(supabase, id, profile.campaign_id)
+    const { data: flow, error } = await getFlowWithAuth(supabase, id, campaignId)
     if (error || !flow) return NextResponse.json({ error: 'Flow no encontrado' }, { status: 404 })
 
     // Últimas 20 ejecuciones con nombre del contacto
@@ -58,18 +59,20 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase      = await createClient()
+    const adminSupabase = await createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('campaign_id')
+      .select('campaign_ids')
       .eq('id', user.id)
       .single()
-    if (!profile?.campaign_id) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
+    const campaignId = profile?.campaign_ids?.[0]
+    if (!campaignId) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
 
-    const { data: existing } = await getFlowWithAuth(supabase, id, profile.campaign_id)
+    const { data: existing } = await getFlowWithAuth(supabase, id, campaignId)
     if (!existing) return NextResponse.json({ error: 'Flow no encontrado' }, { status: 404 })
 
     const body = await req.json()
@@ -86,7 +89,7 @@ export async function PATCH(
       updates.paused_at = now
     }
 
-    const { data: flow, error } = await supabase
+    const { data: flow, error } = await adminSupabase
       .from('automation_flows')
       .update(updates)
       .eq('id', id)
@@ -107,22 +110,24 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase      = await createClient()
+    const adminSupabase = await createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('campaign_id')
+      .select('campaign_ids')
       .eq('id', user.id)
       .single()
-    if (!profile?.campaign_id) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
+    const campaignId = profile?.campaign_ids?.[0]
+    if (!campaignId) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
 
-    const { data: existing } = await getFlowWithAuth(supabase, id, profile.campaign_id)
+    const { data: existing } = await getFlowWithAuth(supabase, id, campaignId)
     if (!existing) return NextResponse.json({ error: 'Flow no encontrado' }, { status: 404 })
 
     // Soft-delete
-    await supabase
+    await adminSupabase
       .from('automation_flows')
       .update({ status: 'archived', updated_at: new Date().toISOString() })
       .eq('id', id)

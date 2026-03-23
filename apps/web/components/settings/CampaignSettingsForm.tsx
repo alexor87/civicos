@@ -15,7 +15,6 @@ interface Campaign {
   election_date?:  string | null
   key_topics?:     string[] | null
   description?:    string | null
-  brand_color?:    string | null
 }
 
 interface Props {
@@ -36,7 +35,6 @@ export function CampaignSettingsForm({ campaign }: Props) {
   const [electionDate,  setElectionDate]  = useState(campaign.election_date  ?? '')
   const [keyTopicsRaw,  setKeyTopicsRaw]  = useState((campaign.key_topics ?? []).join(', '))
   const [description,   setDescription]  = useState(campaign.description ?? '')
-  const [brandColor,    setBrandColor]    = useState(campaign.brand_color ?? '#2960ec')
   const [saving,        setSaving]        = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,7 +57,6 @@ export function CampaignSettingsForm({ campaign }: Props) {
         election_date:  electionDate  || null,
         key_topics,
         description:    description   || null,
-        brand_color:    brandColor,
       }),
     })
 
@@ -97,6 +94,9 @@ export function CampaignSettingsForm({ campaign }: Props) {
           onChange={e => setCandidateName(e.target.value)}
           placeholder="Ej: María López"
         />
+        <p className="text-xs text-muted-foreground">
+          Usado por los agentes IA para personalizar el contenido
+        </p>
       </div>
 
       {/* Tipo de elección */}
@@ -156,21 +156,6 @@ export function CampaignSettingsForm({ campaign }: Props) {
         <p className="text-xs text-muted-foreground">
           Contexto que el motor de IA utiliza para personalizar sugerencias y generar contenido
         </p>
-      </div>
-
-      {/* Color de marca */}
-      <div className="space-y-1.5">
-        <Label htmlFor="brand_color">Color de marca</Label>
-        <div className="flex items-center gap-3">
-          <input
-            id="brand_color"
-            type="color"
-            value={brandColor}
-            onChange={e => setBrandColor(e.target.value)}
-            className="h-9 w-14 rounded-md border border-input cursor-pointer"
-          />
-          <span className="text-sm text-muted-foreground font-mono">{brandColor}</span>
-        </div>
       </div>
 
       <Button type="submit" disabled={saving}>

@@ -14,6 +14,7 @@ export interface ContactPoint {
   campaign_role: string | null
   electoral_priority: string | null
   capture_source: string | null
+  visit_id?: string | null
 }
 
 export type ColorMode = 'visit_result' | 'status' | 'vote_intention' | 'electoral_priority' | 'campaign_role' | 'capture_source'

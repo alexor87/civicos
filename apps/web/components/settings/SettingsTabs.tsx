@@ -9,6 +9,7 @@ const TABS = [
   { href: '/dashboard/settings/integrations', label: 'Integraciones'    },
   { href: '/dashboard/settings/geo-data',     label: 'Base Geográfica'  },
   { href: '/dashboard/settings/api',          label: 'API'              },
+  { href: '/dashboard/settings/brand',        label: 'Marca e Identidad' },
 ]
 
 export function SettingsTabs() {

@@ -97,7 +97,7 @@ describe('RegisterPage', () => {
     await fillStep1()
     await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
     await userEvent.type(screen.getByLabelText(/nombre de la campaña/i), 'Campaña Test')
-    await userEvent.click(screen.getByRole('button', { name: /crear organización/i }))
+    await userEvent.click(screen.getByRole('button', { name: /crear mi campaña/i }))
     expect(await screen.findByText('El subdominio ya existe')).toBeInTheDocument()
   })
 })

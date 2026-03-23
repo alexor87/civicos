@@ -70,7 +70,8 @@ export default function RegisterPage() {
 
       if (signInError) throw signInError
 
-      router.push('/dashboard')
+      // Redirect to Brand Studio onboarding wizard
+      router.push('/onboarding')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
@@ -81,6 +82,13 @@ export default function RegisterPage() {
   const selectedCountry = COUNTRIES.find(c => c.value === form.country)
   const isColombia = form.country === 'colombia'
 
+  const progressWidth = step === 1 ? '50%' : '100%'
+
+  const stepTitles = {
+    1: { title: 'Tu organización',    subtitle: 'Crea tu cuenta de administrador' },
+    2: { title: 'Tu primera campaña', subtitle: 'Configura tu primera campaña electoral' },
+  }
+
   return (
     <AuthLayout tagline="14 días gratis, sin tarjeta de crédito">
       <div className="space-y-6">
@@ -88,26 +96,23 @@ export default function RegisterPage() {
         <div>
           <div className="flex items-center justify-between mb-1">
             <h1 className="text-2xl font-bold text-slate-900">
-              {step === 1 ? 'Tu organización' : 'Tu primera campaña'}
+              {stepTitles[step].title}
             </h1>
             <span className="text-xs text-slate-400 font-medium">Paso {step} de 2</span>
           </div>
-          <p className="text-slate-500 text-sm">
-            {step === 1
-              ? 'Crea tu cuenta de administrador'
-              : 'Configura tu primera campaña electoral'}
-          </p>
+          <p className="text-slate-500 text-sm">{stepTitles[step].subtitle}</p>
         </div>
 
         {/* Progress bar */}
         <div className="w-full h-1 bg-slate-100 rounded-full">
           <div
-            className="h-1 bg-blue-600 rounded-full transition-all duration-300"
-            style={{ width: step === 1 ? '50%' : '100%' }}
+            className="h-1 rounded-full bg-primary transition-all duration-300"
+            style={{ width: progressWidth }}
           />
         </div>
 
-        {step === 1 ? (
+        {/* ── Step 1: Organization ── */}
+        {step === 1 && (
           <form onSubmit={e => { e.preventDefault(); setStep(2) }} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="orgName">Nombre de la organización</Label>
@@ -179,9 +184,11 @@ export default function RegisterPage() {
               Siguiente
             </Button>
           </form>
-        ) : (
+        )}
+
+        {/* ── Step 2: Campaign ── */}
+        {step === 2 && (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Country selector */}
             <div className="space-y-2">
               <Label htmlFor="country" className="flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5 text-slate-400" />
@@ -205,7 +212,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Election type — Colombia only */}
             {isColombia && (
               <div className="space-y-2">
                 <Label htmlFor="electionType" className="flex items-center gap-1.5">
@@ -274,7 +280,7 @@ export default function RegisterPage() {
                   ? isColombia
                     ? 'Configurando datos de Colombia...'
                     : 'Creando organización...'
-                  : 'Crear organización'}
+                  : '¡Crear mi campaña!'}
               </Button>
             </div>
 

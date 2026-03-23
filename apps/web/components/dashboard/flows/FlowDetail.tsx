@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Play, Pause, Trash2, Loader2, CheckCircle2, Zap, BarChart2 } from 'lucide-react'
+import { Play, Pause, Trash2, Loader2, CheckCircle2, Zap, BarChart2, Pencil } from 'lucide-react'
 import { AutomationFlow, FlowExecution, FLOW_STATUS_CONFIG, TriggerConfig, ActionConfig } from './flowTypes'
 import { FlowRecipeCard } from './FlowRecipeCard'
 import { FlowExecutionHistory } from './FlowExecutionHistory'
@@ -67,6 +68,14 @@ export function FlowDetail({ flow: initialFlow }: Props) {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Editar */}
+          <Link
+            href={`/dashboard/automatizaciones/${flow.id}/edit`}
+            data-testid="edit-flow-btn"
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-colors"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Editar
+          </Link>
           {/* Toggle activo/pausado */}
           {(flow.status === 'active' || flow.status === 'paused' || flow.status === 'draft') && (
             <button

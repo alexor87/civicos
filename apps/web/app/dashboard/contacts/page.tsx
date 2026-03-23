@@ -63,7 +63,10 @@ export default async function ContactsPage({
     .range(offset, offset + pageSize - 1)
 
   if (params.q) {
-    query = query.textSearch('search_vec', params.q, { type: 'websearch' })
+    const like = `%${params.q}%`
+    query = query.or(
+      `first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`
+    )
   }
   if (params.status) {
     query = query.eq('status', params.status)

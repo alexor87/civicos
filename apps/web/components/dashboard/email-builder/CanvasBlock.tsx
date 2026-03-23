@@ -5,7 +5,14 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Pencil, Trash2 } from 'lucide-react'
 import type { EmailBlock, HeaderBlock, TextBlock, ImageBlock, ButtonBlock, DividerBlock, SpacerBlock } from '@/lib/email-blocks'
+import { resolveFontSize } from '@/lib/email-blocks'
 import { cn } from '@/lib/utils'
+import { InlineTextEditor } from './block-editors/InlineTextEditor'
+import { InlineHeaderEditor } from './block-editors/InlineHeaderEditor'
+import { InlineButtonEditor } from './block-editors/InlineButtonEditor'
+import { InlineImageEditor } from './block-editors/InlineImageEditor'
+import { InlineDividerEditor } from './block-editors/InlineDividerEditor'
+import { InlineSpacerEditor } from './block-editors/InlineSpacerEditor'
 
 interface Props {
   block: EmailBlock
@@ -18,6 +25,7 @@ interface Props {
 // ── Visual previews per block type ────────────────────────────────────────────
 
 function HeaderPreview({ block }: { block: HeaderBlock }) {
+  const isHtml = block.props.text.trim().startsWith('<')
   return (
     <div className="px-6 py-5 rounded-t" style={{ background: block.props.bgColor }}>
       {block.props.subtext && (
@@ -25,26 +33,44 @@ function HeaderPreview({ block }: { block: HeaderBlock }) {
           {block.props.subtext}
         </p>
       )}
-      <h2 className="text-xl font-bold leading-snug" style={{ color: block.props.textColor }}>
-        {block.props.text}
-      </h2>
+      {isHtml ? (
+        <div
+          className="text-xl font-bold leading-snug [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+          style={{ color: block.props.textColor }}
+          dangerouslySetInnerHTML={{ __html: block.props.text }}
+        />
+      ) : (
+        <h2 className="text-xl font-bold leading-snug" style={{ color: block.props.textColor }}>
+          {block.props.text}
+        </h2>
+      )}
     </div>
   )
 }
 
 function TextPreview({ block }: { block: TextBlock }) {
-  const sizeClass = block.props.fontSize === 'sm' ? 'text-sm' : block.props.fontSize === 'lg' ? 'text-base' : 'text-sm'
+  const fontSize = resolveFontSize(block.props.fontSize)
+  const isHtml = block.props.content.trim().startsWith('<')
+
+  if (isHtml) {
+    return (
+      <div
+        className="px-6 py-4 bg-white prose prose-sm max-w-none"
+        style={{ textAlign: block.props.align, color: block.props.color, fontSize }}
+        // Content is user-generated inside this app only — not from external sources
+        dangerouslySetInnerHTML={{ __html: block.props.content }}
+      />
+    )
+  }
+
   const paragraphs = block.props.content.split('\n').filter(p => p.trim())
   return (
     <div className="px-6 py-4 bg-white" style={{ textAlign: block.props.align }}>
-      {paragraphs.slice(0, 3).map((p, i) => (
-        <p key={i} className={cn(sizeClass, 'leading-relaxed mb-2 last:mb-0')} style={{ color: block.props.color }}>
+      {paragraphs.map((p, i) => (
+        <p key={i} className="leading-relaxed mb-2 last:mb-0" style={{ color: block.props.color, fontSize }}>
           {p}
         </p>
       ))}
-      {paragraphs.length > 3 && (
-        <p className="text-xs text-muted-foreground italic">+{paragraphs.length - 3} párrafo(s) más...</p>
-      )}
     </div>
   )
 }
@@ -266,25 +292,35 @@ export function CanvasBlock({ block, isSelected, onSelect, onDelete, onUpdate }:
       </div>
 
       {/* Block content */}
-      {block.type === 'image' ? (
-        <ImagePreview
-          block={block}
-          onUpdate={b => onUpdate(b)}
-        />
-      ) : (
-        <BlockPreview block={block} />
-      )}
+      <BlockPreview block={block} isSelected={isSelected} onUpdate={onUpdate} />
     </div>
   )
 }
 
-function BlockPreview({ block }: { block: EmailBlock }) {
+function BlockPreview({ block, isSelected, onUpdate }: {
+  block: EmailBlock
+  isSelected: boolean
+  onUpdate: (b: EmailBlock) => void
+}) {
   switch (block.type) {
-    case 'header':  return <HeaderPreview block={block as HeaderBlock} />
-    case 'text':    return <TextPreview block={block as TextBlock} />
-    case 'button':  return <ButtonPreview block={block as ButtonBlock} />
-    case 'divider': return <DividerPreview block={block as DividerBlock} />
-    case 'spacer':  return <SpacerPreview block={block as SpacerBlock} />
+    case 'header':  return isSelected
+      ? <InlineHeaderEditor block={block as HeaderBlock} onUpdate={onUpdate} />
+      : <HeaderPreview block={block as HeaderBlock} />
+    case 'text':    return isSelected
+      ? <InlineTextEditor block={block as TextBlock} onUpdate={onUpdate} />
+      : <TextPreview block={block as TextBlock} />
+    case 'button':  return isSelected
+      ? <InlineButtonEditor block={block as ButtonBlock} onUpdate={onUpdate} />
+      : <ButtonPreview block={block as ButtonBlock} />
+    case 'image':   return isSelected
+      ? <InlineImageEditor block={block as ImageBlock} onUpdate={onUpdate} />
+      : <ImagePreview block={block as ImageBlock} onUpdate={b => onUpdate(b)} />
+    case 'divider': return isSelected
+      ? <InlineDividerEditor block={block as DividerBlock} onUpdate={onUpdate} />
+      : <DividerPreview block={block as DividerBlock} />
+    case 'spacer':  return isSelected
+      ? <InlineSpacerEditor block={block as SpacerBlock} onUpdate={onUpdate} />
+      : <SpacerPreview block={block as SpacerBlock} />
     default:        return null
   }
 }

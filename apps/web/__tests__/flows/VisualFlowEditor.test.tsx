@@ -278,3 +278,133 @@ describe('VisualFlowEditor — Paso 3: Guardar', () => {
     })
   })
 })
+
+// ── Edit mode ─────────────────────────────────────────────────────
+
+const INITIAL_FLOW = {
+  id:             'flow-existing-1',
+  tenant_id:      'tenant-1',
+  campaign_id:    'campaign-1',
+  name:           'Flow de prueba existente',
+  status:         'draft' as const,
+  category:       'engagement' as const,
+  icon:           null,
+  trigger_config: { type: 'contact_created' as const, config: {} },
+  actions_config: [{ type: 'send_whatsapp' as const, config: { message: 'Hola {first_name}', fallback: 'sms' as const } }],
+  filter_config:  [],
+  created_at:     new Date().toISOString(),
+  updated_at:     new Date().toISOString(),
+  created_by:     'user-1',
+  ai_generated:   false,
+  natural_language_input: null,
+  max_executions_per_contact: 1,
+  execution_window_days: null,
+  requires_approval: false,
+  approved_by:    null,
+  approved_at:    null,
+  activated_at:   null,
+  paused_at:      null,
+  from_template_id: null,
+}
+
+describe('VisualFlowEditor — Modo edición', () => {
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  it('muestra indicador de modo edición cuando se pasa initialFlow', () => {
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    expect(screen.getByTestId('edit-mode-indicator')).toBeInTheDocument()
+  })
+
+  it('no muestra indicador de modo edición en modo creación', () => {
+    render(<VisualFlowEditor />)
+    expect(screen.queryByTestId('edit-mode-indicator')).not.toBeInTheDocument()
+  })
+
+  it('pre-selecciona el trigger del flow existente', () => {
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    const card = screen.getByTestId('trigger-card-contact_created')
+    expect(card).toHaveAttribute('data-selected', 'true')
+  })
+
+  it('muestra el nombre del flow existente pre-llenado en paso 3', () => {
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    // navegar a paso 3
+    fireEvent.click(screen.getByTestId('step1-next-btn'))
+    fireEvent.click(screen.getByTestId('step2-next-btn'))
+    const input = screen.getByTestId('flow-name-input') as HTMLInputElement
+    expect(input.value).toBe('Flow de prueba existente')
+  })
+
+  it('pre-carga las acciones del flow existente en paso 2', () => {
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    fireEvent.click(screen.getByTestId('step1-next-btn'))
+    expect(screen.getByTestId('action-card-0')).toBeInTheDocument()
+  })
+
+  it('muestra "Guardar cambios" en lugar de "Guardar como borrador"', () => {
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    fireEvent.click(screen.getByTestId('step1-next-btn'))
+    fireEvent.click(screen.getByTestId('step2-next-btn'))
+    expect(screen.getByTestId('save-draft-btn')).toHaveTextContent('Guardar cambios')
+  })
+
+  it('llama a PATCH en lugar de POST al guardar en modo edición', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'flow-existing-1', status: 'draft' }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    fireEvent.click(screen.getByTestId('step1-next-btn'))
+    fireEvent.click(screen.getByTestId('step2-next-btn'))
+    fireEvent.click(screen.getByTestId('save-draft-btn'))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/flows/flow-existing-1',
+        expect.objectContaining({ method: 'PATCH' })
+      )
+    })
+  })
+
+  it('llama a PATCH con status active al activar en modo edición', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'flow-existing-1', status: 'active' }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    fireEvent.click(screen.getByTestId('step1-next-btn'))
+    fireEvent.click(screen.getByTestId('step2-next-btn'))
+    fireEvent.click(screen.getByTestId('activate-btn'))
+
+    await waitFor(() => {
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(body.status).toBe('active')
+    })
+  })
+
+  it('redirige al detalle del flow al guardar en modo edición', async () => {
+    pushMock.mockClear()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'flow-existing-1' }),
+    }))
+
+    render(<VisualFlowEditor initialFlow={INITIAL_FLOW} />)
+    fireEvent.click(screen.getByTestId('step1-next-btn'))
+    fireEvent.click(screen.getByTestId('step2-next-btn'))
+    fireEvent.click(screen.getByTestId('save-draft-btn'))
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        '/dashboard/automatizaciones/flow-existing-1'
+      )
+    })
+  })
+})

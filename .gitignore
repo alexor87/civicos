@@ -7,3 +7,5 @@ node_modules
 dist/
 *.log
 .git_backup
+.vercel
+supabase/.temp/

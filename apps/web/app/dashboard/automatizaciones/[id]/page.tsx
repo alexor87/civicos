@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -13,23 +13,27 @@ export default async function FlowDetailPage({ params }: { params: Params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  const adminSupabase = await createAdminClient()
+
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_id')
+    .select('campaign_ids')
     .eq('id', user.id)
     .single()
 
-  const { data: flow, error } = await supabase
+  const campaignId = profile?.campaign_ids?.[0] ?? ''
+
+  const { data: flow, error } = await adminSupabase
     .from('automation_flows')
     .select('*')
     .eq('id', id)
-    .eq('campaign_id', profile?.campaign_id ?? '')
+    .eq('campaign_id', campaignId)
     .single()
 
   if (error || !flow) notFound()
 
   // Últimas 20 ejecuciones con nombre del contacto
-  const { data: executions } = await supabase
+  const { data: executions } = await adminSupabase
     .from('flow_executions')
     .select('*, contacts(full_name)')
     .eq('flow_id', id)

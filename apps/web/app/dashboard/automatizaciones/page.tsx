@@ -1,29 +1,31 @@
 import Link from 'next/link'
 import { Plus, Zap } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { FlowsList } from '@/components/dashboard/flows/FlowsList'
 import type { AutomationFlow } from '@/components/dashboard/flows/flowTypes'
 
 export const metadata = { title: 'Automatizaciones · CivicOS' }
 
 export default async function AutomatizacionesPage() {
-  const supabase = await createClient()
+  const supabase      = await createClient()
+  const adminSupabase = await createAdminClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_id')
+    .select('campaign_ids')
     .eq('id', user.id)
     .single()
 
   let flows: AutomationFlow[] = []
 
-  if (profile?.campaign_id) {
-    const { data } = await supabase
+  const campaignId = profile?.campaign_ids?.[0]
+  if (campaignId) {
+    const { data } = await adminSupabase
       .from('automation_flows')
       .select('*')
-      .eq('campaign_id', profile.campaign_id)
+      .eq('campaign_id', campaignId)
       .neq('status', 'archived')
       .order('created_at', { ascending: false })
 

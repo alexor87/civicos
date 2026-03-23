@@ -33,7 +33,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Error al crear la organización' }, { status: 500 })
   }
 
-  // 3. Create auth user
+  // 3. Seed tenant_branding with defaults (onboarding_completed = false so wizard shows)
+  await supabase.from('tenant_branding').insert({
+    tenant_id:            tenant.id,
+    onboarding_completed: false,
+  })
+
+  // 4. Create auth user
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     password,
@@ -47,10 +53,11 @@ export async function POST(request: NextRequest) {
 
   if (authError || !authData.user) {
     await supabase.from('tenants').delete().eq('id', tenant.id)
+    await supabase.from('tenant_branding').delete().eq('tenant_id', tenant.id)
     return NextResponse.json({ error: authError?.message || 'Error al crear usuario' }, { status: 500 })
   }
 
-  // 4. Upsert profile
+  // 5. Upsert profile
   await supabase.from('profiles').upsert({
     id: authData.user.id,
     tenant_id: tenant.id,
@@ -59,7 +66,7 @@ export async function POST(request: NextRequest) {
     campaign_ids: [],
   })
 
-  // 5. Create first campaign
+  // 6. Create first campaign
   const campaignData: {
     tenant_id: string
     name: string
@@ -81,7 +88,7 @@ export async function POST(request: NextRequest) {
     .select()
     .single()
 
-  // 6. Update profile with campaign_id
+  // 7. Update profile with campaign_id
   if (campaign) {
     await supabase
       .from('profiles')
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
       .eq('id', authData.user.id)
   }
 
-  // 7. Auto-import geographic data for Colombia
+  // 8. Auto-import geographic data for Colombia
   if ((country ?? 'colombia') === 'colombia' && campaign) {
     try {
       const rows = readColombiaRows()

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Users, Map, Brain, UserCircle, LogOut, Mail, BarChart2, Settings, Sparkles, GitBranch, Megaphone, Plus, BookOpen, CalendarDays,
@@ -40,9 +41,23 @@ interface Props {
   userInitials: string
   campaignId: string
   suggestionCount: number
+  brandColor: string
+  slogan?: string | null
+  logoUrl?: string | null
 }
 
-export function Sidebar({ tenantName, campaignName, userFullName, userRole, userInitials, campaignId, suggestionCount }: Props) {
+export function Sidebar({
+  tenantName,
+  campaignName,
+  userFullName,
+  userRole,
+  userInitials,
+  campaignId,
+  suggestionCount,
+  brandColor,
+  slogan,
+  logoUrl,
+}: Props) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -57,19 +72,49 @@ export function Sidebar({ tenantName, campaignName, userFullName, userRole, user
 
   return (
     <aside className="w-64 h-screen bg-white dark:bg-slate-900 flex flex-col flex-shrink-0 border-r border-slate-200 dark:border-slate-800">
-      {/* Logo */}
-      <div className="p-6 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20">
-          <LayoutDashboard className="h-5 w-5 text-white" />
+
+      {/* Brand identity block */}
+      <div className="px-4 pt-5 pb-4 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          {/* Candidate photo or colored initials */}
+          <div className="h-12 w-12 rounded-full flex-shrink-0 overflow-hidden border-2 border-white shadow-md"
+            style={{ boxShadow: '0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent)' }}>
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt={campaignName}
+                width={48}
+                height={48}
+                className="h-12 w-12 object-cover"
+              />
+            ) : (
+              <div
+                className="h-12 w-12 flex items-center justify-center text-white font-bold text-base bg-primary"
+              >
+                {campaignName.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          {/* Campaign name + slogan */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900 dark:text-white truncate leading-tight">
+              {campaignName}
+            </p>
+            {slogan ? (
+              <p className="text-[11px] text-slate-500 mt-0.5 truncate italic">"{slogan}"</p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-0.5">{tenantName}</p>
+            )}
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none">CivicOS v2.0</h1>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">{tenantName}</p>
-        </div>
+
+        {/* Brand color accent strip */}
+        <div className="mt-3 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 27%, transparent))' }} />
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-4 py-3 space-y-0.5">
         {NAV_ITEMS.map(item => {
           const active = isActive(item.href)
           return (
@@ -94,14 +139,6 @@ export function Sidebar({ tenantName, campaignName, userFullName, userRole, user
           )
         })}
       </nav>
-
-      {/* Campaign badge */}
-      <div className="px-4 pb-3">
-        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">Campaña activa</p>
-          <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{campaignName}</p>
-        </div>
-      </div>
 
       {/* New Campaign button */}
       <div className="px-4 pb-4">

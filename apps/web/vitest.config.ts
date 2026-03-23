@@ -13,6 +13,21 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       exclude: ['node_modules', '.next', 'vitest.config.ts', 'vitest.setup.ts'],
     },
+    server: {
+      deps: {
+        inline: [
+          '@tiptap/react',
+          '@tiptap/pm',
+          '@tiptap/starter-kit',
+          '@tiptap/extension-underline',
+          '@tiptap/extension-link',
+          '@tiptap/extension-text-style',
+          '@tiptap/extension-color',
+          '@tiptap/extension-text-align',
+          '@tiptap/core',
+        ],
+      },
+    },
   },
   resolve: {
     dedupe: ['react', 'react-dom'],

@@ -31,6 +31,8 @@ export async function PATCH(request: Request) {
     key_topics,
     description,
     brand_color,
+    slogan,
+    logo_url,
   } = body
 
   // Ensure the campaign belongs to this user
@@ -48,6 +50,8 @@ export async function PATCH(request: Request) {
       key_topics:     key_topics ?? [],
       description,
       brand_color,
+      slogan:    slogan    ?? null,
+      logo_url:  logo_url  ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', campaign_id)

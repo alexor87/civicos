@@ -32,6 +32,7 @@ interface Props {
   contactPoints?: ContactPoint[]
   defaultCenter?: [number, number]
   defaultZoom?: number
+  onPointClick?: (point: ContactPoint) => void
 }
 
 // ── Legend items per color mode ────────────────────────────────────────────────
@@ -166,6 +167,7 @@ export function ExpandableMap(props: Props) {
           interactive
           contactPoints={filteredPoints}
           colorMode={colorMode}
+          onPointClick={props.onPointClick}
         />
         <MapLegend colorMode={colorMode} hasCoverage={hasCoverage} />
       </div>
@@ -196,6 +198,7 @@ export function ExpandableMap(props: Props) {
             interactive
             contactPoints={filteredPoints}
             colorMode={colorMode}
+            onPointClick={props.onPointClick}
           />
         </div>
       </div>
