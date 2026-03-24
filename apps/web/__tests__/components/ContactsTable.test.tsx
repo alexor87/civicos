@@ -53,10 +53,9 @@ describe('ContactsTable', () => {
     expect(screen.getByText('Juan Pérez')).toBeInTheDocument()
   })
 
-  it('renders email and phone', () => {
+  it('renders email', () => {
     render(<ContactsTable {...DEFAULT_PROPS} />)
     expect(screen.getByText('juan@test.com')).toBeInTheDocument()
-    expect(screen.getByText('555-1234')).toBeInTheDocument()
   })
 
   it('shows "—" when email is null', () => {
@@ -64,14 +63,14 @@ describe('ContactsTable', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 
-  it('renders Simpatizante badge for supporter status', () => {
+  it('renders ALTO sympathy badge for supporter status', () => {
     render(<ContactsTable {...DEFAULT_PROPS} />)
-    expect(screen.getByText('Simpatizante')).toBeInTheDocument()
+    expect(screen.getByText('ALTO')).toBeInTheDocument()
   })
 
-  it('renders Opositor badge for opponent status', () => {
+  it('renders BAJO sympathy badge for opponent status', () => {
     render(<ContactsTable {...DEFAULT_PROPS} contacts={[makeContact({ status: 'opponent' })]} />)
-    expect(screen.getByText('Opositor')).toBeInTheDocument()
+    expect(screen.getByText('BAJO')).toBeInTheDocument()
   })
 
   it('shows empty state message when no contacts and no search query', () => {
@@ -84,13 +83,10 @@ describe('ContactsTable', () => {
     expect(screen.getByText(/no se encontraron/i)).toBeInTheDocument()
   })
 
-  it('shows up to 3 tags and collapses the rest', () => {
-    const contact = makeContact({ tags: ['a', 'b', 'c', 'd', 'e'] })
+  it('renders MEDIO sympathy badge for undecided status', () => {
+    const contact = makeContact({ status: 'undecided' })
     render(<ContactsTable {...DEFAULT_PROPS} contacts={[contact]} />)
-    expect(screen.getByText('a')).toBeInTheDocument()
-    expect(screen.getByText('b')).toBeInTheDocument()
-    expect(screen.getByText('c')).toBeInTheDocument()
-    expect(screen.getByText('+2')).toBeInTheDocument()
+    expect(screen.getByText('MEDIO')).toBeInTheDocument()
   })
 
   it('does not show pagination when only one page', () => {
