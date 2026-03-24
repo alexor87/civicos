@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Roboto } from "next/font/google";
+import { Inter, Roboto, Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,9 +16,23 @@ const roboto = Roboto({
   display: "swap",
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "CivicOS",
-  description: "Plataforma de gestión de campañas electorales",
+  title: "Scrutix — The Operating System for Modern Campaigns",
+  description: "Scrutix is the all-in-one electoral campaign platform with AI agents, voter CRM, field operations, and multichannel communications.",
 };
 
 export default function RootLayout({
@@ -29,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${roboto.variable} antialiased`}
+        className={`${inter.variable} ${roboto.variable} ${playfair.variable} ${dmSans.variable} antialiased`}
         suppressHydrationWarning
       >
         {children}
