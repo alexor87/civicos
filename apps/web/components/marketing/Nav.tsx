@@ -176,3 +176,4 @@ export default function Nav({ dict, locale }: { dict: NavDict; locale: Locale })
     </nav>
   )
 }
+
