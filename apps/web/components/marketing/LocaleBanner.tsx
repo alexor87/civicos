@@ -33,8 +33,8 @@ export default function LocaleBanner({
             onClick={() => setOpen(!open)}
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow"
           >
-            <span className="text-sm leading-none">{meta.flag}</span>
             <span>{meta.label}</span>
+            <span className="text-sm leading-none">{meta.flag}</span>
             <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
 
