@@ -4,7 +4,7 @@ import { GeoZoneFilter } from '@/components/dashboard/GeoZoneFilter'
 import { Button } from '@/components/ui/button'
 import { ExportButton } from '@/components/dashboard/ExportButton'
 import Link from 'next/link'
-import { Plus, Upload, Layers } from 'lucide-react'
+import { Upload, Layers } from 'lucide-react'
 
 export default async function ContactsPage({
   searchParams,
@@ -105,12 +105,6 @@ export default async function ContactsPage({
             <Button variant="outline" size="sm">
               <Upload className="h-4 w-4 mr-1.5" />
               Importar CSV
-            </Button>
-          </Link>
-          <Link href="/dashboard/contacts/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nuevo contacto
             </Button>
           </Link>
         </div>

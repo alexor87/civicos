@@ -19,17 +19,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, Users, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useCallback, useTransition } from 'react'
+import { Search, SlidersHorizontal, Plus, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import { useCallback, useTransition, useState } from 'react'
 import type { Database } from '@/lib/types/database'
+import { ContactQuickProfile } from './ContactQuickProfile'
+import Link from 'next/link'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 
-const statusConfig: Record<string, { label: string; className: string }> = {
-  supporter: { label: 'Simpatizante', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  undecided: { label: 'Indeciso', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  opponent: { label: 'Opositor', className: 'bg-red-50 text-red-700 border-red-200' },
-  unknown: { label: 'Desconocido', className: '' },
+const sympathyConfig = {
+  supporter: { label: 'ALTO', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  undecided: { label: 'MEDIO', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  opponent: { label: 'BAJO', className: 'bg-red-50 text-red-700 border-red-200' },
+  unknown: { label: 'BAJO', className: 'bg-slate-100 text-slate-500 border-slate-200' },
+} as const
+
+function getInitials(first: string, last: string) {
+  return `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase()
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-orange-100 text-orange-700',
+  'bg-pink-100 text-pink-700',
+  'bg-cyan-100 text-cyan-700',
+]
+
+function avatarColor(id: string) {
+  const code = id.charCodeAt(0) + id.charCodeAt(id.length - 1)
+  return AVATAR_COLORS[code % AVATAR_COLORS.length]
 }
 
 interface Props {
@@ -46,6 +66,7 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
   const pathname = usePathname()
   const searchParamsHook = useSearchParams()
   const [isPending, startTransition] = useTransition()
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
 
   const updateQuery = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParamsHook.toString())
@@ -61,130 +82,173 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
   const totalPages = Math.ceil(total / pageSize)
 
   return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar contactos..."
-            defaultValue={searchQuery}
-            className="h-9 pl-8"
-            onChange={e => updateQuery('q', e.target.value)}
-          />
-        </div>
-        <Select value={statusFilter ?? 'all'} onValueChange={(v) => updateQuery('status', (v ?? 'all') === 'all' ? '' : (v ?? ''))}>
-          <SelectTrigger className="h-9 w-40">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="supporter">Simpatizantes</SelectItem>
-            <SelectItem value="undecided">Indecisos</SelectItem>
-            <SelectItem value="opponent">Opositores</SelectItem>
-            <SelectItem value="unknown">Desconocidos</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <>
+      <div className="space-y-4">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <div className="relative max-w-xs flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Buscar contactos..."
+                defaultValue={searchQuery}
+                className="h-9 pl-9 bg-white"
+                onChange={e => updateQuery('q', e.target.value)}
+              />
+            </div>
 
-      {/* Table */}
-      <div className="rounded-lg border overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="text-xs font-medium">Nombre</TableHead>
-              <TableHead className="text-xs font-medium">Email</TableHead>
-              <TableHead className="text-xs font-medium">Teléfono</TableHead>
-              <TableHead className="text-xs font-medium">Ciudad</TableHead>
-              <TableHead className="text-xs font-medium">Estado</TableHead>
-              <TableHead className="text-xs font-medium">Tags</TableHead>
-              <TableHead className="text-xs font-medium">Registrado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {contacts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <div className="flex flex-col items-center gap-3 py-16 text-center">
-                    <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
-                      <Users className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-semibold">
-                      {searchQuery ? 'Sin resultados' : 'Aún no hay contactos'}
-                    </p>
-                    <p className="text-xs text-muted-foreground max-w-xs">
-                      {searchQuery ? `No se encontraron contactos para "${searchQuery}"` : 'Importa un CSV para empezar.'}
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              contacts.map(contact => {
-                const config = statusConfig[contact.status] ?? statusConfig.unknown
-                return (
-                  <TableRow
-                    key={contact.id}
-                    className="hover:bg-muted/50 transition-colors"
-                    onClick={() => router.push(`/dashboard/contacts/${contact.id}`)}
-                  >
-                    <TableCell className="font-medium">
-                      {contact.first_name} {contact.last_name}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{contact.email ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{contact.phone ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{contact.city ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {contact.status === 'unknown'
-                        ? <Badge variant="secondary">{config.label}</Badge>
-                        : <Badge variant="outline" className={config.className}>{config.label}</Badge>
-                      }
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      <div className="flex gap-1 flex-wrap">
-                        {contact.tags.slice(0, 3).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                        ))}
-                        {contact.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs">+{contact.tags.length - 3}</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {new Date(contact.created_at).toLocaleDateString('es-ES')}
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            <Select value={statusFilter ?? 'all'} onValueChange={(v) => updateQuery('status', v === 'all' ? '' : v)}>
+              <SelectTrigger className="h-9 w-48 bg-white">
+                <SelectValue placeholder="Puntaje de Simpatía" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los puntajes</SelectItem>
+                <SelectItem value="supporter">ALTO — Simpatizante</SelectItem>
+                <SelectItem value="undecided">MEDIO — Indeciso</SelectItem>
+                <SelectItem value="opponent">BAJO — Opositor</SelectItem>
+                <SelectItem value="unknown">BAJO — Desconocido</SelectItem>
+              </SelectContent>
+            </Select>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Mostrando {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} de {total.toLocaleString()}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline" size="sm"
-              disabled={page <= 1 || isPending}
-              onClick={() => updateQuery('page', String(page - 1))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground font-medium tabular-nums">Página {page} de {totalPages}</span>
-            <Button
-              variant="outline" size="sm"
-              disabled={page >= totalPages || isPending}
-              onClick={() => updateQuery('page', String(page + 1))}
-            >
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-slate-600">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Filtros
             </Button>
           </div>
+
+          <Link href="/dashboard/contacts/new">
+            <Button size="sm" className="h-9 gap-1.5 bg-slate-900 hover:bg-slate-800 text-white">
+              <Plus className="h-4 w-4" />
+              Añadir Contacto
+            </Button>
+          </Link>
         </div>
+
+        {/* Table */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pl-4">Nombre / Email</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Dirección</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Zona</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Simpatía</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {contacts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <div className="flex flex-col items-center gap-3 py-16 text-center">
+                      <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center">
+                        <Users className="h-6 w-6 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {searchQuery ? 'Sin resultados' : 'Aún no hay contactos'}
+                      </p>
+                      <p className="text-xs text-slate-400 max-w-xs">
+                        {searchQuery
+                          ? `No se encontraron contactos para "${searchQuery}"`
+                          : 'Importa un CSV o añade contactos para empezar.'}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                contacts.map(contact => {
+                  const sympathy = sympathyConfig[contact.status] ?? sympathyConfig.unknown
+                  const initials = getInitials(contact.first_name, contact.last_name)
+                  const avatarCls = avatarColor(contact.id)
+                  const isSelected = selectedContact?.id === contact.id
+
+                  return (
+                    <TableRow
+                      key={contact.id}
+                      className={`cursor-pointer transition-colors hover:bg-slate-50 ${isSelected ? 'bg-blue-50/60' : ''}`}
+                      onClick={() => setSelectedContact(isSelected ? null : contact)}
+                    >
+                      {/* NOMBRE / EMAIL */}
+                      <TableCell className="pl-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${avatarCls}`}>
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-900 leading-tight">
+                              {contact.first_name} {contact.last_name}
+                            </p>
+                            <p className="text-xs text-slate-400 truncate">{contact.email ?? '—'}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* DIRECCIÓN */}
+                      <TableCell className="py-3">
+                        <p className="text-sm text-slate-600 truncate max-w-[200px]">
+                          {contact.address ? contact.address : '—'}
+                        </p>
+                        {contact.city && (
+                          <p className="text-xs text-slate-400">{contact.city}</p>
+                        )}
+                      </TableCell>
+
+                      {/* ZONA */}
+                      <TableCell className="py-3">
+                        <span className="text-sm text-slate-600">
+                          {contact.district ?? '—'}
+                        </span>
+                      </TableCell>
+
+                      {/* SIMPATÍA */}
+                      <TableCell className="py-3">
+                        <Badge variant="outline" className={`text-xs font-semibold tracking-wide ${sympathy.className}`}>
+                          {sympathy.label}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500">
+              Mostrando {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} de {total.toLocaleString()}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline" size="sm"
+                disabled={page <= 1 || isPending}
+                onClick={() => updateQuery('page', String(page - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-slate-500 font-medium tabular-nums">
+                Página {page} de {totalPages}
+              </span>
+              <Button
+                variant="outline" size="sm"
+                disabled={page >= totalPages || isPending}
+                onClick={() => updateQuery('page', String(page + 1))}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Profile Panel */}
+      {selectedContact && (
+        <ContactQuickProfile
+          contact={selectedContact}
+          onClose={() => setSelectedContact(null)}
+        />
       )}
-    </div>
+    </>
   )
 }
