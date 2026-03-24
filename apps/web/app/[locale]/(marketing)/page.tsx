@@ -13,8 +13,6 @@ import Pricing from '@/components/marketing/Pricing'
 import Testimonials from '@/components/marketing/Testimonials'
 import FinalCTA from '@/components/marketing/FinalCTA'
 import Footer from '@/components/marketing/Footer'
-import LocaleBanner from '@/components/marketing/LocaleBanner'
-
 export default async function MarketingPage({
   params,
 }: {
@@ -28,7 +26,6 @@ export default async function MarketingPage({
   return (
     <main className="min-h-screen bg-white">
       <Nav dict={dict.nav} locale={locale} />
-      <LocaleBanner locale={locale} dict={dict.localeBanner} />
       <Hero dict={dict.hero} />
       <LogoBar dict={dict.logoBar} />
       <Problem dict={dict.problem} />
