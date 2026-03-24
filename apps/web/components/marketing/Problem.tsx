@@ -2,11 +2,17 @@
 
 import { motion } from 'framer-motion'
 import { Layers, BrainCircuit, EyeOff } from 'lucide-react'
-import { PAIN_POINTS } from '@/lib/marketing-constants'
 
-const ICONS = { Layers, BrainCircuit, EyeOff } as const
+interface ProblemDict {
+  headline: string
+  headlineAccent: string
+  points: { title: string; description: string }[]
+  bridge: string
+}
 
-export default function Problem() {
+const ICONS = [Layers, BrainCircuit, EyeOff]
+
+export default function Problem({ dict }: { dict: ProblemDict }) {
   return (
     <section className="py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -17,14 +23,14 @@ export default function Problem() {
           className="mx-auto max-w-2xl text-center"
         >
           <h2 className="font-display text-3xl font-bold tracking-tight text-[#0F0F11] sm:text-4xl">
-            Campaigns run on fragmented tools.{' '}
-            <span className="text-[#1D4ED8]">Scrutix changes that.</span>
+            {dict.headline}{' '}
+            <span className="text-[#1D4ED8]">{dict.headlineAccent}</span>
           </h2>
         </motion.div>
 
         <div className="mt-14 grid gap-6 sm:grid-cols-3">
-          {PAIN_POINTS.map((point, i) => {
-            const Icon = ICONS[point.icon]
+          {dict.points.map((point, i) => {
+            const Icon = ICONS[i]
             return (
               <motion.div
                 key={point.title}
@@ -52,8 +58,7 @@ export default function Problem() {
           viewport={{ once: true }}
           className="mx-auto mt-12 max-w-2xl text-center text-base text-[#6B7280]"
         >
-          Scrutix brings everything together — and adds the AI layer that turns data
-          into decisions.
+          {dict.bridge}
         </motion.p>
       </div>
     </section>

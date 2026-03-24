@@ -1,0 +1,256 @@
+{
+  "meta": {
+    "title": "Scrutix — El Sistema Operativo para Campañas Modernas",
+    "description": "Scrutix es la plataforma integral de campañas electorales con agentes de IA, CRM de votantes, operaciones de campo y comunicaciones multicanal. Utilizada por más de 180 campañas en 12 países."
+  },
+  "nav": {
+    "links": [
+      { "label": "Funcionalidades", "href": "#features" },
+      { "label": "Precios", "href": "#pricing" },
+      { "label": "Integraciones", "href": "#integrations" },
+      { "label": "Blog", "href": "#" }
+    ],
+    "signIn": "Iniciar Sesión",
+    "requestDemo": "Solicitar Demo"
+  },
+  "hero": {
+    "headline": "El Sistema Operativo para Campañas Modernas",
+    "subheadline": "Scrutix unifica tu CRM de votantes, operaciones de campo y agentes de IA en una sola plataforma — para que tu campaña sea más inteligente, más rápida y gane.",
+    "ctaPrimary": "Solicitar una Demo",
+    "ctaSecondary": "Descubre cómo funciona",
+    "noCreditCard": "No se requiere tarjeta de crédito",
+    "trial": "Prueba gratuita de 14 días",
+    "soc2": "Cumplimiento SOC 2"
+  },
+  "logoBar": {
+    "trusted": "Utilizado por campañas en 12 países",
+    "metrics": [
+      { "value": "2.4M+", "label": "Contactos de votantes gestionados" },
+      { "value": "180+", "label": "Campañas impulsadas" },
+      { "value": "94%", "label": "Tasa de cobertura de campo alcanzada" }
+    ]
+  },
+  "problem": {
+    "headline": "Las campañas funcionan con herramientas fragmentadas.",
+    "headlineAccent": "Scrutix cambia eso.",
+    "points": [
+      {
+        "title": "Datos dispersos",
+        "description": "Un CRM aquí, hojas de cálculo allá, WhatsApp por todos lados. Sin una fuente única de verdad."
+      },
+      {
+        "title": "Sin inteligencia",
+        "description": "Los datos se recopilan pero nunca se convierten en acción. Tu equipo adivina en lugar de actuar."
+      },
+      {
+        "title": "Ceguera de campo",
+        "description": "No sabes lo que pasa en el terreno hasta que es demasiado tarde para reaccionar."
+      }
+    ],
+    "bridge": "Scrutix lo integra todo — y agrega la capa de IA que convierte datos en decisiones."
+  },
+  "features": {
+    "headline": "Tres pilares. Una plataforma.",
+    "subtitle": "Todo lo que tu campaña necesita para organizar, comunicar y ganar.",
+    "tabs": [
+      {
+        "title": "Operaciones de Campaña",
+        "subtitle": "Todo lo que tu campaña necesita en un solo lugar",
+        "items": [
+          "CRM de votantes unificado con segmentación inteligente",
+          "Canvassing y operaciones de campo con app móvil offline",
+          "Email, SMS, WhatsApp — todo en una bandeja de entrada",
+          "Mapeo geográfico y gestión de territorios con PostGIS",
+          "Gestión completa de voluntarios y programación"
+        ]
+      },
+      {
+        "title": "Inteligencia Artificial",
+        "subtitle": "El cerebro detrás de tu campaña",
+        "items": [
+          "6 Agentes de IA automatizando flujos de trabajo de campaña",
+          "Centro de Inteligencia con sugerencias proactivas en tiempo real",
+          "Puntuación predictiva de votantes y análisis de engagement",
+          "Generación de contenido alineado con tu plataforma",
+          "Humano en el ciclo para cada decisión crítica"
+        ],
+        "quote": "Scrutix no solo almacena tus datos — te dice qué hacer con ellos. Nuestros agentes de IA monitorean tu campaña 24/7 y destacan las acciones que marcan la diferencia."
+      },
+      {
+        "title": "App Móvil de Campo",
+        "subtitle": "Tu equipo, en todas partes — incluso sin conexión",
+        "items": [
+          "Nativa iOS + Android (Kotlin Multiplatform)",
+          "Offline-first: opera hasta 72h sin conectividad",
+          "Scripts de conversación configurables para voluntarios",
+          "Sincronización automática cuando regresa la señal",
+          "Mapas offline descargables por zona"
+        ]
+      }
+    ]
+  },
+  "aiAgents": {
+    "headline": "Seis agentes de IA. Una misión:",
+    "headlineAccent": "Ganar.",
+    "description": "Los agentes de Scrutix trabajan continuamente en segundo plano, analizando los datos de tu campaña y tomando acción — con tu aprobación. Sin prompts. Sin dashboards que revisar. Solo resultados.",
+    "agents": [
+      { "name": "Inteligencia de Contactos", "description": "Califica y enriquece nuevos contactos automáticamente" },
+      { "name": "Seguimiento de Campo", "description": "Programa reintentos de canvassing y escala contactos fríos" },
+      { "name": "Comunicaciones Inteligentes", "description": "Optimiza horarios de envío, genera variantes A/B, monitorea caídas" },
+      { "name": "Optimizador de Territorio", "description": "Redistribuye voluntarios para maximizar la cobertura antes del día de elección" },
+      { "name": "Monitor de Campaña", "description": "Briefing diario, detección de anomalías, sugerencias de acciones correctivas" },
+      { "name": "Generador de Contenido", "description": "Redacta discursos, guiones y mensajes alineados con tu plataforma" }
+    ],
+    "controlTitle": "Tú mantienes el control",
+    "controlDescription": "Cada acción crítica requiere tu aprobación. La IA de Scrutix actúa rápido — pero tú siempre tienes la última palabra."
+  },
+  "integrations": {
+    "headline": "Se conecta con las herramientas que tu campaña ya usa",
+    "items": [
+      { "name": "WhatsApp Business" },
+      { "name": "SendGrid" },
+      { "name": "Twilio SMS" },
+      { "name": "Mapbox" },
+      { "name": "Anthropic Claude" },
+      { "name": "Supabase" },
+      { "name": "Google Workspace" },
+      { "name": "Slack", "badge": "Próximamente" }
+    ],
+    "footnote": "API abierta disponible para integraciones personalizadas"
+  },
+  "pricing": {
+    "headline": "Precios simples. Resultados serios.",
+    "subtitle": "Comienza gratis por 14 días. No se requiere tarjeta de crédito.",
+    "footnote": "Créditos de IA incluidos en cada plan. Escala a medida que tu campaña crece.",
+    "plans": [
+      {
+        "name": "Starter",
+        "price": 49,
+        "period": "/mes",
+        "description": "Campañas locales pequeñas",
+        "features": [
+          "Hasta 5,000 contactos",
+          "5 miembros del equipo",
+          "Campañas de email y SMS",
+          "Canvassing básico",
+          "Reportes estándar"
+        ],
+        "cta": "Iniciar Prueba Gratuita",
+        "highlighted": false
+      },
+      {
+        "name": "Pro",
+        "price": 199,
+        "period": "/mes",
+        "description": "Campañas en crecimiento",
+        "features": [
+          "Hasta 25,000 contactos",
+          "20 miembros del equipo",
+          "3 contiendas activas",
+          "2 agentes de IA incluidos",
+          "Segmentación avanzada",
+          "Gestión de territorios"
+        ],
+        "cta": "Iniciar Prueba Gratuita",
+        "highlighted": false
+      },
+      {
+        "name": "Campaign",
+        "price": 499,
+        "period": "/mes",
+        "description": "Operaciones a gran escala",
+        "features": [
+          "Contactos ilimitados",
+          "Miembros del equipo ilimitados",
+          "Los 6 agentes de IA",
+          "Centro de Inteligencia",
+          "App móvil de campo",
+          "Soporte prioritario",
+          "Integraciones personalizadas"
+        ],
+        "cta": "Iniciar Prueba Gratuita",
+        "highlighted": true,
+        "badge": "Más Popular"
+      },
+      {
+        "name": "Enterprise",
+        "price": "Personalizado",
+        "period": "",
+        "description": "Partidos y consultorías",
+        "features": [
+          "Múltiples campañas",
+          "Infraestructura dedicada",
+          "SSO y SAML",
+          "Garantía de SLA",
+          "Onboarding y capacitación",
+          "Flujos de IA personalizados",
+          "Opción de marca blanca"
+        ],
+        "cta": "Hablar con Ventas",
+        "highlighted": false
+      }
+    ]
+  },
+  "testimonials": {
+    "headline": "Los directores de campaña confían en Scrutix",
+    "items": [
+      {
+        "quote": "Pasamos de 3 herramientas desconectadas a una sola plataforma. Nuestra cobertura de campo aumentó un 40% en el primer mes.",
+        "name": "María González",
+        "role": "Directora de Campaña",
+        "location": "Colombia 2025"
+      },
+      {
+        "quote": "Las sugerencias de IA son el verdadero cambio de juego. Detectó una caída en el engagement en nuestros distritos del norte antes de que nosotros lo notáramos.",
+        "name": "James Whitfield",
+        "role": "Consultor Político",
+        "location": "Miami"
+      },
+      {
+        "quote": "Por fin una plataforma construida para cómo realmente funcionan las campañas — no como las empresas de software creen que funcionan.",
+        "name": "Ana Ferreira",
+        "role": "Directora de Operaciones",
+        "location": "Portugal 2024"
+      }
+    ]
+  },
+  "finalCta": {
+    "headline": "Tu próxima campaña merece mejores herramientas.",
+    "subtitle": "Únete a cientos de campañas que ya funcionan con Scrutix.",
+    "ctaPrimary": "Iniciar Prueba Gratuita",
+    "ctaSecondary": "Hablar con Ventas"
+  },
+  "footer": {
+    "columns": {
+      "Producto": [
+        { "label": "Funcionalidades", "href": "#features" },
+        { "label": "Precios", "href": "#pricing" },
+        { "label": "Integraciones", "href": "#integrations" },
+        { "label": "Changelog", "href": "#" }
+      ],
+      "Empresa": [
+        { "label": "Nosotros", "href": "#" },
+        { "label": "Blog", "href": "#" },
+        { "label": "Carreras", "href": "#" },
+        { "label": "Prensa", "href": "#" }
+      ],
+      "Recursos": [
+        { "label": "Documentación", "href": "#" },
+        { "label": "API", "href": "#" },
+        { "label": "Estado", "href": "#" },
+        { "label": "Seguridad", "href": "#" }
+      ],
+      "Legal": [
+        { "label": "Política de Privacidad", "href": "#" },
+        { "label": "Términos de Servicio", "href": "#" },
+        { "label": "GDPR", "href": "#" }
+      ]
+    },
+    "copyright": "2026 Scrutix. Todos los derechos reservados.",
+    "badges": ["SOC 2", "Cumplimiento GDPR", "Potenciado por Anthropic Claude"]
+  },
+  "localeBanner": {
+    "viewing": "Estás viendo Scrutix para",
+    "change": "Cambiar región"
+  }
+}

@@ -1,0 +1,256 @@
+{
+  "meta": {
+    "title": "Scrutix — The Operating System for Modern Campaigns",
+    "description": "Scrutix is the all-in-one electoral campaign platform with AI agents, voter CRM, field operations, and multichannel communications. Used by 180+ campaigns in 12 countries."
+  },
+  "nav": {
+    "links": [
+      { "label": "Features", "href": "#features" },
+      { "label": "Pricing", "href": "#pricing" },
+      { "label": "Integrations", "href": "#integrations" },
+      { "label": "Blog", "href": "#" }
+    ],
+    "signIn": "Sign In",
+    "requestDemo": "Request Demo"
+  },
+  "hero": {
+    "headline": "The Operating System for Modern Campaigns",
+    "subheadline": "Scrutix unifies your voter CRM, field operations, and AI agents in one platform — so your campaign runs smarter, faster, and wins.",
+    "ctaPrimary": "Request a Demo",
+    "ctaSecondary": "See how it works",
+    "noCreditCard": "No credit card required",
+    "trial": "14-day free trial",
+    "soc2": "SOC 2 compliant"
+  },
+  "logoBar": {
+    "trusted": "Trusted by campaigns across 12 countries",
+    "metrics": [
+      { "value": "2.4M+", "label": "Voter contacts managed" },
+      { "value": "180+", "label": "Campaigns powered" },
+      { "value": "94%", "label": "Field coverage rate achieved" }
+    ]
+  },
+  "problem": {
+    "headline": "Campaigns run on fragmented tools.",
+    "headlineAccent": "Scrutix changes that.",
+    "points": [
+      {
+        "title": "Scattered data",
+        "description": "A CRM here, spreadsheets there, WhatsApp everywhere. No single source of truth."
+      },
+      {
+        "title": "No intelligence",
+        "description": "Data gets collected but never becomes action. Your team guesses instead of acts."
+      },
+      {
+        "title": "Field blindness",
+        "description": "You don't know what's happening on the ground until it's too late to react."
+      }
+    ],
+    "bridge": "Scrutix brings everything together — and adds the AI layer that turns data into decisions."
+  },
+  "features": {
+    "headline": "Three pillars. One platform.",
+    "subtitle": "Everything your campaign needs to organize, communicate, and win.",
+    "tabs": [
+      {
+        "title": "Campaign Operations",
+        "subtitle": "Everything your campaign needs in one place",
+        "items": [
+          "Unified voter CRM with smart segmentation",
+          "Canvassing & field ops with offline mobile app",
+          "Email, SMS, WhatsApp — all in one inbox",
+          "Geographic mapping & territory management with PostGIS",
+          "Complete volunteer management & scheduling"
+        ]
+      },
+      {
+        "title": "AI Intelligence",
+        "subtitle": "The brain behind your campaign",
+        "items": [
+          "6 AI Agents automating campaign workflows",
+          "Intelligence Center with real-time proactive suggestions",
+          "Predictive voter scoring and engagement analysis",
+          "Content generation aligned with your platform",
+          "Human-in-the-loop for every critical decision"
+        ],
+        "quote": "Scrutix doesn't just store your data — it tells you what to do with it. Our AI agents monitor your campaign 24/7 and surface the actions that move the needle."
+      },
+      {
+        "title": "Mobile Field App",
+        "subtitle": "Your team, everywhere — even offline",
+        "items": [
+          "Native iOS + Android (Kotlin Multiplatform)",
+          "Offline-first: operates up to 72h without connectivity",
+          "Configurable conversation scripts for volunteers",
+          "Auto-sync when signal returns",
+          "Downloadable offline maps by zone"
+        ]
+      }
+    ]
+  },
+  "aiAgents": {
+    "headline": "Six AI agents. One mission:",
+    "headlineAccent": "Win.",
+    "description": "Scrutix agents run continuously in the background, analyzing your campaign data and taking action — with your approval. No prompts needed. No dashboards to check. Just results.",
+    "agents": [
+      { "name": "Contact Intelligence", "description": "Qualifies and enriches new contacts automatically" },
+      { "name": "Field Follow-up", "description": "Schedules canvassing retries and escalates cold contacts" },
+      { "name": "Smart Communications", "description": "Optimizes send times, generates A/B variants, monitors drops" },
+      { "name": "Territory Optimizer", "description": "Redistributes volunteers to maximize coverage before election day" },
+      { "name": "Campaign Monitor", "description": "Daily briefing, anomaly detection, corrective action suggestions" },
+      { "name": "Content Generator", "description": "Drafts speeches, scripts, and messages aligned to your platform" }
+    ],
+    "controlTitle": "You stay in control",
+    "controlDescription": "Every critical action requires your approval. Scrutix AI acts fast — but you always have the final say."
+  },
+  "integrations": {
+    "headline": "Connects with the tools your campaign already uses",
+    "items": [
+      { "name": "WhatsApp Business" },
+      { "name": "SendGrid" },
+      { "name": "Twilio SMS" },
+      { "name": "Mapbox" },
+      { "name": "Anthropic Claude" },
+      { "name": "Supabase" },
+      { "name": "Google Workspace" },
+      { "name": "Slack", "badge": "Soon" }
+    ],
+    "footnote": "Open API available for custom integrations"
+  },
+  "pricing": {
+    "headline": "Simple pricing. Serious results.",
+    "subtitle": "Start free for 14 days. No credit card required.",
+    "footnote": "AI credits included in every plan. Scale as your campaign grows.",
+    "plans": [
+      {
+        "name": "Starter",
+        "price": 49,
+        "period": "/mo",
+        "description": "Small local campaigns",
+        "features": [
+          "Up to 5,000 contacts",
+          "5 team members",
+          "Email & SMS campaigns",
+          "Basic canvassing",
+          "Standard reporting"
+        ],
+        "cta": "Start Free Trial",
+        "highlighted": false
+      },
+      {
+        "name": "Pro",
+        "price": 199,
+        "period": "/mo",
+        "description": "Growing campaigns",
+        "features": [
+          "Up to 25,000 contacts",
+          "20 team members",
+          "3 active races",
+          "2 AI agents included",
+          "Advanced segmentation",
+          "Territory management"
+        ],
+        "cta": "Start Free Trial",
+        "highlighted": false
+      },
+      {
+        "name": "Campaign",
+        "price": 499,
+        "period": "/mo",
+        "description": "Full-scale operations",
+        "features": [
+          "Unlimited contacts",
+          "Unlimited team members",
+          "All 6 AI agents",
+          "Intelligence Center",
+          "Mobile field app",
+          "Priority support",
+          "Custom integrations"
+        ],
+        "cta": "Start Free Trial",
+        "highlighted": true,
+        "badge": "Most Popular"
+      },
+      {
+        "name": "Enterprise",
+        "price": "Custom",
+        "period": "",
+        "description": "Parties & consultancies",
+        "features": [
+          "Multiple campaigns",
+          "Dedicated infrastructure",
+          "SSO & SAML",
+          "SLA guarantee",
+          "Onboarding & training",
+          "Custom AI workflows",
+          "White-label option"
+        ],
+        "cta": "Talk to Sales",
+        "highlighted": false
+      }
+    ]
+  },
+  "testimonials": {
+    "headline": "Campaign managers trust Scrutix",
+    "items": [
+      {
+        "quote": "We went from 3 disconnected tools to one platform. Our field coverage went up 40% in the first month.",
+        "name": "María González",
+        "role": "Campaign Manager",
+        "location": "Colombia 2025"
+      },
+      {
+        "quote": "The AI suggestions are the real game changer. It flagged a drop in engagement in our northern districts before we even noticed.",
+        "name": "James Whitfield",
+        "role": "Political Consultant",
+        "location": "Miami"
+      },
+      {
+        "quote": "Finally a platform built for how campaigns actually work — not how software companies think they work.",
+        "name": "Ana Ferreira",
+        "role": "Director of Operations",
+        "location": "Portugal 2024"
+      }
+    ]
+  },
+  "finalCta": {
+    "headline": "Your next campaign deserves better tools.",
+    "subtitle": "Join hundreds of campaigns already running on Scrutix.",
+    "ctaPrimary": "Start Free Trial",
+    "ctaSecondary": "Talk to Sales"
+  },
+  "footer": {
+    "columns": {
+      "Product": [
+        { "label": "Features", "href": "#features" },
+        { "label": "Pricing", "href": "#pricing" },
+        { "label": "Integrations", "href": "#integrations" },
+        { "label": "Changelog", "href": "#" }
+      ],
+      "Company": [
+        { "label": "About", "href": "#" },
+        { "label": "Blog", "href": "#" },
+        { "label": "Careers", "href": "#" },
+        { "label": "Press", "href": "#" }
+      ],
+      "Resources": [
+        { "label": "Documentation", "href": "#" },
+        { "label": "API", "href": "#" },
+        { "label": "Status", "href": "#" },
+        { "label": "Security", "href": "#" }
+      ],
+      "Legal": [
+        { "label": "Privacy Policy", "href": "#" },
+        { "label": "Terms of Service", "href": "#" },
+        { "label": "GDPR", "href": "#" }
+      ]
+    },
+    "copyright": "2026 Scrutix. All rights reserved.",
+    "badges": ["SOC 2", "GDPR Compliant", "Powered by Anthropic Claude"]
+  },
+  "localeBanner": {
+    "viewing": "You're viewing Scrutix for",
+    "change": "Change region"
+  }
+}

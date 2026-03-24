@@ -1,14 +1,48 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { COUNTRY_TO_LOCALE, DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, isValidLocale } from '@/lib/i18n'
 
 const PUBLIC_PATHS = ['/login', '/register', '/auth/callback', '/registro']
 
-// The root path (/) serves the marketing landing page — no auth required
-function isMarketingRoute(pathname: string) {
-  return pathname === '/'
+/** Matches /en, /es, /co (with or without trailing path) */
+const LOCALE_PATTERN = new RegExp(`^/(${LOCALES.join('|')})(/|$)`)
+
+function isLocaleMarketingRoute(pathname: string) {
+  return LOCALE_PATTERN.test(pathname)
 }
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // ── 1. Root path → geolocation redirect ────────────────────────────
+  if (pathname === '/') {
+    // Respect user's saved preference
+    const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value
+    if (cookieLocale && isValidLocale(cookieLocale)) {
+      return NextResponse.redirect(new URL(`/${cookieLocale}`, request.url))
+    }
+
+    // Detect country from Vercel/Cloudflare header
+    const country =
+      request.headers.get('x-vercel-ip-country') ||
+      request.headers.get('cf-ipcountry') ||
+      ''
+    const locale = COUNTRY_TO_LOCALE[country] ?? DEFAULT_LOCALE
+
+    const response = NextResponse.redirect(new URL(`/${locale}`, request.url))
+    response.cookies.set(LOCALE_COOKIE, locale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+    })
+    return response
+  }
+
+  // ── 2. Locale marketing pages → no auth needed ─────────────────────
+  if (isLocaleMarketingRoute(pathname)) {
+    return NextResponse.next()
+  }
+
+  // ── 3. Everything else → Supabase auth (unchanged) ─────────────────
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -31,16 +65,15 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const pathname = request.nextUrl.pathname
-  const isPublicPath = PUBLIC_PATHS.some(p => pathname.startsWith(p)) || isMarketingRoute(pathname)
+  const isPublicPath = PUBLIC_PATHS.some(p => pathname.startsWith(p))
 
   // Redirect unauthenticated to login
   if (!user && !isPublicPath) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Redirect authenticated users away from auth pages (but not from marketing pages)
-  if (user && isPublicPath && !isMarketingRoute(pathname) && pathname !== '/auth/callback') {
+  // Redirect authenticated users away from auth pages
+  if (user && isPublicPath && pathname !== '/auth/callback') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

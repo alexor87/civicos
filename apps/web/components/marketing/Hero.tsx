@@ -3,7 +3,17 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Play, Shield, CreditCard, Clock } from 'lucide-react'
 
-export default function Hero() {
+interface HeroDict {
+  headline: string
+  subheadline: string
+  ctaPrimary: string
+  ctaSecondary: string
+  noCreditCard: string
+  trial: string
+  soc2: string
+}
+
+export default function Hero({ dict }: { dict: HeroDict }) {
   return (
     <section className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
       {/* Subtle background grid */}
@@ -24,7 +34,7 @@ export default function Hero() {
             transition={{ duration: 0.6 }}
             className="font-display text-4xl font-bold tracking-tight text-[#0F0F11] sm:text-5xl lg:text-6xl"
           >
-            The Operating System for Modern Campaigns
+            {dict.headline}
           </motion.h1>
 
           <motion.p
@@ -33,8 +43,7 @@ export default function Hero() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mx-auto mt-6 max-w-2xl text-lg text-[#6B7280] sm:text-xl"
           >
-            Scrutix unifies your voter CRM, field operations, and AI agents in one
-            platform — so your campaign runs smarter, faster, and wins.
+            {dict.subheadline}
           </motion.p>
 
           {/* CTAs */}
@@ -48,7 +57,7 @@ export default function Hero() {
               href="#demo"
               className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#1D4ED8] px-6 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-[#1E40AF] hover:shadow-xl hover:shadow-blue-500/30"
             >
-              Request a Demo
+              {dict.ctaPrimary}
               <ArrowRight className="h-4 w-4" />
             </a>
             <a
@@ -56,7 +65,7 @@ export default function Hero() {
               className="inline-flex h-12 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-6 text-sm font-semibold text-[#0F0F11] transition-all hover:border-[#d1d5db] hover:bg-[#F7F7F8]"
             >
               <Play className="h-4 w-4" />
-              See how it works
+              {dict.ctaSecondary}
             </a>
           </motion.div>
 
@@ -69,15 +78,15 @@ export default function Hero() {
           >
             <span className="flex items-center gap-1.5">
               <CreditCard className="h-3.5 w-3.5" />
-              No credit card required
+              {dict.noCreditCard}
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
-              14-day free trial
+              {dict.trial}
             </span>
             <span className="flex items-center gap-1.5">
               <Shield className="h-3.5 w-3.5" />
-              SOC 2 compliant
+              {dict.soc2}
             </span>
           </motion.div>
         </div>
@@ -143,7 +152,7 @@ export default function Hero() {
                       <div
                         key={i}
                         className="flex-1 rounded-t bg-blue-500/60"
-                        style={{ height: `${25 + Math.sin(i * 0.5) * 25 + Math.random() * 30}%` }}
+                        style={{ height: `${25 + Math.sin(i * 0.5) * 25 + i * 2}%` }}
                       />
                     ))}
                   </div>

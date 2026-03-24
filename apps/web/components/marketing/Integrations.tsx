@@ -5,14 +5,16 @@ import {
   MessageCircle, Mail, Smartphone, MapPin, BrainCircuit,
   Database, Chrome, Hash,
 } from 'lucide-react'
-import { INTEGRATIONS } from '@/lib/marketing-constants'
 
-const ICONS = {
-  MessageCircle, Mail, Smartphone, MapPin, BrainCircuit,
-  Database, Chrome, Hash,
-} as const
+interface IntegrationsDict {
+  headline: string
+  items: { name: string; badge?: string }[]
+  footnote: string
+}
 
-export default function Integrations() {
+const INTEGRATION_ICONS = [MessageCircle, Mail, Smartphone, MapPin, BrainCircuit, Database, Chrome, Hash]
+
+export default function Integrations({ dict }: { dict: IntegrationsDict }) {
   return (
     <section id="integrations" className="bg-[#F7F7F8] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -23,16 +25,16 @@ export default function Integrations() {
           className="mx-auto max-w-2xl text-center"
         >
           <h2 className="font-display text-3xl font-bold tracking-tight text-[#0F0F11] sm:text-4xl">
-            Connects with the tools your campaign already uses
+            {dict.headline}
           </h2>
         </motion.div>
 
         <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
-          {INTEGRATIONS.map((integration, i) => {
-            const Icon = ICONS[integration.icon]
+          {dict.items.map((item, i) => {
+            const Icon = INTEGRATION_ICONS[i]
             return (
               <motion.div
-                key={integration.name}
+                key={item.name}
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -41,11 +43,11 @@ export default function Integrations() {
               >
                 <Icon className="h-7 w-7 text-[#6B7280]" />
                 <span className="text-center text-xs font-medium text-[#0F0F11]">
-                  {integration.name}
+                  {item.name}
                 </span>
-                {integration.badge && (
+                {item.badge && (
                   <span className="absolute top-2 right-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-                    {integration.badge}
+                    {item.badge}
                   </span>
                 )}
               </motion.div>
@@ -54,7 +56,7 @@ export default function Integrations() {
         </div>
 
         <p className="mt-8 text-center text-xs text-[#6B7280]">
-          Open API available for custom integrations
+          {dict.footnote}
         </p>
       </div>
     </section>

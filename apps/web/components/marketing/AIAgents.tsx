@@ -4,11 +4,19 @@ import { motion } from 'framer-motion'
 import {
   UserCheck, MapPin, Send, Map, BarChart3, PenTool, ShieldCheck,
 } from 'lucide-react'
-import { AI_AGENTS } from '@/lib/marketing-constants'
 
-const ICONS = { UserCheck, MapPin, Send, Map, BarChart3, PenTool } as const
+interface AIAgentsDict {
+  headline: string
+  headlineAccent: string
+  description: string
+  agents: { name: string; description: string }[]
+  controlTitle: string
+  controlDescription: string
+}
 
-export default function AIAgents() {
+const AGENT_ICONS = [UserCheck, MapPin, Send, Map, BarChart3, PenTool]
+
+export default function AIAgents({ dict }: { dict: AIAgentsDict }) {
   return (
     <section className="py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -19,19 +27,17 @@ export default function AIAgents() {
           className="mx-auto max-w-2xl text-center"
         >
           <h2 className="font-display text-3xl font-bold tracking-tight text-[#0F0F11] sm:text-4xl">
-            Six AI agents. One mission:{' '}
-            <span className="text-[#1D4ED8]">Win.</span>
+            {dict.headline}{' '}
+            <span className="text-[#1D4ED8]">{dict.headlineAccent}</span>
           </h2>
           <p className="mt-4 text-base text-[#6B7280]">
-            Scrutix agents run continuously in the background, analyzing your campaign
-            data and taking action — with your approval. No prompts needed. No
-            dashboards to check. Just results.
+            {dict.description}
           </p>
         </motion.div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {AI_AGENTS.map((agent, i) => {
-            const Icon = ICONS[agent.icon]
+          {dict.agents.map((agent, i) => {
+            const Icon = AGENT_ICONS[i]
             return (
               <motion.div
                 key={agent.name}
@@ -63,11 +69,10 @@ export default function AIAgents() {
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#059669]" />
           <div>
             <p className="text-sm font-semibold text-[#0F0F11]">
-              You stay in control
+              {dict.controlTitle}
             </p>
             <p className="mt-1 text-sm text-[#6B7280]">
-              Every critical action requires your approval. Scrutix AI acts fast — but
-              you always have the final say.
+              {dict.controlDescription}
             </p>
           </div>
         </motion.div>

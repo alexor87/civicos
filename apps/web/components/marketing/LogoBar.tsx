@@ -1,9 +1,13 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { METRICS } from '@/lib/marketing-constants'
 
-export default function LogoBar() {
+interface LogoBarDict {
+  trusted: string
+  metrics: { value: string; label: string }[]
+}
+
+export default function LogoBar({ dict }: { dict: LogoBarDict }) {
   return (
     <section className="border-y border-[#E5E7EB] bg-[#F7F7F8] py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -13,11 +17,11 @@ export default function LogoBar() {
           viewport={{ once: true }}
           className="text-center text-sm font-medium text-[#6B7280]"
         >
-          Trusted by campaigns across 12 countries
+          {dict.trusted}
         </motion.p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-8 sm:flex-row sm:gap-16">
-          {METRICS.map((metric, i) => (
+          {dict.metrics.map((metric, i) => (
             <motion.div
               key={metric.label}
               initial={{ opacity: 0, y: 10 }}

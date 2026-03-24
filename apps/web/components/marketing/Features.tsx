@@ -3,11 +3,21 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, BrainCircuit, Smartphone, Check } from 'lucide-react'
-import { FEATURES } from '@/lib/marketing-constants'
+
+interface FeaturesDict {
+  headline: string
+  subtitle: string
+  tabs: {
+    title: string
+    subtitle: string
+    items: string[]
+    quote?: string
+  }[]
+}
 
 const TAB_ICONS = [Settings, BrainCircuit, Smartphone]
 
-export default function Features() {
+export default function Features({ dict }: { dict: FeaturesDict }) {
   const [active, setActive] = useState(0)
 
   return (
@@ -20,20 +30,20 @@ export default function Features() {
           className="mx-auto max-w-2xl text-center"
         >
           <h2 className="font-display text-3xl font-bold tracking-tight text-[#0F0F11] sm:text-4xl">
-            Three pillars. One platform.
+            {dict.headline}
           </h2>
           <p className="mt-4 text-base text-[#6B7280]">
-            Everything your campaign needs to organize, communicate, and win.
+            {dict.subtitle}
           </p>
         </motion.div>
 
         {/* Tabs */}
         <div className="mt-12 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
-          {FEATURES.map((feature, i) => {
+          {dict.tabs.map((tab, i) => {
             const Icon = TAB_ICONS[i]
             return (
               <button
-                key={feature.id}
+                key={tab.title}
                 onClick={() => setActive(i)}
                 className={`flex w-full items-center gap-2 rounded-lg px-5 py-3 text-sm font-medium transition-all sm:w-auto ${
                   active === i
@@ -42,7 +52,7 @@ export default function Features() {
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {feature.title}
+                {tab.title}
               </button>
             )
           })}
@@ -61,13 +71,13 @@ export default function Features() {
             {/* Feature list */}
             <div>
               <h3 className="text-2xl font-bold text-[#0F0F11]">
-                {FEATURES[active].title}
+                {dict.tabs[active].title}
               </h3>
               <p className="mt-2 text-base text-[#6B7280]">
-                {FEATURES[active].subtitle}
+                {dict.tabs[active].subtitle}
               </p>
               <ul className="mt-6 space-y-3">
-                {FEATURES[active].items.map((item) => (
+                {dict.tabs[active].items.map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#059669]" />
                     <span className="text-sm text-[#0F0F11]">{item}</span>
@@ -75,11 +85,9 @@ export default function Features() {
                 ))}
               </ul>
 
-              {active === 1 && (
+              {dict.tabs[active].quote && (
                 <blockquote className="mt-6 border-l-2 border-[#1D4ED8] pl-4 text-sm italic text-[#6B7280]">
-                  &quot;Scrutix doesn&apos;t just store your data — it tells you what to do with
-                  it. Our AI agents monitor your campaign 24/7 and surface the actions
-                  that move the needle.&quot;
+                  {dict.tabs[active].quote}
                 </blockquote>
               )}
             </div>
@@ -92,7 +100,7 @@ export default function Features() {
                     className: 'h-12 w-12 text-[#1D4ED8]/30',
                   })}
                   <span className="text-sm font-medium text-[#6B7280]/60">
-                    {FEATURES[active].title} Preview
+                    {dict.tabs[active].title} Preview
                   </span>
                   {/* Mock UI elements */}
                   <div className="mt-4 w-full max-w-xs space-y-2">

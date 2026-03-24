@@ -1,13 +1,18 @@
 import { Shield, Globe } from 'lucide-react'
-import { FOOTER_LINKS } from '@/lib/marketing-constants'
 
-export default function Footer() {
+interface FooterDict {
+  columns: Record<string, { label: string; href: string }[]>
+  copyright: string
+  badges: string[]
+}
+
+export default function Footer({ dict }: { dict: FooterDict }) {
   return (
     <footer className="border-t border-[#E5E7EB] bg-white py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Link columns */}
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-          {Object.entries(FOOTER_LINKS).map(([category, links]) => (
+          {Object.entries(dict.columns).map(([category, links]) => (
             <div key={category}>
               <h4 className="text-xs font-semibold uppercase tracking-wider text-[#0F0F11]">
                 {category}
@@ -31,19 +36,25 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[#E5E7EB] pt-8 sm:flex-row">
           <p className="text-xs text-[#6B7280]">
-            &copy; 2026 Scrutix. All rights reserved.
+            {dict.copyright}
           </p>
 
           <div className="flex flex-wrap items-center gap-4 text-xs text-[#6B7280]">
-            <span className="flex items-center gap-1">
-              <Shield className="h-3 w-3" />
-              SOC 2
-            </span>
-            <span className="flex items-center gap-1">
-              <Globe className="h-3 w-3" />
-              GDPR Compliant
-            </span>
-            <span>Powered by Anthropic Claude</span>
+            {dict.badges[0] && (
+              <span className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                {dict.badges[0]}
+              </span>
+            )}
+            {dict.badges[1] && (
+              <span className="flex items-center gap-1">
+                <Globe className="h-3 w-3" />
+                {dict.badges[1]}
+              </span>
+            )}
+            {dict.badges.slice(2).map((badge) => (
+              <span key={badge}>{badge}</span>
+            ))}
           </div>
         </div>
       </div>

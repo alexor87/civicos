@@ -2,9 +2,26 @@
 
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
-import { PRICING_PLANS } from '@/lib/marketing-constants'
+import type { Locale } from '@/lib/i18n'
+import { formatPrice } from '@/lib/format-price'
 
-export default function Pricing() {
+interface PricingDict {
+  headline: string
+  subtitle: string
+  footnote: string
+  plans: {
+    name: string
+    price: number | string
+    period: string
+    description: string
+    features: string[]
+    cta: string
+    highlighted: boolean
+    badge?: string
+  }[]
+}
+
+export default function Pricing({ dict, locale }: { dict: PricingDict; locale: Locale }) {
   return (
     <section id="pricing" className="py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -15,15 +32,15 @@ export default function Pricing() {
           className="mx-auto max-w-2xl text-center"
         >
           <h2 className="font-display text-3xl font-bold tracking-tight text-[#0F0F11] sm:text-4xl">
-            Simple pricing. Serious results.
+            {dict.headline}
           </h2>
           <p className="mt-4 text-base text-[#6B7280]">
-            Start free for 14 days. No credit card required.
+            {dict.subtitle}
           </p>
         </motion.div>
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {PRICING_PLANS.map((plan, i) => (
+          {dict.plans.map((plan, i) => (
             <motion.div
               key={plan.name}
               initial={{ opacity: 0, y: 20 }}
@@ -46,7 +63,7 @@ export default function Pricing() {
                 <h3 className="text-sm font-semibold text-[#6B7280]">{plan.name}</h3>
                 <div className="mt-3 flex items-baseline">
                   <span className="text-3xl font-bold tracking-tight text-[#0F0F11]">
-                    {plan.price}
+                    {formatPrice(plan.price, locale)}
                   </span>
                   {plan.period && (
                     <span className="ml-1 text-sm text-[#6B7280]">{plan.period}</span>
@@ -79,7 +96,7 @@ export default function Pricing() {
         </div>
 
         <p className="mt-8 text-center text-xs text-[#6B7280]">
-          AI credits included in every plan. Scale as your campaign grows.
+          {dict.footnote}
         </p>
       </div>
     </section>
