@@ -2,12 +2,21 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Bell, Search, Building2, User, MapPin } from 'lucide-react'
+import { Bell, Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut } from 'lucide-react'
+import Link from 'next/link'
+import { createBrowserClient } from '@supabase/ssr'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/dashboard/contacts': 'CRM de Contactos',
-  '/dashboard/canvassing': 'Canvassing',
+  '/dashboard/canvassing': 'Territorio',
   '/dashboard/calendar/timeline': 'Línea de Tiempo Electoral',
   '/dashboard/calendar/warroom': 'Sala de Guerra',
   '/dashboard/calendar': 'Calendario',
@@ -40,17 +49,22 @@ interface Props {
   userFullName: string | null
   userInitials: string
   userRole: string
+  campaigns?: { id: string; name: string }[]
+  activeCampaignId?: string
 }
 
-export function DashboardHeader({ campaignName, userFullName, userInitials, userRole }: Props) {
+export function DashboardHeader({ campaignName, userFullName, userInitials, userRole, campaigns = [], activeCampaignId }: Props) {
   const pathname  = usePathname()
   const router    = useRouter()
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const campaignRef = useRef<HTMLDivElement>(null)
 
   const [query,   setQuery]   = useState('')
   const [results, setResults] = useState<SearchResults | null>(null)
   const [loading, setLoading] = useState(false)
   const [open,    setOpen]    = useState(false)
+  const [campaignOpen, setCampaignOpen] = useState(false)
+  const [switching, setSwitching] = useState(false)
 
   // Find best matching title
   const pageTitle = Object.entries(PAGE_TITLES)
@@ -84,6 +98,9 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
+      if (campaignRef.current && !campaignRef.current.contains(e.target as Node)) {
+        setCampaignOpen(false)
+      }
     }
     document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
@@ -101,6 +118,26 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
     router.push(`/dashboard/canvassing?territory=${encodeURIComponent(t.id)}`)
   }
 
+  async function switchCampaign(id: string) {
+    if (id === activeCampaignId || switching) return
+    setSwitching(true)
+    try {
+      const res = await fetch('/api/campaigns/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: id }),
+      })
+      if (res.ok) {
+        setCampaignOpen(false)
+        router.refresh()
+      }
+    } finally {
+      setSwitching(false)
+    }
+  }
+
+  const showCampaignSwitcher = userRole === 'super_admin' && campaigns.length > 0
+
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-8 flex-shrink-0 z-10">
       {/* Left: campaign name */}
@@ -111,7 +148,7 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
         <h2 className="text-base font-bold text-slate-800 dark:text-white">{campaignName}</h2>
       </div>
 
-      {/* Right: search + notifications + user */}
+      {/* Right: search + campaign switcher + notifications + user */}
       <div className="flex items-center gap-6">
 
         {/* Search */}
@@ -127,7 +164,7 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
             className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
           />
 
-          {/* Dropdown */}
+          {/* Search Dropdown */}
           {open && (
             <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#dcdee6] rounded-lg shadow-lg overflow-hidden z-50">
               {loading && (
@@ -140,14 +177,14 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
 
               {!loading && results && results.contacts.length > 0 && (
                 <div>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider bg-[#f6f7f8]">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider bg-muted">
                     Contactos
                   </div>
                   {results.contacts.map(c => (
                     <button
                       key={c.id}
                       onClick={() => goToContact(c)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#f6f7f8] transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted transition-colors text-left"
                     >
                       <div className="h-6 w-6 rounded-full bg-[#2960ec]/10 flex items-center justify-center shrink-0">
                         <User className="h-3.5 w-3.5 text-[#2960ec]" />
@@ -167,14 +204,14 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
 
               {!loading && results && results.territories.length > 0 && (
                 <div>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider bg-[#f6f7f8]">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider bg-muted">
                     Territorios
                   </div>
                   {results.territories.map(t => (
                     <button
                       key={t.id}
                       onClick={() => goToTerritory(t)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#f6f7f8] transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted transition-colors text-left"
                     >
                       <div className="h-6 w-6 rounded-full bg-[#28a745]/10 flex items-center justify-center shrink-0">
                         <MapPin className="h-3.5 w-3.5 text-[#28a745]" />
@@ -188,21 +225,106 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
           )}
         </div>
 
+        {/* Campaign Switcher */}
+        {showCampaignSwitcher && (
+          <div ref={campaignRef} className="relative">
+            <button
+              onClick={() => setCampaignOpen(prev => !prev)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700"
+            >
+              <Building2 className="h-4 w-4 text-slate-400" />
+              <span className="max-w-[160px] truncate font-medium">Seleccionar campaña</span>
+              <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${campaignOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {campaignOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 bg-white border border-[#dcdee6] rounded-lg shadow-lg overflow-hidden z-50">
+                <div className="px-3 py-2 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider border-b border-slate-100">
+                  Campañas
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {campaigns.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => switchCampaign(c.id)}
+                      disabled={switching}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-sm ${
+                        c.id === activeCampaignId
+                          ? 'bg-primary/5 text-primary font-medium'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
+                        c.id === activeCampaignId ? 'bg-primary/10' : 'bg-slate-100'
+                      }`}>
+                        {c.id === activeCampaignId
+                          ? <Check className="h-3.5 w-3.5 text-primary" />
+                          : <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                        }
+                      </div>
+                      <span className="truncate">{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t border-slate-100">
+                  <Link
+                    href="/dashboard/campaigns/new"
+                    onClick={() => setCampaignOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors"
+                  >
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Plus className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <span className="font-medium">Nueva Campaña</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-6">
           <button className="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
           </button>
 
-          <div className="flex items-center gap-3 ml-2">
-            <div className="text-right">
-              <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">{userFullName ?? 'Usuario'}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">{ROLE_LABELS[userRole] ?? userRole}</p>
-            </div>
-            <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-semibold">{userInitials}</span>
-            </div>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 ml-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">{userFullName ?? 'Usuario'}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{ROLE_LABELS[userRole] ?? userRole}</p>
+                </div>
+                <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-semibold">{userInitials}</span>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/perfil" className="flex items-center gap-2 cursor-pointer">
+                  <User className="h-4 w-4" />
+                  Mi perfil
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  const supabase = createBrowserClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                  )
+                  await supabase.auth.signOut()
+                  router.push('/login')
+                }}
+                className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
