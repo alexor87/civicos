@@ -208,7 +208,7 @@ interface ContactFormFieldsProps {
 
 export function ContactFormFields({ initialData, zones = [] }: ContactFormFieldsProps) {
   return (
-    <div className="space-y-5">
+    <div className="max-w-3xl space-y-5">
       {/* 1 — Información Personal */}
       <FormSection icon={<User className="h-4 w-4" />} title="Información Personal">
         <div className="grid grid-cols-2 gap-4">
