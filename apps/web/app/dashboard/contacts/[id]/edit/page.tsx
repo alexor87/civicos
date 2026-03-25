@@ -115,48 +115,46 @@ export default async function EditContactPage({
   })
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="p-6 space-y-6 animate-page-in">
       <form action={boundUpdate}>
         {/* ── Page header ── */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4">
-          <div className="max-w-3xl mx-auto flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-xs text-slate-400 mb-0.5">
-                <Link href="/dashboard/contacts" className="hover:text-slate-600 transition-colors">
-                  Contactos
-                </Link>
-                <span>/</span>
-                <Link href={`/dashboard/contacts/${id}`} className="hover:text-slate-600 transition-colors">
-                  {contact.first_name} {contact.last_name}
-                </Link>
-                <span>/</span>
-                <span>Editar</span>
-              </div>
-              <h1 className="text-lg font-semibold text-slate-900">Ficha del Ciudadano</h1>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Edita los datos del contacto en la red territorial.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link href={`/dashboard/contacts/${id}`}>
-                <Button type="button" variant="outline" size="sm">
-                  Cancelar
-                </Button>
+        <div className="flex items-start justify-between pb-6 border-b border-slate-100 mb-6">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-0.5">
+              <Link href="/dashboard/contacts" className="hover:text-slate-600 transition-colors">
+                Contactos
               </Link>
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-slate-900 hover:bg-slate-800 text-white"
-              >
-                Guardar Contacto
-              </Button>
+              <span>/</span>
+              <Link href={`/dashboard/contacts/${id}`} className="hover:text-slate-600 transition-colors">
+                {contact.first_name} {contact.last_name}
+              </Link>
+              <span>/</span>
+              <span>Editar</span>
             </div>
+            <h1 className="text-xl font-bold text-slate-900">Ficha del Ciudadano</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Edita los datos del contacto en la red territorial.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href={`/dashboard/contacts/${id}`}>
+              <Button type="button" variant="outline" size="sm">
+                Cancelar
+              </Button>
+            </Link>
+            <Button
+              type="submit"
+              size="sm"
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              Guardar Contacto
+            </Button>
           </div>
         </div>
 
         {/* ── Error banners ── */}
         {(sp.error === 'required' || sp.error === 'duplicate') && (
-          <div className="max-w-3xl mx-auto px-6 pt-5">
+          <div>
             {sp.error === 'required' && (
               <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
                 Los campos <strong>Nombre, Apellido, Tipo de documento, Número y Teléfono</strong> son obligatorios.
@@ -174,8 +172,7 @@ export default async function EditContactPage({
         )}
 
         {/* ── Form sections ── */}
-        <div className="max-w-3xl mx-auto px-6 py-6">
-          <ContactFormFields
+        <ContactFormFields
             zones={zones}
             initialData={{
               first_name: contact.first_name,
@@ -195,28 +192,25 @@ export default async function EditContactPage({
               notes: contact.notes ?? '',
             }}
           />
-        </div>
 
         {/* ── Footer ── */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4">
-          <div className="max-w-3xl mx-auto flex items-center justify-between">
-            <p className="text-xs text-slate-400">
-              Última edición: {lastEdit}
-            </p>
-            <div className="flex items-center gap-2">
-              <Link href={`/dashboard/contacts/${id}`}>
-                <Button type="button" variant="outline" size="sm">
-                  Ver Cambios
-                </Button>
-              </Link>
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-slate-900 hover:bg-slate-800 text-white"
-              >
-                Guardar y Salir
+        <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-100">
+          <p className="text-xs text-slate-400">
+            Última edición: {lastEdit}
+          </p>
+          <div className="flex items-center gap-2">
+            <Link href={`/dashboard/contacts/${id}`}>
+              <Button type="button" variant="outline" size="sm">
+                Ver Cambios
               </Button>
-            </div>
+            </Link>
+            <Button
+              type="submit"
+              size="sm"
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              Guardar y Salir
+            </Button>
           </div>
         </div>
       </form>
