@@ -210,7 +210,7 @@ export default async function NewContactPage({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="document_type">Tipo de documento <span className="text-red-500">*</span></Label>
                     <Select name="document_type" required>
@@ -225,7 +225,7 @@ export default async function NewContactPage({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="col-span-2 space-y-1.5">
                     <Label htmlFor="document_number">Número de documento <span className="text-red-500">*</span></Label>
                     <Input id="document_number" name="document_number" placeholder="1023456789" required />
                   </div>
@@ -292,8 +292,8 @@ export default async function NewContactPage({
                 <Label htmlFor="address">Dirección</Label>
                 <Input id="address" name="address" placeholder="Calle 80 #45-23" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="district_barrio">Barrio / Vereda</Label>
                   <Input id="district_barrio" name="district_barrio" placeholder="San Javier" />
                 </div>
@@ -320,8 +320,8 @@ export default async function NewContactPage({
                 <Label htmlFor="commune">Comuna / Localidad</Label>
                 <Input id="commune" name="commune" placeholder="Comuna 13" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="voting_place">Puesto de votación</Label>
                   <Input id="voting_place" name="voting_place" placeholder="IE San Javier" />
                 </div>
