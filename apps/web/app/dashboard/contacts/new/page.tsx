@@ -152,44 +152,42 @@ export default async function NewContactPage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="p-6 space-y-6 animate-page-in">
       <form action={createContact}>
         {/* ── Page header ── */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4">
-          <div className="max-w-3xl mx-auto flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-xs text-slate-400 mb-0.5">
-                <Link href="/dashboard/contacts" className="hover:text-slate-600 transition-colors">
-                  Contactos
-                </Link>
-                <span>/</span>
-                <span>Nuevo</span>
-              </div>
-              <h1 className="text-lg font-semibold text-slate-900">Ficha del Ciudadano</h1>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Complete los datos para integrar al contacto en la red territorial.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link href="/dashboard/contacts">
-                <Button type="button" variant="outline" size="sm">
-                  Cancelar
-                </Button>
+        <div className="flex items-start justify-between pb-6 border-b border-slate-100 mb-6">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-0.5">
+              <Link href="/dashboard/contacts" className="hover:text-slate-600 transition-colors">
+                Contactos
               </Link>
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-slate-900 hover:bg-slate-800 text-white"
-              >
-                Guardar Contacto
-              </Button>
+              <span>/</span>
+              <span>Nuevo</span>
             </div>
+            <h1 className="text-xl font-bold text-slate-900">Ficha del Ciudadano</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Complete los datos para integrar al contacto en la red territorial.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/contacts">
+              <Button type="button" variant="outline" size="sm">
+                Cancelar
+              </Button>
+            </Link>
+            <Button
+              type="submit"
+              size="sm"
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              Guardar Contacto
+            </Button>
           </div>
         </div>
 
         {/* ── Error banners ── */}
         {(error === 'required' || error === 'duplicate') && (
-          <div className="max-w-3xl mx-auto px-6 pt-5">
+          <div>
             {error === 'required' && (
               <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
                 Los campos <strong>Nombre, Apellido, Tipo de documento, Número y Teléfono</strong> son obligatorios.
@@ -207,26 +205,22 @@ export default async function NewContactPage({
         )}
 
         {/* ── Form sections ── */}
-        <div className="max-w-3xl mx-auto px-6 py-6">
-          <ContactFormFields zones={zones} />
-        </div>
+        <ContactFormFields zones={zones} />
 
         {/* ── Footer ── */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4">
-          <div className="max-w-3xl mx-auto flex items-center justify-end gap-2">
-            <Link href="/dashboard/contacts">
-              <Button type="button" variant="outline" size="sm">
-                Ver Cambios
-              </Button>
-            </Link>
-            <Button
-              type="submit"
-              size="sm"
-              className="bg-slate-900 hover:bg-slate-800 text-white"
-            >
-              Guardar y Salir
+        <div className="flex items-center justify-end gap-2 pt-6 mt-6 border-t border-slate-100">
+          <Link href="/dashboard/contacts">
+            <Button type="button" variant="outline" size="sm">
+              Ver Cambios
             </Button>
-          </div>
+          </Link>
+          <Button
+            type="submit"
+            size="sm"
+            className="bg-slate-900 hover:bg-slate-800 text-white"
+          >
+            Guardar y Salir
+          </Button>
         </div>
       </form>
     </div>
