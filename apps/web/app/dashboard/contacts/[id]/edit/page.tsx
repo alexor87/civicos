@@ -155,7 +155,7 @@ export default async function EditContactPage({
                     <Input id="last_name" name="last_name" defaultValue={contact.last_name} required />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="document_type">Tipo de documento <span className="text-red-500">*</span></Label>
                     <Select name="document_type" defaultValue={(contact as Record<string, unknown>).document_type as string ?? ''}>
@@ -168,7 +168,7 @@ export default async function EditContactPage({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="col-span-2 space-y-1.5">
                     <Label htmlFor="document_number">Número de documento <span className="text-red-500">*</span></Label>
                     <Input id="document_number" name="document_number" defaultValue={(contact as Record<string, unknown>).document_number as string ?? ''} required />
                   </div>
@@ -228,8 +228,8 @@ export default async function EditContactPage({
                 <Label htmlFor="address">Dirección</Label>
                 <Input id="address" name="address" defaultValue={contact.address ?? ''} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="district_barrio">Barrio / Vereda</Label>
                   <Input id="district_barrio" name="district_barrio" defaultValue={contact.district ?? ''} />
                 </div>
@@ -255,8 +255,8 @@ export default async function EditContactPage({
                 <Label htmlFor="commune">Comuna / Localidad</Label>
                 <Input id="commune" name="commune" defaultValue={(contact as Record<string, unknown>).commune as string ?? ''} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="voting_place">Puesto de votación</Label>
                   <Input id="voting_place" name="voting_place" defaultValue={(contact as Record<string, unknown>).voting_place as string ?? ''} />
                 </div>
