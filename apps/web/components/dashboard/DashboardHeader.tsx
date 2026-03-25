@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Bell, Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut } from 'lucide-react'
 import Link from 'next/link'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -310,10 +310,7 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={async () => {
-                  const supabase = createBrowserClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-                  )
+                  const supabase = createClient()
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
