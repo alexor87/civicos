@@ -290,23 +290,22 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
           </button>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 ml-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
-                <div className="text-right">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">{userFullName ?? 'Usuario'}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{ROLE_LABELS[userRole] ?? userRole}</p>
-                </div>
-                <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs font-semibold">{userInitials}</span>
-                </div>
-              </button>
+            <DropdownMenuTrigger className="flex items-center gap-3 ml-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+              <div className="text-right">
+                <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">{userFullName ?? 'Usuario'}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{ROLE_LABELS[userRole] ?? userRole}</p>
+              </div>
+              <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs font-semibold">{userInitials}</span>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/perfil" className="flex items-center gap-2 cursor-pointer">
-                  <User className="h-4 w-4" />
-                  Mi perfil
-                </Link>
+              <DropdownMenuItem
+                onClick={() => router.push('/dashboard/perfil')}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <User className="h-4 w-4" />
+                Mi perfil
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -318,7 +317,8 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
                   await supabase.auth.signOut()
                   router.push('/login')
                 }}
-                className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer"
+                variant="destructive"
               >
                 <LogOut className="h-4 w-4" />
                 Cerrar sesión
