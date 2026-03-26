@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, Users, Map, Brain, UserCircle, LogOut, Mail, BarChart2, Settings, Sparkles, GitBranch, Megaphone, BookOpen, CalendarDays,
+  LayoutDashboard, Users, Map, Brain, UserCircle, LogOut, Mail, BarChart2, Sparkles, GitBranch, Megaphone, BookOpen, CalendarDays,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { RealtimeSuggestionsBadge } from '@/components/dashboard/RealtimeSuggestionsBadge'
@@ -44,11 +44,6 @@ const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: 
       { href: '/dashboard/ai',             label: 'Agentes IA',        icon: Brain, badge: true },
       { href: '/dashboard/ai/knowledge',   label: 'Base Conocimiento', icon: BookOpen  },
       { href: '/dashboard/contenido',      label: 'Contenido IA',      icon: Sparkles  },
-    ],
-  },
-  {
-    items: [
-      { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
     ],
   },
 ]

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Bell, Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut } from 'lucide-react'
+import { Bell, Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -306,6 +306,13 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
               >
                 <User className="h-4 w-4" />
                 Mi perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.push('/dashboard/settings')}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Settings className="h-4 w-4" />
+                Configuración
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
