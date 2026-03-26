@@ -140,8 +140,9 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
     // Validate full schema
     const fullResult = contactFormSchema.safeParse(values)
     if (!fullResult.success) {
+      const fields = fullResult.error.issues.map(i => i.path.join('.')).join(', ')
       await methods.trigger()
-      toast.error('Hay campos obligatorios sin completar')
+      toast.error(`Campos por completar: ${fields}`)
       return
     }
 

@@ -32,7 +32,7 @@ export const stepEssentialsSchema = z.object({
   first_name: z.string().min(1, 'Nombre requerido'),
   last_name: z.string().min(1, 'Apellido requerido'),
   document_type: z.enum(documentTypes),
-  document_number: z.string().min(1, 'Número de documento requerido'),
+  document_number: z.string().optional().or(z.literal('')),
   phone: z.string().min(1, 'Teléfono requerido'),
   status: z.enum(contactStatuses),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
@@ -70,7 +70,10 @@ export const stepAdditionalSchema = z.object({
   contact_source: z.enum(contactSources).optional(),
   source_detail: z.string().optional(),
   referred_by: z.string().optional(),
-  mobilizes_count: z.number().int().min(0).optional(),
+  mobilizes_count: z.preprocess(
+    (v) => (v === '' || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+    z.number().int().min(0).optional()
+  ),
   main_need: z.string().optional(),
   economic_sector: z.string().optional(),
   beneficiary_program: z.string().optional(),

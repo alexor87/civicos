@@ -29,20 +29,22 @@ export async function POST(request: Request) {
   const phone = data.phone.replace(/\D/g, '')
   const email = data.email ? data.email.toLowerCase() : null
 
-  // Deduplication: document number
-  const { data: existingByDoc } = await supabase
-    .from('contacts')
-    .select('id')
-    .eq('campaign_id', campaignId)
-    .eq('document_number', data.document_number)
-    .limit(1)
-    .single()
+  // Deduplication: document number (only if provided)
+  if (data.document_number) {
+    const { data: existingByDoc } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .eq('document_number', data.document_number)
+      .limit(1)
+      .single()
 
-  if (existingByDoc?.id) {
-    return NextResponse.json(
-      { error: 'duplicate', duplicateId: existingByDoc.id },
-      { status: 409 }
-    )
+    if (existingByDoc?.id) {
+      return NextResponse.json(
+        { error: 'duplicate', duplicateId: existingByDoc.id },
+        { status: 409 }
+      )
+    }
   }
 
   // Secondary dedup: email or phone
@@ -94,7 +96,7 @@ export async function POST(request: Request) {
     first_name: data.first_name,
     last_name: data.last_name,
     document_type: data.document_type,
-    document_number: data.document_number,
+    document_number: data.document_number || null,
     phone,
     email,
     birth_date: data.birth_date || null,

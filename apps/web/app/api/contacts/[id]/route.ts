@@ -33,21 +33,23 @@ export async function PATCH(
   const phone = data.phone.replace(/\D/g, '')
   const email = data.email ? data.email.toLowerCase() : null
 
-  // Dedup: same doc number but different contact
-  const { data: existingByDoc } = await supabase
-    .from('contacts')
-    .select('id')
-    .eq('campaign_id', campaignId)
-    .eq('document_number', data.document_number)
-    .neq('id', id)
-    .limit(1)
-    .single()
+  // Dedup: same doc number but different contact (only if provided)
+  if (data.document_number) {
+    const { data: existingByDoc } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .eq('document_number', data.document_number)
+      .neq('id', id)
+      .limit(1)
+      .single()
 
-  if (existingByDoc?.id) {
-    return NextResponse.json(
-      { error: 'duplicate', duplicateId: existingByDoc.id },
-      { status: 409 }
-    )
+    if (existingByDoc?.id) {
+      return NextResponse.json(
+        { error: 'duplicate', duplicateId: existingByDoc.id },
+        { status: 409 }
+      )
+    }
   }
 
   // Build metadata
@@ -74,7 +76,7 @@ export async function PATCH(
     first_name: data.first_name,
     last_name: data.last_name,
     document_type: data.document_type,
-    document_number: data.document_number,
+    document_number: data.document_number || null,
     phone,
     email,
     birth_date: data.birth_date || null,

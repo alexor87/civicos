@@ -215,8 +215,41 @@ describe('contactFormSchema (full)', () => {
   it('rejects when required fields are missing', () => {
     const result = contactFormSchema.safeParse({
       first_name: 'Juan',
-      // missing last_name, document_type, document_number, phone, status
+      // missing last_name, document_type, phone, status
     })
     expect(result.success).toBe(false)
+  })
+
+  it('accepts empty document_number', () => {
+    const result = contactFormSchema.safeParse({
+      first_name: 'Juan',
+      last_name: 'Pérez',
+      document_type: 'CC',
+      document_number: '',
+      phone: '3001234567',
+      status: 'supporter',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts missing document_number', () => {
+    const result = contactFormSchema.safeParse({
+      first_name: 'Juan',
+      last_name: 'Pérez',
+      document_type: 'CC',
+      phone: '3001234567',
+      status: 'supporter',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts mobilizes_count as empty string (preprocess)', () => {
+    const result = stepAdditionalSchema.safeParse({ mobilizes_count: '' })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts mobilizes_count as NaN (preprocess)', () => {
+    const result = stepAdditionalSchema.safeParse({ mobilizes_count: NaN })
+    expect(result.success).toBe(true)
   })
 })
