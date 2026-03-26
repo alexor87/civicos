@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select'
 import Link from 'next/link'
 import { ChevronLeft, ChevronDown } from 'lucide-react'
+import { ContactGeoSelector } from '@/components/contacts/ContactGeoSelector'
 
 async function updateContact(id: string, formData: FormData) {
   'use server'
@@ -70,7 +71,7 @@ async function updateContact(id: string, formData: FormData) {
     municipality: (formData.get('municipality') as string)?.trim() || null,
     commune: (formData.get('commune') as string)?.trim() || null,
     city: (formData.get('municipality') as string)?.trim() || null,
-    district: (formData.get('commune') as string)?.trim() || null,
+    district: (formData.get('district_barrio') as string)?.trim() || null,
     voting_place: (formData.get('voting_place') as string)?.trim() || null,
     voting_table: (formData.get('voting_table') as string)?.trim() || null,
     status: (formData.get('status') as string) || 'unknown',
@@ -228,33 +229,19 @@ export default async function EditContactPage({
                 <Label htmlFor="address">Dirección</Label>
                 <Input id="address" name="address" defaultValue={contact.address ?? ''} />
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2 space-y-1.5">
-                  <Label htmlFor="district_barrio">Barrio / Vereda</Label>
-                  <Input id="district_barrio" name="district_barrio" defaultValue={contact.district ?? ''} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="postal_code">Código postal</Label>
-                  <Input id="postal_code" name="postal_code" defaultValue={meta.postal_code as string ?? ''} />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="postal_code">Código postal</Label>
+                <Input id="postal_code" name="postal_code" defaultValue={meta.postal_code as string ?? ''} />
               </div>
             </CollapsibleSection>
 
             <CollapsibleSection title="Ubicación electoral">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="department">Departamento</Label>
-                  <Input id="department" name="department" defaultValue={(contact as Record<string, unknown>).department as string ?? ''} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="municipality">Municipio</Label>
-                  <Input id="municipality" name="municipality" defaultValue={(contact as Record<string, unknown>).municipality as string ?? contact.city ?? ''} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="commune">Comuna / Localidad</Label>
-                <Input id="commune" name="commune" defaultValue={(contact as Record<string, unknown>).commune as string ?? ''} />
-              </div>
+              <ContactGeoSelector
+                defaultDepartment={(contact as Record<string, unknown>).department as string ?? null}
+                defaultMunicipality={(contact as Record<string, unknown>).municipality as string ?? contact.city ?? null}
+                defaultCommune={(contact as Record<string, unknown>).commune as string ?? null}
+                defaultBarrio={contact.district ?? null}
+              />
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="voting_place">Puesto de votación</Label>

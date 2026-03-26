@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import Link from 'next/link'
 import { ChevronLeft, ChevronDown } from 'lucide-react'
+import { ContactGeoSelector } from '@/components/contacts/ContactGeoSelector'
 
 async function createContact(formData: FormData) {
   'use server'
@@ -120,8 +121,8 @@ async function createContact(formData: FormData) {
     department: (formData.get('department') as string)?.trim() || null,
     municipality: (formData.get('municipality') as string)?.trim() || null,
     commune: (formData.get('commune') as string)?.trim() || null,
-    city: (formData.get('municipality') as string)?.trim() || null, // keep city in sync
-    district: (formData.get('commune') as string)?.trim() || null,  // keep district in sync
+    city: (formData.get('municipality') as string)?.trim() || null,
+    district: (formData.get('district_barrio') as string)?.trim() || null,
     voting_place: (formData.get('voting_place') as string)?.trim() || null,
     voting_table: (formData.get('voting_table') as string)?.trim() || null,
     status: (formData.get('status') as string) || 'unknown',
@@ -292,34 +293,15 @@ export default async function NewContactPage({
                 <Label htmlFor="address">Dirección</Label>
                 <Input id="address" name="address" placeholder="Calle 80 #45-23" />
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2 space-y-1.5">
-                  <Label htmlFor="district_barrio">Barrio / Vereda</Label>
-                  <Input id="district_barrio" name="district_barrio" placeholder="San Javier" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="postal_code">Código postal</Label>
-                  <Input id="postal_code" name="postal_code" placeholder="050016" />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="postal_code">Código postal</Label>
+                <Input id="postal_code" name="postal_code" placeholder="050016" />
               </div>
             </CollapsibleSection>
 
             {/* C. Ubicación electoral */}
             <CollapsibleSection title="Ubicación electoral">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="department">Departamento</Label>
-                  <Input id="department" name="department" placeholder="Antioquia" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="municipality">Municipio</Label>
-                  <Input id="municipality" name="municipality" placeholder="Medellín" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="commune">Comuna / Localidad</Label>
-                <Input id="commune" name="commune" placeholder="Comuna 13" />
-              </div>
+              <ContactGeoSelector />
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-1.5">
                   <Label htmlFor="voting_place">Puesto de votación</Label>
