@@ -20,7 +20,7 @@ export const DEFAULT_BRAND: TenantBrand = {
   color_primary:    '#2960ec',
   color_secondary:  '#1e293b',
   color_accent:     '#ea580c',
-  color_background: '#f8fafc',
+  color_background: '#FEFEFF',
   color_surface:    '#ffffff',
 }
 

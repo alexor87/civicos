@@ -128,7 +128,7 @@ export function IntegrationsForm({ campaign }: Props) {
           <Brain className="h-4 w-4 text-[#6a737d]" />
           <h3 className="text-sm font-semibold text-[#1b1f23]">Modelo de IA — Claude</h3>
         </div>
-        <div className="rounded-md bg-[#f6f7f8] border border-[#dcdee6] px-4 py-3 text-sm text-[#6a737d]">
+        <div className="rounded-md bg-muted border border-[#dcdee6] px-4 py-3 text-sm text-[#6a737d]">
           Modelo activo: <span className="font-medium text-[#1b1f23]">claude-sonnet-4-6</span>
           <br />
           <span className="text-xs">La configuración avanzada del modelo estará disponible en Plan Campaign.</span>

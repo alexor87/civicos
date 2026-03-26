@@ -122,7 +122,7 @@ function SidebarPreview({
       </div>
       {/* Fake nav */}
       <div className="px-2 py-2 flex flex-col gap-0.5">
-        {['Dashboard', 'Contactos', 'Canvassing', 'Reportes'].map((item, i) => (
+        {['Dashboard', 'Contactos', 'Territorio', 'Reportes'].map((item, i) => (
           <div
             key={item}
             className="px-2 py-1 rounded-md flex items-center gap-1.5"

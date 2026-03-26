@@ -46,7 +46,7 @@ export function TestEmailButton({ campaignId, defaultEmail = '' }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2 bg-[#f6f7f8] border border-[#dcdee6] rounded-md px-3 py-2">
+    <div className="flex items-center gap-2 bg-muted border border-[#dcdee6] rounded-md px-3 py-2">
       <FlaskConical className="h-4 w-4 text-[#6a737d] shrink-0" />
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <Label htmlFor="test-email" className="text-xs text-[#6a737d] shrink-0">Enviar a:</Label>

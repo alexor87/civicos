@@ -214,13 +214,13 @@ export default async function NewContactPage({
                   <div className="space-y-1.5">
                     <Label htmlFor="document_type">Tipo de documento <span className="text-red-500">*</span></Label>
                     <Select name="document_type" required>
-                      <SelectTrigger id="document_type">
-                        <SelectValue placeholder="Seleccionar" />
+                      <SelectTrigger id="document_type" className="w-full">
+                        <SelectValue placeholder="CC / CE / TI..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CC">Cédula de ciudadanía (CC)</SelectItem>
-                        <SelectItem value="CE">Cédula de extranjería (CE)</SelectItem>
-                        <SelectItem value="TI">Tarjeta de identidad (TI)</SelectItem>
+                        <SelectItem value="CC">CC — Cédula de ciudadanía</SelectItem>
+                        <SelectItem value="CE">CE — Cédula de extranjería</SelectItem>
+                        <SelectItem value="TI">TI — Tarjeta de identidad</SelectItem>
                         <SelectItem value="Pasaporte">Pasaporte</SelectItem>
                       </SelectContent>
                     </Select>
@@ -246,7 +246,7 @@ export default async function NewContactPage({
                   <div className="space-y-1.5">
                     <Label htmlFor="gender">Sexo / Género</Label>
                     <Select name="gender">
-                      <SelectTrigger id="gender">
+                      <SelectTrigger id="gender" className="w-full">
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
                       <SelectContent>
@@ -260,7 +260,7 @@ export default async function NewContactPage({
                   <div className="space-y-1.5">
                     <Label htmlFor="marital_status">Estado civil</Label>
                     <Select name="marital_status">
-                      <SelectTrigger id="marital_status">
+                      <SelectTrigger id="marital_status" className="w-full">
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
                       <SelectContent>
@@ -349,7 +349,7 @@ export default async function NewContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="vote_intention">Intención de voto</Label>
                   <Select name="vote_intention">
-                    <SelectTrigger id="vote_intention">
+                    <SelectTrigger id="vote_intention" className="w-full">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -362,7 +362,7 @@ export default async function NewContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="electoral_priority">Prioridad electoral</Label>
                   <Select name="electoral_priority">
-                    <SelectTrigger id="electoral_priority">
+                    <SelectTrigger id="electoral_priority" className="w-full">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -377,7 +377,7 @@ export default async function NewContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="campaign_role">Rol en campaña</Label>
                   <Select name="campaign_role">
-                    <SelectTrigger id="campaign_role">
+                    <SelectTrigger id="campaign_role" className="w-full">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -403,7 +403,7 @@ export default async function NewContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="contact_source">Fuente de captura</Label>
                   <Select name="contact_source">
-                    <SelectTrigger id="contact_source">
+                    <SelectTrigger id="contact_source" className="w-full">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -464,8 +464,8 @@ export default async function NewContactPage({
                 <CardTitle className="text-base">Estado</CardTitle>
               </CardHeader>
               <CardContent>
-                <Select name="status" defaultValue="unknown">
-                  <SelectTrigger>
+                <Select name="status">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Seleccionar estado" />
                   </SelectTrigger>
                   <SelectContent>

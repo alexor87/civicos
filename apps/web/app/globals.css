@@ -53,7 +53,7 @@
 
 :root {
   /* ── The North Designs tokens ─────────────────────────────────── */
-  --background: oklch(0.97 0.003 265);       /* #f6f7f8 app bg      */
+  --background: oklch(0.998 0.001 265);      /* #FEFEFF app bg      */
   --foreground: oklch(0.16 0.01 255);        /* #1b1f23 dark text   */
   --card: oklch(1 0 0);                      /* #ffffff card bg     */
   --card-foreground: oklch(0.16 0.01 255);

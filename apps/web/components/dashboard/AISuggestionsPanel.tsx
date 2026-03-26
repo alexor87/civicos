@@ -30,7 +30,7 @@ const priorityConfig = {
   critical: { label: 'Crítica', className: 'bg-red-100 text-red-700 border-red-200' },
   high: { label: 'Alta', className: 'bg-orange-100 text-orange-700 border-orange-200' },
   medium: { label: 'Media', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  low: { label: 'Baja', className: 'bg-[#f6f7f8] text-[#6a737d] border-[#dcdee6]' },
+  low: { label: 'Baja', className: 'bg-muted text-[#6a737d] border-[#dcdee6]' },
 }
 
 const moduleLabels: Record<string, string> = {
@@ -304,7 +304,7 @@ export function AISuggestionsPanel({ suggestions, history, agentRuns, campaignId
             </Card>
           ) : (
             history.map(s => (
-              <div key={s.id} className="p-4 border rounded-lg bg-[#f6f7f8] flex items-center gap-3">
+              <div key={s.id} className="p-4 border rounded-lg bg-muted flex items-center gap-3">
                 {s.status === 'applied' ? (
                   <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                 ) : (

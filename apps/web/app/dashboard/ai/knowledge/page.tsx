@@ -26,7 +26,7 @@ export default async function KnowledgeBasePage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="p-6 lg:p-8 space-y-6">
 
         {/* Header */}

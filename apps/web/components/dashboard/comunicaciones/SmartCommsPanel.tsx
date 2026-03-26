@@ -27,7 +27,7 @@ function CopyBtn({ text }: { text: string }) {
 const CONFIDENCE_CONFIG = {
   high:   { label: 'Alta confianza',   cls: 'bg-[#28a745]/10 text-[#28a745]'  },
   medium: { label: 'Confianza media',  cls: 'bg-amber-100   text-amber-700'   },
-  low:    { label: 'Baja confianza',   cls: 'bg-[#f6f7f8]   text-[#6a737d]'   },
+  low:    { label: 'Baja confianza',   cls: 'bg-muted   text-[#6a737d]'   },
 }
 
 const DOW = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
@@ -62,7 +62,7 @@ export function SmartCommsPanel() {
         <button
           type="button"
           onClick={() => setState('idle')}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#f6f7f8] transition-colors"
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-[#2960ec]/10 flex items-center justify-center shrink-0">
@@ -146,7 +146,7 @@ export function SmartCommsPanel() {
                   <p className="text-[10px] font-semibold text-[#6a737d] uppercase tracking-widest mb-2">
                     Horario óptimo de envío
                   </p>
-                  <div className="bg-[#f6f7f8] rounded-md px-4 py-3 flex items-start gap-3">
+                  <div className="bg-muted rounded-md px-4 py-3 flex items-start gap-3">
                     <Clock className="h-4 w-4 text-[#2960ec] shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -201,7 +201,7 @@ export function SmartCommsPanel() {
                 <p className="text-[10px] font-semibold text-[#6a737d] uppercase tracking-widest mb-2">
                   Reengagement
                 </p>
-                <div className="bg-[#f6f7f8] rounded-md p-3 space-y-2">
+                <div className="bg-muted rounded-md p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-[#6a737d] shrink-0" />
                     <p className="text-sm font-medium text-[#1b1f23]">

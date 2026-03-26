@@ -15,16 +15,16 @@ const resultColors: Record<string, string> = {
   positive:        'bg-[#28a745]/10 text-[#28a745]',
   negative:        'bg-red-50 text-red-600',
   undecided:       'bg-[#f8cf0c]/20 text-[#2a2a2a]',
-  no_home:         'bg-[#f6f7f8] text-[#6a737d]',
-  not_home:        'bg-[#f6f7f8] text-[#6a737d]',
-  neighbor_absent: 'bg-[#f6f7f8] text-[#6a737d]',
+  no_home:         'bg-muted text-[#6a737d]',
+  not_home:        'bg-muted text-[#6a737d]',
+  neighbor_absent: 'bg-muted text-[#6a737d]',
   follow_up:       'bg-[#2960ec]/10 text-[#2960ec]',
   refused:         'bg-orange-50 text-orange-600',
   moved:           'bg-[#6f42c1]/10 text-[#6f42c1]',
   wrong_address:   'bg-[#6f42c1]/10 text-[#6f42c1]',
-  deceased:        'bg-[#f6f7f8] text-[#6a737d]',
+  deceased:        'bg-muted text-[#6a737d]',
   come_back_later: 'bg-[#2960ec]/10 text-[#2960ec]',
-  inaccessible:    'bg-[#f6f7f8] text-[#6a737d]',
+  inaccessible:    'bg-muted text-[#6a737d]',
 }
 
 const resultLabels: Record<string, string> = {
@@ -61,7 +61,7 @@ export function CanvassingVisitsTable({ visits, canApprove }: Props) {
   if (!visits.length) {
     return (
       <div className="flex flex-col items-center gap-3 py-20 text-center px-6">
-        <div className="h-14 w-14 rounded-full bg-[#f6f7f8] border border-[#dcdee6] flex items-center justify-center">
+        <div className="h-14 w-14 rounded-full bg-muted border border-[#dcdee6] flex items-center justify-center">
           <MapPin className="h-6 w-6 text-[#dcdee6]" />
         </div>
         <div>
@@ -84,7 +84,7 @@ export function CanvassingVisitsTable({ visits, canApprove }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow className="bg-[#f6f7f8]/60">
+          <TableRow className="bg-muted/60">
             <TableHead className="text-xs font-semibold text-[#6a737d]">Contacto</TableHead>
             <TableHead className="text-xs font-semibold text-[#6a737d]">Resultado</TableHead>
             <TableHead className="text-xs font-semibold text-[#6a737d]">Voluntario</TableHead>
@@ -105,14 +105,14 @@ export function CanvassingVisitsTable({ visits, canApprove }: Props) {
             return (
               <TableRow
                 key={visit.id}
-                className="hover:bg-[#f6f7f8]/60 transition-colors cursor-pointer"
+                className="hover:bg-muted/60 transition-colors cursor-pointer"
                 onClick={() => setSelectedVisit(visit)}
               >
                 <TableCell className="font-medium text-sm text-[#1b1f23]">
                   {contact ? `${contact.first_name} ${contact.last_name}` : '—'}
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${resultColors[visit.result] ?? 'bg-[#f6f7f8] text-[#6a737d]'}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${resultColors[visit.result] ?? 'bg-muted text-[#6a737d]'}`}>
                     {resultLabels[visit.result] ?? visit.result}
                   </span>
                 </TableCell>

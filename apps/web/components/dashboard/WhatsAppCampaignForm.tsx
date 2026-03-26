@@ -56,7 +56,7 @@ export function WhatsAppCampaignForm({ segments, action, defaultValues }: Props)
           defaultValue={defaultValues?.template_name ?? ''}
           required
         />
-        <div className="flex items-start gap-1.5 text-xs text-[#6a737d] bg-[#f6f7f8] rounded-md p-2.5">
+        <div className="flex items-start gap-1.5 text-xs text-[#6a737d] bg-muted rounded-md p-2.5">
           <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-[#2960ec]" />
           <span>
             Este es el <strong>Content SID</strong> del template aprobado por Meta en tu cuenta Twilio.

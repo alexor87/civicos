@@ -43,7 +43,7 @@ describe('Sidebar', () => {
     render(<Sidebar {...PROPS} />)
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Contactos')).toBeInTheDocument()
-    expect(screen.getByText('Canvassing')).toBeInTheDocument()
+    expect(screen.getAllByText('Territorio').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Voluntarios')).toBeInTheDocument()
     expect(screen.getByText('Agentes IA')).toBeInTheDocument()
     expect(screen.getByText('Configuración')).toBeInTheDocument()

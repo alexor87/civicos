@@ -2,7 +2,7 @@ import { SettingsTabs } from '@/components/settings/SettingsTabs'
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="p-6 lg:p-8 space-y-6">
 
         {/* Header */}

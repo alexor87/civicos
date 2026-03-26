@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
@@ -33,18 +34,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/onboarding')
   }
 
-  // Fetch active campaign name
-  const firstCampaignId = profile.campaign_ids?.[0] ?? ''
-  let campaignName = 'Sin campaña'
+  // Determine active campaign (cookie > first in array)
+  const cookieStore = await cookies()
+  const cookieCampaignId = cookieStore.get('active_campaign_id')?.value
+  const campaignIds: string[] = profile.campaign_ids ?? []
+  const activeCampaignId = (cookieCampaignId && campaignIds.includes(cookieCampaignId))
+    ? cookieCampaignId
+    : campaignIds[0] ?? ''
 
-  if (firstCampaignId) {
-    const { data: campaign } = await supabase
+  // Fetch all user campaigns for the switcher
+  let allCampaigns: { id: string; name: string }[] = []
+  if (campaignIds.length > 0) {
+    const { data } = await supabase
       .from('campaigns')
-      .select('name')
-      .eq('id', firstCampaignId)
-      .single()
-    if (campaign?.name) campaignName = campaign.name
+      .select('id, name')
+      .in('id', campaignIds)
+      .order('name')
+    allCampaigns = data ?? []
   }
+
+  const campaignName = allCampaigns.find(c => c.id === activeCampaignId)?.name ?? 'Sin campaña'
+  const firstCampaignId = activeCampaignId
 
   // Build effective brand — tenant_branding takes priority; fallback to defaults
   const effectiveBrand: TenantBrand = tenantBranding
@@ -103,6 +113,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             userFullName={profile.full_name}
             userInitials={userInitials}
             userRole={profile.role}
+            campaigns={allCampaigns}
+            activeCampaignId={activeCampaignId}
           />
           <main className="flex-1 overflow-auto bg-background">
             {children}

@@ -77,7 +77,7 @@ export default async function NewTerritoryPage() {
   const boundCreate = createTerritory.bind(null, campaignId, tenantId, user.id)
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-6 lg:p-8 space-y-6">
 
         {/* Page header */}
@@ -91,7 +91,7 @@ export default async function NewTerritoryPage() {
           <div className="mt-3">
             <h1 className="text-2xl font-semibold text-[#1b1f23]">Nuevo territorio</h1>
             <p className="text-sm text-[#6a737d] mt-1">
-              Define el área geográfica, propiedades y límites del territorio de canvassing
+              Define el área geográfica, propiedades y límites del territorio
             </p>
           </div>
         </div>
@@ -248,7 +248,7 @@ export default async function NewTerritoryPage() {
                         <p className="text-xs text-[#6a737d] mt-0.5">Dibuja el polígono del territorio</p>
                       </div>
                     </div>
-                    <span className="text-xs text-[#6a737d] bg-[#f6f7f8] border border-[#dcdee6] px-2 py-1 rounded-full">
+                    <span className="text-xs text-[#6a737d] bg-muted border border-[#dcdee6] px-2 py-1 rounded-full">
                       Opcional
                     </span>
                   </div>

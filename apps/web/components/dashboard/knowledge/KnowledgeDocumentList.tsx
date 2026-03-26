@@ -20,7 +20,7 @@ import type { KnowledgeDocumentMetaRow } from '@/lib/types/database'
 
 const FILE_TYPE_BADGE: Record<string, string> = {
   pdf:  'bg-red-50 text-red-600 border-red-200',
-  txt:  'bg-[#f6f7f8] text-[#6a737d] border-[#dcdee6]',
+  txt:  'bg-muted text-[#6a737d] border-[#dcdee6]',
   md:   'bg-purple-50 text-purple-600 border-purple-200',
   docx: 'bg-blue-50 text-blue-600 border-blue-200',
 }

@@ -93,7 +93,7 @@ describe('BrandProvider', () => {
       expect(brand.color_primary).toBe('#dc2626')
       expect(brand.color_secondary).toBe('#1e293b')
       expect(brand.color_accent).toBe('#ea580c')
-      expect(brand.color_background).toBe('#f8fafc')
+      expect(brand.color_background).toBe('#FEFEFF')
       expect(brand.color_surface).toBe('#ffffff')
     })
   })

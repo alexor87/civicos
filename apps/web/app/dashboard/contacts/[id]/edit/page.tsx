@@ -159,11 +159,11 @@ export default async function EditContactPage({
                   <div className="space-y-1.5">
                     <Label htmlFor="document_type">Tipo de documento <span className="text-red-500">*</span></Label>
                     <Select name="document_type" defaultValue={(contact as Record<string, unknown>).document_type as string ?? ''}>
-                      <SelectTrigger id="document_type"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectTrigger id="document_type" className="w-full"><SelectValue placeholder="CC / CE / TI..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CC">Cédula de ciudadanía (CC)</SelectItem>
-                        <SelectItem value="CE">Cédula de extranjería (CE)</SelectItem>
-                        <SelectItem value="TI">Tarjeta de identidad (TI)</SelectItem>
+                        <SelectItem value="CC">CC — Cédula de ciudadanía</SelectItem>
+                        <SelectItem value="CE">CE — Cédula de extranjería</SelectItem>
+                        <SelectItem value="TI">TI — Tarjeta de identidad</SelectItem>
                         <SelectItem value="Pasaporte">Pasaporte</SelectItem>
                       </SelectContent>
                     </Select>
@@ -187,7 +187,7 @@ export default async function EditContactPage({
                   <div className="space-y-1.5">
                     <Label htmlFor="gender">Sexo / Género</Label>
                     <Select name="gender" defaultValue={(contact as Record<string, unknown>).gender as string ?? ''}>
-                      <SelectTrigger id="gender"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectTrigger id="gender" className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="M">Masculino</SelectItem>
                         <SelectItem value="F">Femenino</SelectItem>
@@ -199,7 +199,7 @@ export default async function EditContactPage({
                   <div className="space-y-1.5">
                     <Label htmlFor="marital_status">Estado civil</Label>
                     <Select name="marital_status" defaultValue={meta.marital_status as string ?? ''}>
-                      <SelectTrigger id="marital_status"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectTrigger id="marital_status" className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="soltero">Soltero/a</SelectItem>
                         <SelectItem value="casado">Casado/a</SelectItem>
@@ -283,7 +283,7 @@ export default async function EditContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="vote_intention">Intención de voto</Label>
                   <Select name="vote_intention" defaultValue={meta.vote_intention as string ?? ''}>
-                    <SelectTrigger id="vote_intention"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectTrigger id="vote_intention" className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="si">Sí</SelectItem>
                       <SelectItem value="no">No</SelectItem>
@@ -294,7 +294,7 @@ export default async function EditContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="electoral_priority">Prioridad electoral</Label>
                   <Select name="electoral_priority" defaultValue={meta.electoral_priority as string ?? ''}>
-                    <SelectTrigger id="electoral_priority"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectTrigger id="electoral_priority" className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="alta">Alta</SelectItem>
                       <SelectItem value="media">Media</SelectItem>
@@ -307,7 +307,7 @@ export default async function EditContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="campaign_role">Rol en campaña</Label>
                   <Select name="campaign_role" defaultValue={meta.campaign_role as string ?? ''}>
-                    <SelectTrigger id="campaign_role"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectTrigger id="campaign_role" className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="votante">Votante</SelectItem>
                       <SelectItem value="lider_barrial">Líder barrial</SelectItem>
@@ -330,7 +330,7 @@ export default async function EditContactPage({
                 <div className="space-y-1.5">
                   <Label htmlFor="contact_source">Fuente de captura</Label>
                   <Select name="contact_source" defaultValue={meta.contact_source as string ?? ''}>
-                    <SelectTrigger id="contact_source"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectTrigger id="contact_source" className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="puerta_a_puerta">Puerta a puerta</SelectItem>
                       <SelectItem value="evento">Evento</SelectItem>
@@ -386,7 +386,7 @@ export default async function EditContactPage({
               <CardHeader className="pb-3"><CardTitle className="text-base">Estado</CardTitle></CardHeader>
               <CardContent>
                 <Select name="status" defaultValue={contact.status ?? 'unknown'}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unknown">Sin definir</SelectItem>
                     <SelectItem value="supporter">Simpatizante</SelectItem>

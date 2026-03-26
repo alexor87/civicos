@@ -66,7 +66,7 @@ export default async function VisitsHistoryPage({
   ])
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="p-6 lg:p-8 space-y-6">
 
         {/* ── Header ── */}
@@ -75,7 +75,7 @@ export default async function VisitsHistoryPage({
             <Link href="/dashboard/canvassing">
               <Button variant="ghost" size="sm" className="text-[#6a737d] hover:text-[#1b1f23] -ml-2">
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Canvassing
+                Territorio
               </Button>
             </Link>
             <div>

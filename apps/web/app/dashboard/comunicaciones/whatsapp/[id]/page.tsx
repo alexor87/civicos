@@ -6,7 +6,7 @@ import { deleteWhatsAppCampaign } from '../../whatsapp-actions'
 import { SendWhatsAppButton } from '@/components/dashboard/SendWhatsAppButton'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
-  draft:  { label: 'Borrador', className: 'bg-[#f6f7f8] text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
+  draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
   sent:   { label: 'Enviada',  className: 'bg-[#28a745]/10 text-[#28a745] border-[#28a745]/20', Icon: Send },
   failed: { label: 'Fallida',  className: 'bg-red-50 text-red-600 border-red-200',               Icon: AlertCircle },
 }
@@ -60,7 +60,7 @@ export default async function WhatsAppCampaignDetailPage({ params }: { params: P
     .limit(50)
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto p-6 lg:p-8 space-y-6">
         {/* Back */}
         <div>
@@ -143,7 +143,7 @@ export default async function WhatsAppCampaignDetailPage({ params }: { params: P
                 <div key={conv.id} className="flex items-start gap-3 px-5 py-3">
                   <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                     conv.direction === 'inbound'
-                      ? 'bg-[#f6f7f8] border border-[#dcdee6]'
+                      ? 'bg-muted border border-[#dcdee6]'
                       : 'bg-[#25D366]/10'
                   }`}>
                     {conv.direction === 'inbound'

@@ -31,7 +31,7 @@ export default async function ScriptsPage() {
           <Link href="/dashboard/canvassing">
             <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700 -ml-2">
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Canvassing
+              Territorio
             </Button>
           </Link>
           <div>

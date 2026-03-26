@@ -40,7 +40,7 @@ function ReportView({ report }: { report: TerritoryAnalysisReport }) {
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="bg-[#f6f7f8] rounded-md px-2 py-2.5">
+        <div className="bg-muted rounded-md px-2 py-2.5">
           <p className="text-lg font-semibold text-[#1b1f23]">{report.total_visits}</p>
           <p className="text-[10px] text-[#6a737d] leading-tight">visitas<br/>últimos {report.period_days}d</p>
         </div>

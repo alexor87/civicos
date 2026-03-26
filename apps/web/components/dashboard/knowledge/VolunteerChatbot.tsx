@@ -139,7 +139,7 @@ export function VolunteerChatbot({ campaignId }: Props) {
                 <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
                   msg.role === 'user'
                     ? 'bg-[#2960ec] text-white'
-                    : 'bg-[#f6f7f8] border border-[#dcdee6]'
+                    : 'bg-muted border border-[#dcdee6]'
                 }`}>
                   {msg.role === 'user'
                     ? <User className="h-3.5 w-3.5" />
@@ -149,7 +149,7 @@ export function VolunteerChatbot({ campaignId }: Props) {
                 <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
                   msg.role === 'user'
                     ? 'bg-[#2960ec] text-white rounded-tr-sm'
-                    : 'bg-[#f6f7f8] text-[#1b1f23] rounded-tl-sm'
+                    : 'bg-muted text-[#1b1f23] rounded-tl-sm'
                 }`}>
                   {msg.content || (
                     <span className="inline-flex gap-1">

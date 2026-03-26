@@ -79,8 +79,8 @@ export function SmsCampaignForm({ segments, action, defaultValues }: Props) {
         />
         <SmsCharCounter value={bodyText} />
         <p className="text-xs text-[#6a737d]">
-          Usa <code className="bg-[#f6f7f8] px-1 rounded">{'{nombre}'}</code> y{' '}
-          <code className="bg-[#f6f7f8] px-1 rounded">{'{apellido}'}</code> para personalizar el mensaje.
+          Usa <code className="bg-muted px-1 rounded">{'{nombre}'}</code> y{' '}
+          <code className="bg-muted px-1 rounded">{'{apellido}'}</code> para personalizar el mensaje.
         </p>
       </div>
 

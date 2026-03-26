@@ -6,7 +6,7 @@ import { SmartCommsPanel } from '@/components/dashboard/comunicaciones/SmartComm
 // WhatsApp icon via MessageSquare with green tint handled via className
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
-  draft:  { label: 'Borrador', className: 'bg-[#f6f7f8] text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
+  draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
   sent:   { label: 'Enviada',  className: 'bg-[#28a745]/10 text-[#28a745] border-[#28a745]/20', Icon: Send },
   failed: { label: 'Fallida',  className: 'bg-red-50 text-red-600 border-red-200',               Icon: AlertCircle },
 }
@@ -61,7 +61,7 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
     : '/dashboard/comunicaciones/whatsapp/new'
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="p-6 lg:p-8 space-y-6">
 
         {/* Header */}
@@ -161,7 +161,7 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
           {[
             { label: isTemplateView ? 'Total plantillas' : 'Total campañas', value: total,     Icon: isTemplateView ? LayoutTemplate : (isEmailTab ? Mail : MessageSquare), iconBg: 'bg-[#2960ec]/10',  iconColor: 'text-[#2960ec]',  valueColor: 'text-[#1b1f23]'  },
             { label: 'Enviadas',       value: sent,      Icon: Send,                              iconBg: 'bg-[#28a745]/10',  iconColor: 'text-[#28a745]',  valueColor: isTemplateView ? 'text-[#6a737d]' : 'text-[#28a745]'  },
-            { label: 'Borradores',     value: drafts,    Icon: FileText,                          iconBg: 'bg-[#f6f7f8]',    iconColor: 'text-[#6a737d]',  valueColor: 'text-[#1b1f23]'  },
+            { label: 'Borradores',     value: drafts,    Icon: FileText,                          iconBg: 'bg-muted',    iconColor: 'text-[#6a737d]',  valueColor: 'text-[#1b1f23]'  },
             { label: statLabel,        value: totalSent, Icon: TrendingUp,                        iconBg: 'bg-[#6f42c1]/10', iconColor: 'text-[#6f42c1]',  valueColor: isTemplateView ? 'text-[#6a737d]' : 'text-[#6f42c1]'  },
           ].map(k => (
             <div key={k.label} className="flex items-center gap-3 px-5 py-4">
@@ -185,7 +185,7 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
         {!campaigns.length ? (
           <div className="bg-white border border-[#dcdee6] rounded-md">
             <div className="flex flex-col items-center gap-3 py-20 text-center px-6">
-              <div className="h-14 w-14 rounded-full bg-[#f6f7f8] border border-[#dcdee6] flex items-center justify-center">
+              <div className="h-14 w-14 rounded-full bg-muted border border-[#dcdee6] flex items-center justify-center">
                 <Inbox className="h-6 w-6 text-[#dcdee6]" />
               </div>
               <div>
@@ -232,7 +232,7 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
                   <Link
                     key={campaign.id}
                     href={href}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f6f7f8] transition-colors group"
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted transition-colors group"
                   >
                     <div className="h-9 w-9 rounded-lg bg-[#2960ec]/10 flex items-center justify-center flex-shrink-0">
                       <Icon className="h-4 w-4 text-[#2960ec]" />

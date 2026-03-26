@@ -35,7 +35,7 @@ export function CanvassingStats({
       label: 'Visitas totales',
       value: totalVisits,
       Icon: Users,
-      iconBg: 'bg-[#f6f7f8]',
+      iconBg: 'bg-muted',
       iconColor: 'text-[#6a737d]',
       valueColor: 'text-[#1b1f23]',
     },
@@ -43,7 +43,7 @@ export function CanvassingStats({
       label: 'Pendientes aprobación',
       value: pendingApproval,
       Icon: Clock,
-      iconBg: pendingApproval > 0 ? 'bg-orange-50' : 'bg-[#f6f7f8]',
+      iconBg: pendingApproval > 0 ? 'bg-orange-50' : 'bg-muted',
       iconColor: pendingApproval > 0 ? 'text-orange-500' : 'text-[#6a737d]',
       valueColor: pendingApproval > 0 ? 'text-orange-600' : 'text-[#1b1f23]',
     },
@@ -85,7 +85,7 @@ export function CanvassingStats({
             </span>
           </div>
         </div>
-        <div className="h-1.5 bg-[#f6f7f8] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             data-testid="progress-bar"
             data-value={approvalRate}
@@ -106,7 +106,7 @@ export function CanvassingStats({
               return (
                 <div key={item.name} className="flex items-center gap-3">
                   <span className="text-xs text-[#6a737d] w-24 shrink-0 truncate">{item.name}</span>
-                  <div className="flex-1 h-1.5 bg-[#f6f7f8] rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[#2960ec] rounded-full transition-all duration-500"
                       style={{ width: `${pct}%` }}

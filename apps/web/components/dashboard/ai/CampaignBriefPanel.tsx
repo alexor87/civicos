@@ -135,7 +135,7 @@ export function CampaignBriefPanel() {
                 const good   = (kpi.is_positive && isUp) || (!kpi.is_positive && isDown)
                 const bad    = (kpi.is_positive && isDown) || (!kpi.is_positive && isUp)
                 return (
-                  <div key={i} className="bg-[#f6f7f8] rounded-md px-3 py-2.5">
+                  <div key={i} className="bg-muted rounded-md px-3 py-2.5">
                     <p className="text-[10px] text-[#6a737d] font-medium uppercase tracking-wide truncate">
                       {kpi.label}
                     </p>
@@ -186,7 +186,7 @@ export function CampaignBriefPanel() {
               {brief.top_actions.map((action, i) => {
                 const p = PRIORITY_CONFIG[action.priority] ?? PRIORITY_CONFIG.medium
                 return (
-                  <div key={i} className="flex items-start gap-3 bg-[#f6f7f8] rounded-md px-3 py-2.5">
+                  <div key={i} className="flex items-start gap-3 bg-muted rounded-md px-3 py-2.5">
                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${p.bg} ${p.text} shrink-0 mt-0.5`}>
                       {p.label}
                     </span>

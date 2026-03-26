@@ -7,7 +7,7 @@ import { SendCampaignButton } from '@/components/dashboard/SendCampaignButton'
 import { TestEmailButton } from '@/components/dashboard/TestEmailButton'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
-  draft:  { label: 'Borrador', className: 'bg-[#f6f7f8] text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
+  draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
   sent:   { label: 'Enviada',  className: 'bg-[#28a745]/10 text-[#28a745] border-[#28a745]/20', Icon: Send },
   failed: { label: 'Fallida',  className: 'bg-red-50 text-red-600 border-red-200',               Icon: AlertCircle },
 }
@@ -53,7 +53,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto p-6 lg:p-8 space-y-6">
 
         {/* Header */}
@@ -111,7 +111,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
             </div>
           </div>
           <div className="flex items-center gap-3 px-5 py-4">
-            <div className="h-8 w-8 rounded-lg bg-[#f6f7f8] flex items-center justify-center shrink-0">
+            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
               <FileText className="h-4 w-4 text-[#6a737d]" />
             </div>
             <div>
@@ -122,7 +122,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
             </div>
           </div>
           <div className="flex items-center gap-3 px-5 py-4">
-            <div className="h-8 w-8 rounded-lg bg-[#f6f7f8] flex items-center justify-center shrink-0">
+            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
               <Mail className="h-4 w-4 text-[#6a737d]" />
             </div>
             <div>

@@ -52,14 +52,14 @@ export default async function NewZonePage() {
         <Link href="/dashboard/canvassing">
           <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700 -ml-2">
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Canvassing
+            Territorio
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Nueva zona de canvassing</CardTitle>
+          <CardTitle>Nueva zona de territorio</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={boundCreate} className="space-y-5">

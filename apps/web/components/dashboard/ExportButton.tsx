@@ -3,15 +3,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ExportButtonProps {
   /** Base API path, e.g. "/api/export/contacts" */
   baseUrl: string
   /** Extra query params to forward (e.g. current filters) */
   params?: Record<string, string>
+  className?: string
 }
 
-export function ExportButton({ baseUrl, params = {} }: ExportButtonProps) {
+export function ExportButton({ baseUrl, params = {}, className }: ExportButtonProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -36,7 +38,7 @@ export function ExportButton({ baseUrl, params = {} }: ExportButtonProps) {
         variant="outline"
         size="sm"
         onClick={() => setOpen(prev => !prev)}
-        className="gap-1.5"
+        className={cn("gap-1.5 text-slate-700 border-slate-300 bg-slate-50 hover:bg-slate-100", className)}
       >
         <Download className="h-4 w-4" />
         Exportar

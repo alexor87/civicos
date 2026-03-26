@@ -49,7 +49,7 @@ function EmailResult({ result }: { result: GenerateContentResult }) {
   return (
     <div className="space-y-4">
       {result.subject && (
-        <div className="bg-[#f6f7f8] rounded-md p-3">
+        <div className="bg-muted rounded-md p-3">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[10px] font-semibold text-[#6a737d] uppercase tracking-wide">Asunto del email</p>
             <CopyButton text={result.subject} />
@@ -58,7 +58,7 @@ function EmailResult({ result }: { result: GenerateContentResult }) {
         </div>
       )}
       {result.blocks && result.blocks.length > 0 && (
-        <div className="bg-[#f6f7f8] rounded-md p-3">
+        <div className="bg-muted rounded-md p-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-semibold text-[#6a737d] uppercase tracking-wide">Bloques generados ({result.blocks.length})</p>
             <CopyButton text={result.blocks.map(b => {
@@ -108,7 +108,7 @@ function ScriptResult({ result }: { result: GenerateContentResult }) {
         <p className="text-[10px] font-semibold text-[#6a737d] uppercase tracking-wide">Script generado</p>
         <CopyButton text={fullText} />
       </div>
-      <div className="bg-[#f6f7f8] rounded-md p-3 space-y-3">
+      <div className="bg-muted rounded-md p-3 space-y-3">
         <div>
           <p className="text-[10px] font-semibold text-[#2960ec] uppercase mb-1">Presentación</p>
           <p className="text-sm text-[#1b1f23]">{result.script.intro}</p>
@@ -147,7 +147,7 @@ function SmsResult({ result }: { result: GenerateContentResult }) {
           <CopyButton text={result.sms_text} />
         </div>
       </div>
-      <div className="bg-[#f6f7f8] rounded-md p-4">
+      <div className="bg-muted rounded-md p-4">
         <p className="text-sm text-[#1b1f23] leading-relaxed">{result.sms_text}</p>
       </div>
       {charCount > 160 && (
@@ -168,7 +168,7 @@ function TalkingPointsResult({ result }: { result: GenerateContentResult }) {
       </div>
       <ol className="space-y-2">
         {result.points.map((point, i) => (
-          <li key={i} className="flex gap-3 bg-[#f6f7f8] rounded-md px-3 py-2.5">
+          <li key={i} className="flex gap-3 bg-muted rounded-md px-3 py-2.5">
             <span className="text-sm font-semibold text-[#2960ec] shrink-0 w-5">{i + 1}</span>
             <p className="text-sm text-[#1b1f23]">{point}</p>
           </li>

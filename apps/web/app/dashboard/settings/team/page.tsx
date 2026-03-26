@@ -62,7 +62,7 @@ export default async function TeamSettingsPage() {
       <div className="border border-[#dcdee6] rounded-md overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#f6f7f8]/60">
+            <TableRow className="bg-muted/60">
               <TableHead className="text-xs font-semibold text-[#6a737d]">Nombre</TableHead>
               <TableHead className="text-xs font-semibold text-[#6a737d]">Email</TableHead>
               <TableHead className="text-xs font-semibold text-[#6a737d]">Rol</TableHead>
@@ -71,7 +71,7 @@ export default async function TeamSettingsPage() {
           </TableHeader>
           <TableBody>
             {(members ?? []).map(member => (
-              <TableRow key={member.id} className="hover:bg-[#f6f7f8]/60">
+              <TableRow key={member.id} className="hover:bg-muted/60">
                 <TableCell className="font-medium text-sm text-[#1b1f23]">
                   {member.full_name ?? '—'}
                   {member.id === user.id && (
@@ -80,7 +80,7 @@ export default async function TeamSettingsPage() {
                 </TableCell>
                 <TableCell className="text-sm text-[#6a737d]">{member.email ?? '—'}</TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[member.role] ?? 'bg-[#f6f7f8] text-[#6a737d]'}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[member.role] ?? 'bg-muted text-[#6a737d]'}`}>
                     {ROLE_LABELS[member.role] ?? member.role}
                   </span>
                 </TableCell>

@@ -112,7 +112,7 @@ export default function Hero({ dict }: { dict: HeroDict }) {
               <div className="grid grid-cols-12 gap-3 p-4 sm:p-6">
                 {/* Sidebar mock */}
                 <div className="col-span-3 hidden space-y-2 md:block">
-                  {['Dashboard', 'Contacts', 'Canvassing', 'Campaigns', 'AI Agents', 'Analytics'].map((item, i) => (
+                  {['Dashboard', 'Contacts', 'Territorio', 'Campaigns', 'AI Agents', 'Analytics'].map((item, i) => (
                     <div
                       key={item}
                       className={`rounded-md px-3 py-2 text-xs ${

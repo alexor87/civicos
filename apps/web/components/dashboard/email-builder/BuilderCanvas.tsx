@@ -21,7 +21,7 @@ export function BuilderCanvas({ blocks, selectedBlockId, onSelect, onDelete, onU
   const { setNodeRef, isOver } = useDroppable({ id: CANVAS_DROP_ID })
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#f6f7f8] p-6">
+    <div className="flex-1 overflow-y-auto bg-muted p-6">
       <div className="max-w-[600px] mx-auto">
         <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
           {blocks.length === 0 ? (

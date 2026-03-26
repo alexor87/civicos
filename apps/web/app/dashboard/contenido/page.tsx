@@ -3,7 +3,7 @@ import { ContentStudio } from '@/components/dashboard/contenido/ContentStudio'
 
 export default function ContenidoPage() {
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
 
         {/* Header */}

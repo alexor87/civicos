@@ -195,7 +195,7 @@ export function MapFilterPanel({
                   flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors
                   ${d.key === activeDimension
                     ? 'bg-[#eef3ff] font-semibold text-[#2262ec]'
-                    : 'text-[#6a737d] hover:bg-[#f6f7f8]'
+                    : 'text-[#6a737d] hover:bg-muted'
                   }
                 `}
               >
@@ -223,7 +223,7 @@ export function MapFilterPanel({
                   transition-all duration-150
                   ${isActive
                     ? 'text-white shadow-sm ring-1 ring-inset ring-white/20'
-                    : 'bg-[#f6f7f8] text-[#444] hover:bg-[#edf0f3]'
+                    : 'bg-muted text-[#444] hover:bg-[#edf0f3]'
                   }
                 `}
                 style={isActive ? { backgroundColor: color } : {}}
@@ -255,7 +255,7 @@ export function MapFilterPanel({
         )}
 
         {/* Counter */}
-        <div className="ml-auto flex items-center gap-1 rounded-full bg-[#f6f7f8] px-2.5 py-1 shrink-0">
+        <div className="ml-auto flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 shrink-0">
           <span className="text-xs font-semibold text-[#1b1f23]">{filteredCount.toLocaleString()}</span>
           <span className="text-[10px] text-[#94a3b8]">/ {allPoints.length.toLocaleString()} contactos</span>
         </div>

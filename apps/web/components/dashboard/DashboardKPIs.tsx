@@ -43,7 +43,7 @@ const KPI_CONFIG = [
   },
   {
     key: 'coverage',
-    label: 'Cobertura Canvassing',
+    label: 'Cobertura Territorial',
     Icon: MapPin,
     iconClass: 'text-slate-400',
     trendClass: 'text-primary',

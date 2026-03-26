@@ -149,7 +149,7 @@ export function ExpandableMap(props: Props) {
         <span className="text-sm font-semibold text-[#1b1f23]">Cobertura de territorios</span>
         <button
           onClick={() => setExpanded(false)}
-          className="flex items-center gap-1.5 text-xs text-[#6a737d] hover:text-[#1b1f23] border border-[#dcdee6] rounded-md px-2.5 py-1.5 hover:bg-[#f6f7f8] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#6a737d] hover:text-[#1b1f23] border border-[#dcdee6] rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors"
         >
           <X className="h-3.5 w-3.5" />
           Cerrar
@@ -186,7 +186,7 @@ export function ExpandableMap(props: Props) {
         <div className="relative">
           <button
             onClick={() => setExpanded(true)}
-            className="absolute top-2 right-2 z-[1000] flex items-center gap-1.5 bg-white border border-[#dcdee6] rounded-md px-2.5 py-1.5 shadow-sm hover:bg-[#f6f7f8] transition-colors text-xs text-[#6a737d] font-medium"
+            className="absolute top-2 right-2 z-[1000] flex items-center gap-1.5 bg-white border border-[#dcdee6] rounded-md px-2.5 py-1.5 shadow-sm hover:bg-muted transition-colors text-xs text-[#6a737d] font-medium"
             title="Expandir mapa"
           >
             <Maximize2 className="h-3.5 w-3.5" />

@@ -28,7 +28,7 @@ export default async function EditSmsCampaignPage({ params }: { params: Promise<
   if (!campaign || campaign.status !== 'draft') redirect(`/dashboard/comunicaciones/sms/${id}`)
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-6 lg:p-8 space-y-6">
         <div>
           <Link href={`/dashboard/comunicaciones/sms/${id}`}>
