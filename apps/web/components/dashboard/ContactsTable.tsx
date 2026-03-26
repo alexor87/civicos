@@ -117,7 +117,7 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
           </div>
 
           <Link href="/dashboard/contacts/new">
-            <Button size="sm" className="h-9 gap-1.5 bg-slate-900 hover:bg-slate-800 text-white">
+            <Button size="sm" className="h-9 gap-1.5">
               <Plus className="h-4 w-4" />
               Añadir Contacto
             </Button>
