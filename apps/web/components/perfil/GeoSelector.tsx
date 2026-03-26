@@ -2,14 +2,60 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
-interface GeoData {
-  metadata: Record<string, unknown>
-  cities: Record<string, CityData>
+/* ── Tipos que reflejan la estructura real de colombia.json ── */
+
+interface UPZ {
+  codigo: string
+  nombre: string
+  barrios: string[]
 }
 
-interface CityData {
-  [key: string]: unknown
+interface Localidad {
+  codigo: string
+  nombre: string
+  barrios?: (string | { nombre: string })[]
+  upz?: UPZ[]
 }
+
+interface Corregimiento {
+  codigo: string
+  nombre: string
+  veredas: string[]
+}
+
+interface Ciudad {
+  municipio_codigo: string
+  municipio_nombre: string
+  departamento_codigo: string
+  tipo_division_urbana: string
+  localidades?: Localidad[]
+  comunas?: Localidad[]
+  corregimientos?: Corregimiento[]
+}
+
+interface GeoData {
+  metadata: Record<string, unknown>
+  ciudades: Ciudad[]
+}
+
+/* ── Mapeo código DANE → nombre departamento ── */
+
+const DEPT_NAMES: Record<string, string> = {
+  '05': 'Antioquia',
+  '08': 'Atlántico',
+  '11': 'Bogotá D.C.',
+  '13': 'Bolívar',
+  '17': 'Caldas',
+  '50': 'Meta',
+  '54': 'Norte de Santander',
+  '63': 'Quindío',
+  '66': 'Risaralda',
+  '68': 'Santander',
+  '73': 'Tolima',
+  '76': 'Valle del Cauca',
+}
+
+/* ── Props ── */
 
 interface Props {
   departmentCode: string | null
@@ -41,27 +87,55 @@ export function GeoSelector({ departmentCode, municipalityCode, localityName, ne
       .catch(() => { setError(true); setLoading(false) })
   }, [])
 
-  // Extract city names from geo data
-  const cities = geoData ? Object.keys(geoData.cities).sort() : []
+  /* ── Derivar opciones ── */
 
-  // Extract localities for selected city
-  const localities = geoData && municipality
-    ? Object.keys(geoData.cities[municipality] ?? {}).filter(k => k !== 'metadata').sort()
+  // Departamentos únicos
+  const departments = geoData
+    ? [...new Map(geoData.ciudades.map(c => [c.departamento_codigo, DEPT_NAMES[c.departamento_codigo] ?? c.departamento_codigo])).entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]))
     : []
 
-  // Extract neighborhoods for selected locality
-  const neighborhoods = geoData && municipality && locality
-    ? (() => {
-        const cityData = geoData.cities[municipality]
-        if (!cityData || !cityData[locality]) return []
-        const locData = cityData[locality]
-        if (Array.isArray(locData)) return (locData as string[]).sort()
-        if (typeof locData === 'object' && locData !== null) {
-          return Object.keys(locData).sort()
-        }
-        return []
-      })()
+  // Municipios del departamento seleccionado
+  const municipalities = geoData && department
+    ? geoData.ciudades
+        .filter(c => c.departamento_codigo === department)
+        .sort((a, b) => a.municipio_nombre.localeCompare(b.municipio_nombre))
     : []
+
+  // Localidades/comunas del municipio seleccionado
+  const selectedCity = geoData && municipality
+    ? geoData.ciudades.find(c => c.municipio_codigo === municipality)
+    : null
+
+  const localities = selectedCity
+    ? (selectedCity.localidades ?? selectedCity.comunas ?? [])
+        .map(l => l.nombre)
+        .sort()
+    : []
+
+  // Barrios de la localidad/comuna seleccionada
+  const getBarrios = (): string[] => {
+    if (!selectedCity || !locality) return []
+    const divisions = selectedCity.localidades ?? selectedCity.comunas ?? []
+    const div = divisions.find(l => l.nombre === locality)
+    if (!div) return []
+
+    // Bogotá: localidad > upz > barrios
+    if (div.upz) {
+      return div.upz.flatMap(u => u.barrios).sort()
+    }
+
+    // Otras ciudades: barrios directo (string[] o {nombre}[])
+    if (div.barrios) {
+      return div.barrios.map(b => typeof b === 'string' ? b : b.nombre).sort()
+    }
+
+    return []
+  }
+
+  const neighborhoods = getBarrios()
+
+  /* ── Handlers ── */
 
   const handleChange = useCallback((field: string, value: string) => {
     let newDept = department
@@ -91,6 +165,8 @@ export function GeoSelector({ departmentCode, municipalityCode, localityName, ne
     })
   }, [department, municipality, locality, neighborhood, onChange])
 
+  /* ── Render ── */
+
   if (error) {
     return <p className="text-sm text-slate-400">Datos geográficos no disponibles</p>
   }
@@ -108,20 +184,9 @@ export function GeoSelector({ departmentCode, municipalityCode, localityName, ne
           className={selectClass}
         >
           <option value="">Seleccionar...</option>
-          {/* Colombia departments - using cities as proxy since geo data is city-based */}
-          <option value="bogota">Bogotá D.C.</option>
-          <option value="antioquia">Antioquia</option>
-          <option value="valle">Valle del Cauca</option>
-          <option value="atlantico">Atlántico</option>
-          <option value="santander">Santander</option>
-          <option value="bolivar">Bolívar</option>
-          <option value="cundinamarca">Cundinamarca</option>
-          <option value="norte_santander">Norte de Santander</option>
-          <option value="tolima">Tolima</option>
-          <option value="risaralda">Risaralda</option>
-          <option value="caldas">Caldas</option>
-          <option value="nariño">Nariño</option>
-          <option value="meta">Meta</option>
+          {departments.map(([code, name]) => (
+            <option key={code} value={code}>{name}</option>
+          ))}
         </select>
       </div>
 
@@ -134,14 +199,18 @@ export function GeoSelector({ departmentCode, municipalityCode, localityName, ne
           className={selectClass}
         >
           <option value="">Seleccionar...</option>
-          {cities.map(city => (
-            <option key={city} value={city}>{city}</option>
+          {municipalities.map(city => (
+            <option key={city.municipio_codigo} value={city.municipio_codigo}>
+              {city.municipio_nombre}
+            </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label className="text-sm font-medium text-slate-700 mb-1 block">Localidad</label>
+        <label className="text-sm font-medium text-slate-700 mb-1 block">
+          {selectedCity?.tipo_division_urbana === 'localidad' ? 'Localidad' : 'Comuna'}
+        </label>
         <select
           value={locality}
           onChange={e => handleChange('locality', e.target.value)}
