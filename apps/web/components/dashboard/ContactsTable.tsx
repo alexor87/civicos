@@ -23,7 +23,7 @@ import { Search, SlidersHorizontal, Plus, ChevronLeft, ChevronRight, Users } fro
 import { useCallback, useTransition, useState } from 'react'
 import type { Database } from '@/lib/types/database'
 import { ContactQuickProfile } from './ContactQuickProfile'
-import Link from 'next/link'
+import { ContactEntryModal } from '@/components/contacts/ContactEntryModal'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 
@@ -52,6 +52,23 @@ function avatarColor(id: string) {
   return AVATAR_COLORS[code % AVATAR_COLORS.length]
 }
 
+function getProfileCompletion(contact: Contact): number {
+  const fields = [
+    contact.first_name,
+    contact.last_name,
+    contact.phone,
+    contact.email,
+    (contact as Record<string, unknown>).document_number,
+    (contact as Record<string, unknown>).department,
+    (contact as Record<string, unknown>).municipality ?? contact.city,
+    contact.address,
+    ((contact.metadata as Record<string, unknown>) ?? {}).political_affinity,
+    ((contact.metadata as Record<string, unknown>) ?? {}).vote_intention,
+  ]
+  const filled = fields.filter((v) => v !== null && v !== undefined && v !== '').length
+  return Math.round((filled / fields.length) * 100)
+}
+
 interface Props {
   contacts: Contact[]
   total: number
@@ -59,14 +76,16 @@ interface Props {
   pageSize: number
   searchQuery?: string
   statusFilter?: string
+  campaignId?: string
 }
 
-export function ContactsTable({ contacts, total, page, pageSize, searchQuery, statusFilter }: Props) {
+export function ContactsTable({ contacts, total, page, pageSize, searchQuery, statusFilter, campaignId }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParamsHook = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [showEntryModal, setShowEntryModal] = useState(false)
 
   const updateQuery = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParamsHook.toString())
@@ -116,12 +135,10 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
             </Button>
           </div>
 
-          <Link href="/dashboard/contacts/new">
-            <Button size="sm" className="h-9 gap-1.5">
-              <Plus className="h-4 w-4" />
-              Añadir Contacto
-            </Button>
-          </Link>
+          <Button size="sm" className="h-9 gap-1.5" onClick={() => setShowEntryModal(true)}>
+            <Plus className="h-4 w-4" />
+            Añadir Contacto
+          </Button>
         </div>
 
         {/* Table */}
@@ -201,9 +218,16 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
 
                       {/* SIMPATÍA */}
                       <TableCell className="py-3">
-                        <Badge variant="outline" className={`text-xs font-semibold tracking-wide ${sympathy.className}`}>
-                          {sympathy.label}
-                        </Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className={`text-xs font-semibold tracking-wide ${sympathy.className}`}>
+                            {sympathy.label}
+                          </Badge>
+                          {getProfileCompletion(contact) < 80 && (
+                            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                              Completar
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
@@ -249,6 +273,13 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
           onClose={() => setSelectedContact(null)}
         />
       )}
+
+      {/* Entry Modal (Quick Add / Full Form) */}
+      <ContactEntryModal
+        open={showEntryModal}
+        onOpenChange={setShowEntryModal}
+        campaignId={campaignId ?? ''}
+      />
     </>
   )
 }

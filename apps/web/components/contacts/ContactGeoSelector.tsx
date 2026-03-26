@@ -34,11 +34,19 @@ interface GeoData {
   ciudades: Ciudad[]
 }
 
+export interface GeoValues {
+  department: string
+  municipality: string
+  commune: string
+  district_barrio: string
+}
+
 interface Props {
   defaultDepartment?: string | null
   defaultMunicipality?: string | null
   defaultCommune?: string | null
   defaultBarrio?: string | null
+  onGeoChange?: (values: GeoValues) => void
 }
 
 export function ContactGeoSelector({
@@ -46,6 +54,7 @@ export function ContactGeoSelector({
   defaultMunicipality,
   defaultCommune,
   defaultBarrio,
+  onGeoChange,
 }: Props) {
   const [geoData, setGeoData] = useState<GeoData | null>(null)
 
@@ -108,7 +117,23 @@ export function ContactGeoSelector({
     // Keep codes in sync for GeoSelector
     setDeptCode(values.department_code)
     setMuniCode(values.municipality_code)
-  }, [geoData])
+
+    // Notify parent (react-hook-form integration)
+    if (onGeoChange) {
+      const deptName = values.department_code ? (DEPT_NAMES[values.department_code] ?? '') : ''
+      let muniName = ''
+      if (values.municipality_code && geoData) {
+        const city = geoData.ciudades.find(c => c.municipio_codigo === values.municipality_code)
+        muniName = city?.municipio_nombre ?? ''
+      }
+      onGeoChange({
+        department: deptName,
+        municipality: muniName,
+        commune: values.locality_name ?? '',
+        district_barrio: values.neighborhood_name ?? '',
+      })
+    }
+  }, [geoData, onGeoChange])
 
   // Wait for initial reverse resolution before rendering GeoSelector
   if (!initialResolved) {

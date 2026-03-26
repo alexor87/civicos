@@ -126,6 +126,7 @@ export default async function ContactsPage({
         pageSize={pageSize}
         searchQuery={params.q}
         statusFilter={params.status}
+        campaignId={campaignId ?? ''}
       />
     </div>
   )
