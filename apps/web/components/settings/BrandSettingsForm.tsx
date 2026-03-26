@@ -117,11 +117,42 @@ export function BrandSettingsForm({ initial }: Props) {
   const [customPrimary,   setCustomPrimary]   = useState(initial.color_primary ?? '#2960ec')
   const [uploading,       setUploading]       = useState(false)
   const [saving,          setSaving]          = useState(false)
+  const [previewTab,      setPreviewTab]      = useState<'sidebar' | 'dashboard' | 'login'>('sidebar')
+  const [suggestedColor,  setSuggestedColor]  = useState<string | null>(null)
 
   const logoInputRef  = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
   const effectivePrimary = selectedPalette?.color_primary ?? customPrimary
+
+  // Extract dominant color from logo using Canvas API
+  function extractDominantColor(url: string) {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = 50
+        canvas.height = 50
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+        ctx.drawImage(img, 0, 0, 50, 50)
+        const data = ctx.getImageData(0, 0, 50, 50).data
+        const colors: Record<string, number> = {}
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i+1], b = data[i+2]
+          // Skip near-white and near-black
+          if (r > 230 && g > 230 && b > 230) continue
+          if (r < 25 && g < 25 && b < 25) continue
+          const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+          colors[hex] = (colors[hex] ?? 0) + 1
+        }
+        const sorted = Object.entries(colors).sort((a, b) => b[1] - a[1])
+        if (sorted.length > 0) setSuggestedColor(sorted[0][0])
+      } catch { /* CORS or other error — ignore */ }
+    }
+    img.src = url
+  }
 
   async function uploadImage(file: File): Promise<string | null> {
     const fd = new FormData()
@@ -138,7 +169,7 @@ export function BrandSettingsForm({ initial }: Props) {
     setUploading(true)
     const url = await uploadImage(file)
     setUploading(false)
-    if (url) { setLogoUrl(url); toast.success('Logo actualizado') }
+    if (url) { setLogoUrl(url); toast.success('Logo actualizado'); extractDominantColor(url); setSuggestedColor(null) }
     else toast.error('No se pudo subir el logo')
     if (logoInputRef.current) logoInputRef.current.value = ''
   }
@@ -213,7 +244,7 @@ export function BrandSettingsForm({ initial }: Props) {
 
         {/* Section: Imágenes */}
         <section className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Imágenes</h3>
+          <h3 className="text-sm font-semibold text-slate-700 tracking-normal">Imágenes</h3>
 
           {/* Foto candidato + Logo — side by side */}
           <div className="flex gap-6">
@@ -266,13 +297,36 @@ export function BrandSettingsForm({ initial }: Props) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">JPG, PNG o WebP · Máx. 5 MB</p>
+
+          {/* Suggested color from logo */}
+          {suggestedColor && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="h-8 w-8 rounded-full border border-slate-200" style={{ backgroundColor: suggestedColor }} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-slate-700">Color detectado en tu logo</p>
+                <p className="text-xs text-slate-500 font-mono">{suggestedColor}</p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => { setCustomPrimary(suggestedColor); setSelectedPalette(null); setSuggestedColor(null) }}
+                className="text-xs"
+              >
+                Usar este color
+              </Button>
+              <button type="button" onClick={() => setSuggestedColor(null)} className="text-xs text-slate-400 hover:text-slate-600">
+                Ignorar
+              </button>
+            </div>
+          )}
         </section>
 
         <div className="border-t border-slate-100" />
 
         {/* Section: Candidato/a */}
         <section className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Candidato/a</h3>
+          <h3 className="text-sm font-semibold text-slate-700 tracking-normal">Candidato/a</h3>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -300,7 +354,7 @@ export function BrandSettingsForm({ initial }: Props) {
 
         {/* Section: Mensaje */}
         <section className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Mensaje</h3>
+          <h3 className="text-sm font-semibold text-slate-700 tracking-normal">Mensaje</h3>
 
           <div className="space-y-1.5">
             <Label htmlFor="slogan">Eslogan de campaña</Label>
@@ -319,7 +373,7 @@ export function BrandSettingsForm({ initial }: Props) {
 
         {/* Section: Colores */}
         <section className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Paleta de colores</h3>
+          <h3 className="text-sm font-semibold text-slate-700 tracking-normal">Paleta de colores</h3>
 
           {/* Category tabs */}
           <div className="flex gap-1.5">
@@ -393,14 +447,70 @@ export function BrandSettingsForm({ initial }: Props) {
 
       {/* ── Right: live preview ─────────────────────────────────────────────── */}
       <div className="hidden xl:flex flex-col items-center gap-3 pt-1 flex-shrink-0">
-        <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">Vista previa</p>
+        <p className="text-xs text-slate-400 font-medium tracking-normal">Vista previa</p>
+
+        {/* Preview tabs */}
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+          {(['sidebar', 'dashboard', 'login'] as const).map(tab => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setPreviewTab(tab)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${previewTab === tab ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              {tab === 'sidebar' ? 'Panel lateral' : tab === 'dashboard' ? 'Dashboard' : 'Login'}
+            </button>
+          ))}
+        </div>
+
         <div className="sticky top-6">
-          <SidebarPreview
-            primary={effectivePrimary}
-            candidateName={candidateName}
-            slogan={slogan}
-            photoUrl={photoUrl || logoUrl || null}
-          />
+          {previewTab === 'sidebar' && (
+            <SidebarPreview
+              primary={effectivePrimary}
+              candidateName={candidateName}
+              slogan={slogan}
+              photoUrl={photoUrl || logoUrl || null}
+            />
+          )}
+          {previewTab === 'dashboard' && (
+            <div className="w-52 rounded-xl border shadow-lg overflow-hidden bg-white text-xs select-none">
+              <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: `${effectivePrimary}22` }}>
+                <div className="h-6 w-6 rounded-full flex items-center justify-center text-white text-[9px] font-bold" style={{ backgroundColor: effectivePrimary }}>
+                  {(candidateName?.[0] ?? 'C').toUpperCase()}
+                </div>
+                <span className="font-bold text-slate-900 truncate">{candidateName || 'Tu campaña'}</span>
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {['1,247', '89%', '142', '24'].map((val, i) => (
+                    <div key={i} className="rounded-lg p-2 text-center" style={{ backgroundColor: `${effectivePrimary}10` }}>
+                      <p className="font-black text-sm" style={{ color: effectivePrimary }}>{val}</p>
+                      <p className="text-[9px] text-slate-400">{['Contactos', 'Simpatía', 'Visitas', 'Equipo'][i]}</p>
+                    </div>
+                  ))}
+                </div>
+                {slogan && <p className="text-[10px] italic text-slate-400 text-center">"{slogan}"</p>}
+              </div>
+            </div>
+          )}
+          {previewTab === 'login' && (
+            <div className="w-52 rounded-xl border shadow-lg overflow-hidden bg-white text-xs select-none p-6 flex flex-col items-center gap-3">
+              <div className="h-12 w-12 rounded-full flex items-center justify-center text-white font-bold text-lg" style={{ backgroundColor: effectivePrimary }}>
+                {logoUrl
+                  ? <img src={logoUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+                  : (candidateName?.[0] ?? 'C').toUpperCase()
+                }
+              </div>
+              <p className="font-bold text-slate-900">{candidateName || 'Tu campaña'}</p>
+              <div className="w-full space-y-2">
+                <div className="h-7 w-full rounded border border-slate-200 bg-slate-50" />
+                <div className="h-7 w-full rounded border border-slate-200 bg-slate-50" />
+                <div className="h-7 w-full rounded text-center text-white text-[10px] font-bold flex items-center justify-center" style={{ backgroundColor: effectivePrimary }}>
+                  Iniciar sesión
+                </div>
+              </div>
+            </div>
+          )}
           <p className="text-[11px] text-slate-400 text-center mt-2">Actualiza en tiempo real</p>
         </div>
       </div>

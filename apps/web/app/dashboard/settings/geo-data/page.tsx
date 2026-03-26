@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, CheckCircle, AlertCircle, MapPin, Trash2, FileJson, FileSpreadsheet, Eye, Flag, Target } from 'lucide-react'
@@ -416,6 +417,7 @@ export default function GeoDataPage() {
       setPendingRows(rows)
       setPreview(rows.slice(0, 10))
       setTotalRows(rows.length)
+      toast.success(`${rows.length.toLocaleString('es-ES')} unidades geográficas de Colombia listas para importar`)
     } catch {
       setError('No se pudo cargar los datos de Colombia.')
     }
@@ -593,6 +595,19 @@ export default function GeoDataPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Empty state banner ───────────────────────────────────────────────── */}
+      {stats && totalUnits === 0 && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-lg">
+          <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">No hay datos geográficos cargados</p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              Sin datos geográficos, el módulo de Territorio y el canvassing no funcionarán correctamente. Carga los datos de Colombia o importa un archivo para empezar.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Section 2: Stats ──────────────────────────────────────────────────── */}
       {stats && activeStats.length > 0 && (

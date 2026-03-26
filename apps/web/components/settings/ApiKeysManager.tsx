@@ -32,18 +32,26 @@ interface Props {
 }
 
 const SCOPE_OPTIONS = [
-  { value: 'contacts:read',   label: 'Leer contactos'   },
-  { value: 'contacts:write',  label: 'Crear contactos'  },
-  { value: 'campaigns:read',  label: 'Leer campaña'     },
+  { value: 'contacts:read',   label: 'Leer contactos',  description: 'Consultar la lista de contactos y sus datos' },
+  { value: 'contacts:write',  label: 'Crear contactos', description: 'Crear y actualizar contactos desde sistemas externos' },
+  { value: 'campaigns:read',  label: 'Leer campaña',    description: 'Acceder a la información básica de la campaña' },
+]
+
+const EXPIRATION_OPTIONS = [
+  { value: '30',  label: '30 días' },
+  { value: '90',  label: '90 días' },
+  { value: '365', label: '1 año' },
+  { value: '',    label: 'Sin expiración' },
 ]
 
 export function ApiKeysManager({ initialKeys, canManage }: Props) {
   const [keys,        setKeys]        = useState<ApiKey[]>(initialKeys)
   const [creating,    setCreating]    = useState(false)
   const [newKeyName,  setNewKeyName]  = useState('')
-  const [newScopes,   setNewScopes]   = useState<string[]>(['contacts:read'])
-  const [newKeyValue, setNewKeyValue] = useState<string | null>(null)
-  const [loading,     setLoading]     = useState(false)
+  const [newScopes,     setNewScopes]     = useState<string[]>(['contacts:read'])
+  const [newExpiration, setNewExpiration] = useState('90')
+  const [newKeyValue,   setNewKeyValue]   = useState<string | null>(null)
+  const [loading,       setLoading]       = useState(false)
 
   async function handleCreate() {
     if (!newKeyName.trim()) return
@@ -52,7 +60,7 @@ export function ApiKeysManager({ initialKeys, canManage }: Props) {
       const res = await fetch('/api/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newKeyName.trim(), scopes: newScopes }),
+        body: JSON.stringify({ name: newKeyName.trim(), scopes: newScopes, expires_in_days: newExpiration ? Number(newExpiration) : null }),
       })
       if (!res.ok) throw new Error()
       const data = await res.json()
@@ -60,6 +68,7 @@ export function ApiKeysManager({ initialKeys, canManage }: Props) {
       setKeys(prev => [data.api_key, ...prev])
       setNewKeyName('')
       setNewScopes(['contacts:read'])
+      setNewExpiration('90')
     } catch {
       toast.error('No se pudo crear la API key')
       setCreating(false)
@@ -180,18 +189,36 @@ export function ApiKeysManager({ initialKeys, canManage }: Props) {
               />
             </div>
             <div>
+              <label className="text-sm font-medium text-[#1b1f23] mb-1 block">Expiración</label>
+              <select
+                value={newExpiration}
+                onChange={e => setNewExpiration(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                aria-label="Expiración"
+              >
+                {EXPIRATION_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="text-sm font-medium text-[#1b1f23] mb-2 block">Permisos</label>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {SCOPE_OPTIONS.map(opt => (
-                  <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <label key={opt.value} className="flex items-start gap-2 text-sm cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newScopes.includes(opt.value)}
                       onChange={() => toggleScope(opt.value)}
-                      className="rounded"
+                      className="rounded mt-0.5"
                     />
-                    <span>{opt.label}</span>
-                    <code className="text-xs text-[#6a737d] ml-auto">{opt.value}</code>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span>{opt.label}</span>
+                        <code className="text-xs text-[#6a737d]">{opt.value}</code>
+                      </div>
+                      <p className="text-xs text-[#6a737d] mt-0.5">{opt.description}</p>
+                    </div>
                   </label>
                 ))}
               </div>
