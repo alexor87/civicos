@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { checkPermission } from '@/lib/auth/check-permission'
 
 const VALID_ROLES = ['field_coordinator', 'volunteer', 'analyst', 'comms_coordinator']
 
@@ -9,14 +10,14 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  const canInvite = await checkPermission(supabase, user.id, 'team.invite')
+  if (!canInvite) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id, campaign_ids, role')
     .eq('id', user.id)
     .single()
-
-  const canInvite = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
-  if (!canInvite) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const body = await request.json()
   const { email, role, full_name, phone } = body

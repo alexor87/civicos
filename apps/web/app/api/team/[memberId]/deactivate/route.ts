@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkPermission } from '@/lib/auth/check-permission'
 
 export async function POST(
   request: Request,
@@ -10,15 +11,14 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  const canDeactivate = await checkPermission(supabase, user.id, 'team.deactivate')
+  if (!canDeactivate) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id, role')
     .eq('id', user.id)
     .single()
-
-  if (!['super_admin', 'campaign_manager'].includes(profile?.role ?? '')) {
-    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-  }
 
   // Cannot deactivate yourself
   if (memberId === user.id) {

@@ -2,23 +2,26 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { usePermissions } from '@/hooks/usePermission'
 
 const TABS = [
-  { href: '/dashboard/settings/campaign',     label: 'Campaña'          },
-  { href: '/dashboard/settings/team',         label: 'Equipo'           },
-  { href: '/dashboard/settings/integrations', label: 'Integraciones'    },
-  { href: '/dashboard/settings/geo-data',     label: 'Base Geográfica'  },
-  { href: '/dashboard/settings/api',          label: 'API'              },
-  { href: '/dashboard/settings/brand',        label: 'Marca e Identidad' },
+  { href: '/dashboard/settings/campaign',     label: 'Campaña',           permission: 'settings.campaign' },
+  { href: '/dashboard/settings/team',         label: 'Equipo',            permission: 'team.view' },
+  { href: '/dashboard/settings/integrations', label: 'Integraciones',     permission: 'settings.integrations' },
+  { href: '/dashboard/settings/geo-data',     label: 'Base Geográfica',   permission: 'settings.geo' },
+  { href: '/dashboard/settings/api',          label: 'API',               permission: 'settings.api' },
+  { href: '/dashboard/settings/brand',        label: 'Marca e Identidad', permission: 'settings.brand' },
 ]
 
 export function SettingsTabs() {
   const pathname = usePathname()
+  const perms = usePermissions(TABS.map(t => t.permission))
+  const visibleTabs = TABS.filter(t => perms[t.permission])
 
   return (
     <div className="border-b border-[#dcdee6]">
       <nav className="flex gap-1 -mb-px">
-        {TABS.map(tab => {
+        {visibleTabs.map(tab => {
           const active = pathname.startsWith(tab.href)
           return (
             <Link

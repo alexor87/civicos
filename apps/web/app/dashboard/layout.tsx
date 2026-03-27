@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { BrandProvider } from '@/components/dashboard/BrandProvider'
+import { PermissionsProvider } from '@/components/providers/PermissionsProvider'
 import { brandFromColor, type TenantBrand } from '@/lib/brand-utils'
 import { Toaster } from '@/components/ui/sonner'
 
@@ -94,6 +95,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <BrandProvider brand={effectiveBrand}>
+      <PermissionsProvider
+        userRole={profile.role}
+        customRoleId={profile.custom_role_id ?? null}
+        tenantId={profile.tenant_id}
+      >
       <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar
           tenantName={tenantName}
@@ -122,6 +128,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
         <Toaster />
       </div>
+      </PermissionsProvider>
     </BrandProvider>
   )
 }

@@ -8,8 +8,9 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { RealtimeSuggestionsBadge } from '@/components/dashboard/RealtimeSuggestionsBadge'
+import { usePermissions } from '@/hooks/usePermission'
 
-const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: typeof LayoutDashboard; badge?: boolean }[] }[] = [
+const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: typeof LayoutDashboard; badge?: boolean; permission?: string }[] }[] = [
   {
     items: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -18,32 +19,32 @@ const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: 
   {
     label: 'Gestión',
     items: [
-      { href: '/dashboard/contacts',  label: 'Contactos',   icon: Users      },
-      { href: '/dashboard/calendar',  label: 'Calendario',  icon: CalendarDays },
-      { href: '/dashboard/team',      label: 'Voluntarios', icon: UserCircle },
+      { href: '/dashboard/contacts',  label: 'Contactos',   icon: Users,        permission: 'contacts.view' },
+      { href: '/dashboard/calendar',  label: 'Calendario',  icon: CalendarDays, permission: 'calendar.view' },
+      { href: '/dashboard/team',      label: 'Voluntarios', icon: UserCircle,   permission: 'volunteers.view' },
     ],
   },
   {
     label: 'Territorio',
     items: [
-      { href: '/dashboard/canvassing', label: 'Territorio', icon: Map },
+      { href: '/dashboard/canvassing', label: 'Territorio', icon: Map, permission: 'territory.view' },
     ],
   },
   {
     label: 'Comunicaciones',
     items: [
-      { href: '/dashboard/comunicaciones',    label: 'Comunicaciones',   icon: Mail      },
-      { href: '/dashboard/campaigns',         label: 'Campañas',         icon: Megaphone },
-      { href: '/dashboard/automatizaciones',  label: 'Automatizaciones', icon: GitBranch },
+      { href: '/dashboard/comunicaciones',    label: 'Comunicaciones',   icon: Mail,      permission: 'communications.view' },
+      { href: '/dashboard/campaigns',         label: 'Campañas',         icon: Megaphone, permission: 'communications.view' },
+      { href: '/dashboard/automatizaciones',  label: 'Automatizaciones', icon: GitBranch, permission: 'flows.view' },
     ],
   },
   {
     label: 'Inteligencia',
     items: [
-      { href: '/dashboard/reportes',       label: 'Reportes',          icon: BarChart2 },
-      { href: '/dashboard/ai',             label: 'Agentes IA',        icon: Brain, badge: true },
-      { href: '/dashboard/ai/knowledge',   label: 'Base Conocimiento', icon: BookOpen  },
-      { href: '/dashboard/contenido',      label: 'Contenido IA',      icon: Sparkles  },
+      { href: '/dashboard/reportes',       label: 'Reportes',          icon: BarChart2, permission: 'reports.view' },
+      { href: '/dashboard/ai',             label: 'Agentes IA',        icon: Brain, badge: true, permission: 'ai_agents.view' },
+      { href: '/dashboard/ai/knowledge',   label: 'Base Conocimiento', icon: BookOpen,  permission: 'knowledge_base.view' },
+      { href: '/dashboard/contenido',      label: 'Contenido IA',      icon: Sparkles,  permission: 'content_ia.view' },
     ],
   },
 ]
@@ -83,6 +84,10 @@ export function Sidebar({
 }: Props) {
   const pathname = usePathname()
   const router = useRouter()
+
+  // Get all unique permissions from NAV_GROUPS
+  const allNavPermissions = NAV_GROUPS.flatMap(g => g.items).map(i => i.permission).filter(Boolean) as string[]
+  const perms = usePermissions(allNavPermissions)
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -138,7 +143,10 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-2">
-        {NAV_GROUPS.map((group, gi) => (
+        {NAV_GROUPS.map((group, gi) => {
+          const visibleItems = group.items.filter(item => !item.permission || perms[item.permission])
+          if (visibleItems.length === 0) return null
+          return (
           <div key={gi}>
             {group.label && (
               <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -146,7 +154,7 @@ export function Sidebar({
               </p>
             )}
             <div className="space-y-0.5">
-              {group.items.map(item => {
+              {visibleItems.map(item => {
                 const active = isActive(item.href)
                 return (
                   <Link
@@ -171,7 +179,8 @@ export function Sidebar({
               })}
             </div>
           </div>
-        ))}
+          )
+        })}
       </nav>
 
       {/* User footer */}

@@ -138,6 +138,30 @@ export interface KnowledgeDocumentMetaRow {
   created_at: string
 }
 
+export interface CustomRoleRow {
+  id: string
+  tenant_id: string
+  name: string
+  slug: string
+  description: string | null
+  color: string
+  is_system: boolean
+  base_role_key: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RolePermissionRow {
+  id: string
+  tenant_id: string
+  role_id: string
+  permission: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -186,6 +210,7 @@ export interface Database {
           id: string
           tenant_id: string
           role: UserRole
+          custom_role_id: string | null
           campaign_ids: string[]
           full_name: string | null
           avatar_url: string | null
@@ -432,6 +457,16 @@ export interface Database {
         Row: KnowledgeDocumentMetaRow
         Insert: Omit<KnowledgeDocumentMetaRow, 'id' | 'created_at'>
         Update: Partial<Omit<KnowledgeDocumentMetaRow, 'id' | 'created_at'>>
+      }
+      custom_roles: {
+        Row: CustomRoleRow
+        Insert: Omit<CustomRoleRow, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<CustomRoleRow, 'id' | 'created_at' | 'updated_at'>>
+      }
+      role_permissions: {
+        Row: RolePermissionRow
+        Insert: Omit<RolePermissionRow, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<RolePermissionRow, 'id' | 'created_at' | 'updated_at'>>
       }
     }
     Views: Record<string, never>

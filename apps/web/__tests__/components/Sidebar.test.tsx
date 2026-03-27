@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Sidebar } from '@/components/dashboard/Sidebar'
+import { PermissionsProvider } from '@/components/providers/PermissionsProvider'
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/dashboard',
@@ -28,19 +29,27 @@ const PROPS = {
   suggestionCount: 0,
 }
 
+function renderSidebar(props = PROPS) {
+  return render(
+    <PermissionsProvider userRole={props.userRole} customRoleId={null} tenantId="t1">
+      <Sidebar {...props} />
+    </PermissionsProvider>
+  )
+}
+
 describe('Sidebar', () => {
   it('muestra el nombre de la organización', () => {
-    render(<Sidebar {...PROPS} />)
+    renderSidebar()
     expect(screen.getByText('Campaña Demo')).toBeInTheDocument()
   })
 
   it('muestra la campaña activa', () => {
-    render(<Sidebar {...PROPS} />)
+    renderSidebar()
     expect(screen.getByText('Elecciones 2026')).toBeInTheDocument()
   })
 
   it('muestra los ítems de navegación principales', () => {
-    render(<Sidebar {...PROPS} />)
+    renderSidebar()
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Contactos')).toBeInTheDocument()
     expect(screen.getAllByText('Territorio').length).toBeGreaterThanOrEqual(1)
@@ -49,17 +58,17 @@ describe('Sidebar', () => {
   })
 
   it('muestra el nombre del usuario en el footer', () => {
-    render(<Sidebar {...PROPS} />)
+    renderSidebar()
     expect(screen.getByText('Admin User')).toBeInTheDocument()
   })
 
   it('muestra el label del rol', () => {
-    render(<Sidebar {...PROPS} />)
+    renderSidebar()
     expect(screen.getByText('Super Admin')).toBeInTheDocument()
   })
 
   it('muestra las iniciales del usuario', () => {
-    render(<Sidebar {...PROPS} />)
+    renderSidebar()
     expect(screen.getByText('AU')).toBeInTheDocument()
   })
 })

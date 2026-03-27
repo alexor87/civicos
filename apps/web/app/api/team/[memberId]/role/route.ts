@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkPermission } from '@/lib/auth/check-permission'
 
 const VALID_ROLES = ['field_coordinator', 'volunteer', 'analyst', 'comms_coordinator', 'campaign_manager']
 
@@ -12,15 +13,14 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  const canManage = await checkPermission(supabase, user.id, 'team.manage_roles')
+  if (!canManage) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id, role')
     .eq('id', user.id)
     .single()
-
-  if (!['super_admin', 'campaign_manager'].includes(profile?.role ?? '')) {
-    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-  }
 
   const body = await request.json()
   const { role } = body
