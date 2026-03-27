@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { checkPermission } from '@/lib/auth/check-permission'
 
 export async function GET() {
@@ -28,7 +28,8 @@ export async function GET() {
 
   // Auto-initialize system roles if none exist for this tenant
   if (!roles || roles.length === 0) {
-    await supabase.rpc('initialize_system_roles', { p_tenant_id: profile.tenant_id })
+    const adminSupabase = await createAdminClient()
+    await adminSupabase.rpc('initialize_system_roles', { p_tenant_id: profile.tenant_id })
     const { data: freshRoles } = await supabase
       .from('custom_roles')
       .select('*')
