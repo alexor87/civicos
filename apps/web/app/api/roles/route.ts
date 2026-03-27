@@ -42,17 +42,48 @@ export async function GET() {
 
   if (!profile) return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 })
 
-  // Single SECURITY DEFINER RPC: auto-inits roles if needed + returns roles with member counts
-  const { data: roles, error } = await supabase.rpc('get_tenant_roles', {
+  // Try SECURITY DEFINER RPC first (auto-inits + returns roles with member counts)
+  const { data: rpcRoles, error: rpcError } = await supabase.rpc('get_tenant_roles', {
     p_tenant_id: profile.tenant_id,
   })
 
-  if (error) {
-    console.error('[roles/GET] get_tenant_roles RPC failed:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!rpcError && rpcRoles !== null) {
+    return NextResponse.json(rpcRoles)
   }
 
-  return NextResponse.json(roles ?? [])
+  // Fallback: direct table queries (works via _via_profile RLS policies)
+  console.warn('[roles/GET] RPC unavailable, using direct queries:', rpcError?.message)
+
+  const { data: roles, error: rolesError } = await supabase
+    .from('custom_roles')
+    .select('id, tenant_id, name, slug, description, color, is_system, base_role_key, created_by, created_at, updated_at')
+    .eq('tenant_id', profile.tenant_id)
+    .order('is_system', { ascending: false })
+    .order('name')
+
+  if (rolesError) {
+    console.error('[roles/GET] direct query failed:', rolesError.message)
+    return NextResponse.json({ error: rolesError.message }, { status: 500 })
+  }
+
+  // Compute member counts
+  const { data: members } = await supabase
+    .from('profiles')
+    .select('custom_role_id')
+    .eq('tenant_id', profile.tenant_id)
+    .not('custom_role_id', 'is', null)
+
+  const counts: Record<string, number> = {}
+  members?.forEach((m: { custom_role_id: string }) => {
+    counts[m.custom_role_id] = (counts[m.custom_role_id] || 0) + 1
+  })
+
+  const rolesWithCounts = (roles ?? []).map((r: any) => ({
+    ...r,
+    member_count: counts[r.id] || 0,
+  }))
+
+  return NextResponse.json(rolesWithCounts)
 }
 
 export async function POST(request: Request) {

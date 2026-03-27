@@ -13,6 +13,7 @@ function makeChain(data: unknown, error: unknown = null) {
     delete:  () => chain,
     eq:      () => chain,
     neq:     () => chain,
+    not:     () => chain,
     order:   () => chain,
     in:      () => chain,
     single:  async () => ({ data, error }),
@@ -84,9 +85,22 @@ beforeEach(() => {
   // Default fromHandler: profiles returns tenant_id, custom_roles returns roles array
   fromHandler = (table: string) => {
     if (table === 'profiles') {
-      return makeChain({ tenant_id: 'tenant-1', custom_role_id: null })
+      // Supports both .single() (tenant lookup) and .not() chain (member counts)
+      const chain: Record<string, any> = {}
+      chain.select = () => chain
+      chain.eq = () => chain
+      chain.neq = () => chain
+      chain.not = () => ({
+        then: (r: any) => r({ data: [], error: null }),
+      })
+      chain.order = () => chain
+      chain.in = () => chain
+      chain.single = async () => ({ data: { tenant_id: 'tenant-1', custom_role_id: null }, error: null })
+      chain.then = (r: any) => r({ data: { tenant_id: 'tenant-1', custom_role_id: null }, error: null })
+      return chain
     }
     if (table === 'custom_roles') {
+      const rolesData = [{ id: 'role-1', name: 'Admin', is_system: true }]
       return {
         select: () => ({
           eq: () => ({
@@ -95,7 +109,7 @@ beforeEach(() => {
             }),
             order: () => ({
               order: () => ({
-                then: (r: any) => r({ data: [{ id: 'role-1', name: 'Admin', is_system: true }], error: null }),
+                then: (r: any) => r({ data: rolesData, error: null }),
               }),
             }),
           }),
@@ -166,19 +180,21 @@ describe('GET /api/roles', () => {
     expect(res.status).toBe(403)
   })
 
-  it('devuelve 500 cuando get_tenant_roles RPC falla', async () => {
+  it('usa fallback directo cuando get_tenant_roles RPC falla', async () => {
     mockRpc.mockImplementation((name: string) => {
       if (name === 'check_user_permission') {
         return Promise.resolve({ data: true, error: null })
       }
       if (name === 'get_tenant_roles') {
-        return Promise.resolve({ data: null, error: { message: 'function error' } })
+        return Promise.resolve({ data: null, error: { message: 'not in schema cache' } })
       }
       return Promise.resolve({ data: null, error: null })
     })
     const { GET } = await import('@/app/api/roles/route')
     const res = await GET()
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(Array.isArray(body)).toBe(true)
   })
 
   it('devuelve lista de roles desde get_tenant_roles RPC', async () => {
@@ -205,7 +221,7 @@ describe('GET /api/roles', () => {
     expect(mockRpc).toHaveBeenCalledWith('get_tenant_roles', { p_tenant_id: 'tenant-1' })
   })
 
-  it('devuelve array vacío si RPC retorna null', async () => {
+  it('usa fallback si RPC retorna null sin error', async () => {
     mockRpc.mockImplementation((name: string) => {
       if (name === 'check_user_permission') {
         return Promise.resolve({ data: true, error: null })
@@ -219,7 +235,7 @@ describe('GET /api/roles', () => {
     const res = await GET()
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body).toEqual([])
+    expect(Array.isArray(body)).toBe(true)
   })
 })
 
