@@ -149,14 +149,18 @@ describe('GET /api/roles', () => {
   })
 
   it('devuelve 403 sin permiso roles.manage', async () => {
-    mockCheckPermission.mockResolvedValueOnce(false)
+    // Must return false for both server client and admin client calls
+    mockCheckPermission.mockResolvedValue(false)
     const { GET } = await import('@/app/api/roles/route')
     const res = await GET()
     expect(res.status).toBe(403)
   })
 
-  it('usa fallback cuando RPC falla y no hay roles', async () => {
-    mockRpc.mockResolvedValueOnce({ error: { message: 'function not found' } })
+  it('usa admin RPC como fallback cuando server RPC falla y no hay roles', async () => {
+    // First RPC call (server client) fails, second (admin) succeeds
+    mockRpc
+      .mockResolvedValueOnce({ error: { message: 'function not found' } })
+      .mockResolvedValueOnce({ error: null })
 
     let queryCount = 0
     fromHandler = (table: string) => {
@@ -175,8 +179,8 @@ describe('GET /api/roles', () => {
               order: () => ({
                 order: () => {
                   queryCount++
-                  // First query returns empty (triggers init), second returns roles
-                  if (queryCount <= 1) {
+                  // First two queries return empty (admin then server fallback), third returns roles after init
+                  if (queryCount <= 2) {
                     return { then: (r: any) => r({ data: [], error: null }) }
                   }
                   return {
@@ -197,12 +201,15 @@ describe('GET /api/roles', () => {
     const { GET } = await import('@/app/api/roles/route')
     const res = await GET()
     expect(res.status).toBe(200)
-    expect(mockInitializeSystemRoles).toHaveBeenCalledWith(expect.anything(), 'tenant-1')
+    // Both server and admin RPCs were called
+    expect(mockRpc).toHaveBeenCalledWith('initialize_system_roles', { p_tenant_id: 'tenant-1' })
   })
 
-  it('devuelve 500 cuando RPC y fallback fallan', async () => {
-    mockRpc.mockResolvedValueOnce({ error: { message: 'function not found' } })
-    mockInitializeSystemRoles.mockResolvedValueOnce({ success: false, error: 'table missing' })
+  it('devuelve 500 cuando ambos RPCs fallan', async () => {
+    // Both server and admin RPCs fail
+    mockRpc
+      .mockResolvedValueOnce({ error: { message: 'function not found' } })
+      .mockResolvedValueOnce({ error: { message: 'admin also failed' } })
 
     fromHandler = (table: string) => {
       if (table === 'profiles') {
@@ -295,7 +302,8 @@ describe('POST /api/roles', () => {
   })
 
   it('devuelve 403 sin permiso', async () => {
-    mockCheckPermission.mockResolvedValueOnce(false)
+    // Must return false for both server client and admin client calls
+    mockCheckPermission.mockResolvedValue(false)
     const { POST } = await import('@/app/api/roles/route')
     const req = makeRequest('http://localhost/api/roles', {
       method: 'POST',
