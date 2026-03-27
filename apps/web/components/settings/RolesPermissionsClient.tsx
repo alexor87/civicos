@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import { RolesList } from '@/components/settings/RolesList'
 import { PermissionEditor } from '@/components/settings/PermissionEditor'
 import { CreateRoleModal } from '@/components/settings/CreateRoleModal'
@@ -34,6 +35,9 @@ export function RolesPermissionsClient() {
         if (!selectedRoleId && data.length > 0) {
           setSelectedRoleId(data[0].id)
         }
+      } else {
+        const body = await res.json().catch(() => ({}))
+        toast.error(body.error || `Error ${res.status} al cargar roles`)
       }
     } catch {
       toast.error('Error al cargar roles')
@@ -65,6 +69,23 @@ export function RolesPermissionsClient() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  if (roles.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-sm text-slate-500">No se encontraron roles configurados.</p>
+        <p className="text-xs text-slate-400 mt-1">Recarga la página o contacta al administrador.</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => { setLoading(true); fetchRoles() }}
+        >
+          Reintentar
+        </Button>
       </div>
     )
   }

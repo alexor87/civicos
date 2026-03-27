@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
+import { initializeSystemRoles } from '@/lib/roles/initialize-system-roles'
 
 export async function GET() {
   const supabase = await createClient()
@@ -33,16 +34,30 @@ export async function GET() {
 
   // Auto-initialize system roles if none exist for this tenant
   if (!roles || roles.length === 0) {
+    // Try RPC first (fastest if migration functions are registered)
     const { error: rpcError } = await admin.rpc('initialize_system_roles', { p_tenant_id: profile.tenant_id })
-    if (!rpcError) {
-      const { data: freshRoles } = await admin
-        .from('custom_roles')
-        .select('*')
-        .eq('tenant_id', profile.tenant_id)
-        .order('is_system', { ascending: false })
-        .order('name')
-      roles = freshRoles
+
+    if (rpcError) {
+      // RPC unavailable — fallback to direct insert via admin client
+      console.warn('[roles/GET] RPC initialize_system_roles failed, using fallback:', rpcError.message)
+      const result = await initializeSystemRoles(admin, profile.tenant_id)
+      if (!result.success) {
+        console.error('[roles/GET] Fallback initialization also failed:', result.error)
+        return NextResponse.json(
+          { error: 'No se pudieron inicializar los roles del sistema' },
+          { status: 500 }
+        )
+      }
     }
+
+    // Re-fetch after initialization (always, regardless of which path succeeded)
+    const { data: freshRoles } = await admin
+      .from('custom_roles')
+      .select('*')
+      .eq('tenant_id', profile.tenant_id)
+      .order('is_system', { ascending: false })
+      .order('name')
+    roles = freshRoles
   }
 
   // Get member counts per role

@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { ALL_PERMISSIONS } from '@/lib/permissions'
 
 export interface PermissionsContextValue {
@@ -28,7 +27,7 @@ export function PermissionsProvider({ userRole, customRoleId, tenantId, children
   const [loading, setLoading] = useState(true)
 
   const fetchPermissions = useCallback(async () => {
-    // Super admin has all permissions
+    // Super admin has all permissions — shortcut without API call
     if (userRole === 'super_admin') {
       const allTrue: Record<string, boolean> = {}
       ALL_PERMISSIONS.forEach(p => { allTrue[p] = true })
@@ -38,40 +37,15 @@ export function PermissionsProvider({ userRole, customRoleId, tenantId, children
     }
 
     try {
-      const supabase = createClient()
-
-      let roleId = customRoleId
-
-      // If no custom_role_id, look up the system role
-      if (!roleId) {
-        const { data: sysRole } = await supabase
-          .from('custom_roles')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .eq('base_role_key', userRole)
-          .eq('is_system', true)
-          .single()
-
-        roleId = sysRole?.id ?? null
-      }
-
-      if (!roleId) {
+      // Fetch via server API to bypass RLS issues (JWT lacks tenant_id claim)
+      const res = await fetch('/api/me/permissions')
+      if (res.ok) {
+        const permMap = await res.json()
+        setPermissions(permMap)
+      } else {
+        console.error('[PermissionsProvider] Failed to fetch permissions:', res.status)
         setPermissions({})
-        setLoading(false)
-        return
       }
-
-      const { data: perms } = await supabase
-        .from('role_permissions')
-        .select('permission, is_active')
-        .eq('role_id', roleId)
-
-      const permMap: Record<string, boolean> = {}
-      perms?.forEach((p: { permission: string; is_active: boolean }) => {
-        permMap[p.permission] = p.is_active
-      })
-
-      setPermissions(permMap)
     } catch {
       setPermissions({})
     } finally {

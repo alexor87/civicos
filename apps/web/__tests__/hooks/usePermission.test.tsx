@@ -4,14 +4,9 @@ import { PermissionsProvider } from '@/components/providers/PermissionsProvider'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { PermissionGate } from '@/components/auth/PermissionGate'
 
-// Mock supabase client
-const mockEq = vi.fn()
-const mockSelect = vi.fn(() => ({ eq: mockEq }))
-const mockFrom = vi.fn(() => ({ select: mockSelect }))
-
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({ from: mockFrom }),
-}))
+// Mock fetch for /api/me/permissions (used by PermissionsProvider for non-super_admin)
+const mockFetch = vi.fn()
+vi.stubGlobal('fetch', mockFetch)
 
 function SinglePermTest({ permission }: { permission: string }) {
   const has = usePermission(permission)
@@ -30,32 +25,11 @@ function MultiPermTest({ permissions }: { permissions: string[] }) {
 }
 
 function setupMock(perms: { permission: string; is_active: boolean }[]) {
-  // For system role lookup: from('custom_roles').select('id').eq('tenant_id',...).eq('base_role_key',...).eq('is_system',...)
-  const singleResult = { data: { id: 'sys-role-1' }, error: null }
-  const permsResult = { data: perms, error: null }
-
-  mockFrom.mockImplementation((table: string) => {
-    if (table === 'custom_roles') {
-      return {
-        select: () => ({
-          eq: () => ({
-            eq: () => ({
-              eq: () => ({
-                single: () => Promise.resolve(singleResult),
-              }),
-            }),
-          }),
-        }),
-      }
-    }
-    if (table === 'role_permissions') {
-      return {
-        select: () => ({
-          eq: () => Promise.resolve(permsResult),
-        }),
-      }
-    }
-    return { select: mockSelect }
+  const permMap: Record<string, boolean> = {}
+  perms.forEach(p => { permMap[p.permission] = p.is_active })
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve(permMap),
   })
 }
 
@@ -108,20 +82,7 @@ describe('usePermission', () => {
   })
 
   it('uses customRoleId when provided', async () => {
-    const permsResult = {
-      data: [{ permission: 'contacts.view', is_active: true }],
-      error: null,
-    }
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'role_permissions') {
-        return {
-          select: () => ({
-            eq: () => Promise.resolve(permsResult),
-          }),
-        }
-      }
-      return { select: mockSelect }
-    })
+    setupMock([{ permission: 'contacts.view', is_active: true }])
 
     render(
       <PermissionsProvider userRole="field_coordinator" customRoleId="custom-123" tenantId="t1">

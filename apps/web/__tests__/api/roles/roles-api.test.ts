@@ -52,6 +52,14 @@ vi.mock('@/lib/permissions', () => ({
   ALL_PERMISSIONS: ['contacts.view', 'contacts.create', 'roles.manage'],
 }))
 
+// ── initializeSystemRoles mock ──────────────────────────────────────────────────
+
+const mockInitializeSystemRoles = vi.fn()
+
+vi.mock('@/lib/roles/initialize-system-roles', () => ({
+  initializeSystemRoles: (...args: any[]) => mockInitializeSystemRoles(...args),
+}))
+
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
 function makeRequest(url: string, init?: RequestInit) {
@@ -65,6 +73,7 @@ beforeEach(() => {
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
   mockCheckPermission.mockResolvedValue(true)
   mockRpc.mockResolvedValue({ error: null })
+  mockInitializeSystemRoles.mockResolvedValue({ success: true })
 
   // Default fromHandler: profiles returns tenant_id, custom_roles returns roles array
   fromHandler = (table: string) => {
@@ -144,6 +153,87 @@ describe('GET /api/roles', () => {
     const { GET } = await import('@/app/api/roles/route')
     const res = await GET()
     expect(res.status).toBe(403)
+  })
+
+  it('usa fallback cuando RPC falla y no hay roles', async () => {
+    mockRpc.mockResolvedValueOnce({ error: { message: 'function not found' } })
+
+    let queryCount = 0
+    fromHandler = (table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: (...args: any[]) => {
+            if (args[0] === 'tenant_id') return makeChain({ tenant_id: 'tenant-1' })
+            return makeChain([])
+          },
+        }
+      }
+      if (table === 'custom_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                order: () => {
+                  queryCount++
+                  // First query returns empty (triggers init), second returns roles
+                  if (queryCount <= 1) {
+                    return { then: (r: any) => r({ data: [], error: null }) }
+                  }
+                  return {
+                    then: (r: any) => r({
+                      data: [{ id: 'role-1', name: 'Super Admin', is_system: true }],
+                      error: null,
+                    }),
+                  }
+                },
+              }),
+            }),
+          }),
+        }
+      }
+      return makeChain(null)
+    }
+
+    const { GET } = await import('@/app/api/roles/route')
+    const res = await GET()
+    expect(res.status).toBe(200)
+    expect(mockInitializeSystemRoles).toHaveBeenCalledWith(expect.anything(), 'tenant-1')
+  })
+
+  it('devuelve 500 cuando RPC y fallback fallan', async () => {
+    mockRpc.mockResolvedValueOnce({ error: { message: 'function not found' } })
+    mockInitializeSystemRoles.mockResolvedValueOnce({ success: false, error: 'table missing' })
+
+    fromHandler = (table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: (...args: any[]) => {
+            if (args[0] === 'tenant_id') return makeChain({ tenant_id: 'tenant-1' })
+            return makeChain([])
+          },
+        }
+      }
+      if (table === 'custom_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                order: () => ({
+                  then: (r: any) => r({ data: [], error: null }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      return makeChain(null)
+    }
+
+    const { GET } = await import('@/app/api/roles/route')
+    const res = await GET()
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error).toContain('inicializar')
   })
 
   it('devuelve lista de roles con member_count', async () => {
