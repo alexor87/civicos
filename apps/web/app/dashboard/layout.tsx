@@ -21,7 +21,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/login')
+  if (!profile) {
+    await supabase.auth.signOut()
+    redirect('/login?error=no-profile')
+  }
 
   // Fetch tenant branding (source of truth for brand identity)
   const { data: tenantBranding } = await supabase
