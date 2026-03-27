@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { usePermissions } from '@/hooks/usePermission'
+import { usePermissions, usePermissionsLoading } from '@/hooks/usePermission'
 
 const TABS = [
   { href: '/dashboard/settings/campaign',     label: 'Campaña',           permission: 'settings.campaign' },
@@ -16,7 +16,8 @@ const TABS = [
 export function SettingsTabs() {
   const pathname = usePathname()
   const perms = usePermissions(TABS.map(t => t.permission))
-  const visibleTabs = TABS.filter(t => perms[t.permission])
+  const loading = usePermissionsLoading()
+  const visibleTabs = loading ? TABS : TABS.filter(t => perms[t.permission])
 
   return (
     <div className="border-b border-[#dcdee6]">

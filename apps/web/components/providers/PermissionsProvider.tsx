@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ALL_PERMISSIONS } from '@/lib/permissions'
 
 export interface PermissionsContextValue {
   permissions: Record<string, boolean>
@@ -29,14 +30,8 @@ export function PermissionsProvider({ userRole, customRoleId, tenantId, children
   const fetchPermissions = useCallback(async () => {
     // Super admin has all permissions
     if (userRole === 'super_admin') {
-      // Use a proxy that returns true for any key
-      const allTrue = new Proxy({} as Record<string, boolean>, {
-        get: (_target, prop) => {
-          if (typeof prop === 'string') return true
-          return undefined
-        },
-        has: () => true,
-      })
+      const allTrue: Record<string, boolean> = {}
+      ALL_PERMISSIONS.forEach(p => { allTrue[p] = true })
       setPermissions(allTrue)
       setLoading(false)
       return

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { RealtimeSuggestionsBadge } from '@/components/dashboard/RealtimeSuggestionsBadge'
-import { usePermissions } from '@/hooks/usePermission'
+import { usePermissions, usePermissionsLoading } from '@/hooks/usePermission'
 
 const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: typeof LayoutDashboard; badge?: boolean; permission?: string }[] }[] = [
   {
@@ -88,6 +88,7 @@ export function Sidebar({
   // Get all unique permissions from NAV_GROUPS
   const allNavPermissions = NAV_GROUPS.flatMap(g => g.items).map(i => i.permission).filter(Boolean) as string[]
   const perms = usePermissions(allNavPermissions)
+  const permsLoading = usePermissionsLoading()
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -144,7 +145,9 @@ export function Sidebar({
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-2">
         {NAV_GROUPS.map((group, gi) => {
-          const visibleItems = group.items.filter(item => !item.permission || perms[item.permission])
+          const visibleItems = permsLoading
+            ? group.items
+            : group.items.filter(item => !item.permission || perms[item.permission])
           if (visibleItems.length === 0) return null
           return (
           <div key={gi}>

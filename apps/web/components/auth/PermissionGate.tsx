@@ -1,6 +1,6 @@
 'use client'
 
-import { usePermissions } from '@/hooks/usePermission'
+import { usePermissions, usePermissionsLoading } from '@/hooks/usePermission'
 
 interface Props {
   permission: string | string[]
@@ -12,6 +12,11 @@ interface Props {
 export function PermissionGate({ permission, mode = 'all', fallback = null, children }: Props) {
   const keys = Array.isArray(permission) ? permission : [permission]
   const results = usePermissions(keys)
+  const loading = usePermissionsLoading()
+
+  // While loading, show children to avoid flash of hidden content
+  if (loading) return <>{children}</>
+
   const granted = mode === 'any'
     ? keys.some(p => results[p])
     : keys.every(p => results[p])
