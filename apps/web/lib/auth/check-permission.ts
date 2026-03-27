@@ -1,17 +1,14 @@
-import { createAdminClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Server-side permission check.
- * Uses admin client (service role) to bypass RLS — the profiles table
- * RLS policy depends on JWT claims that may not resolve in all SSR contexts.
+ * Used in API routes and server components.
  */
 export async function checkPermission(
-  _supabase: unknown,
+  supabase: SupabaseClient,
   userId: string,
   permission: string
 ): Promise<boolean> {
-  const supabase = createAdminClient()
-
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, custom_role_id, tenant_id')
@@ -52,12 +49,10 @@ export async function checkPermission(
  * Check multiple permissions at once (server-side).
  */
 export async function checkPermissions(
-  _supabase: unknown,
+  supabase: SupabaseClient,
   userId: string,
   permissions: string[]
 ): Promise<Record<string, boolean>> {
-  const supabase = createAdminClient()
-
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, custom_role_id, tenant_id')

@@ -1,4 +1,4 @@
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { TeamMembersClient } from '@/components/settings/TeamMembersClient'
 import { TeamSubNav } from '@/components/settings/TeamSubNav'
@@ -9,16 +9,13 @@ export default async function TeamSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Use admin client to bypass RLS for data queries
-  const adminSupabase = createAdminClient()
-
-  const { data: profile } = await adminSupabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id, role')
     .eq('id', user.id)
     .single()
 
-  const { data: members } = await adminSupabase
+  const { data: members } = await supabase
     .from('profiles')
     .select('id, full_name, email, role, created_at')
     .eq('tenant_id', profile?.tenant_id ?? '')
