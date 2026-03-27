@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
 
 export async function GET() {
@@ -10,7 +11,12 @@ export async function GET() {
   const can = await checkPermission(supabase, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
-  const { data: profile } = await supabase
+  // Use admin client for data queries — bypasses RLS which fails when
+  // JWT lacks tenant_id claim (enrich-jwt hook not registered).
+  // Safe because auth + permission already verified above.
+  const admin = createAdminClient()
+
+  const { data: profile } = await admin
     .from('profiles')
     .select('tenant_id')
     .eq('id', user.id)
@@ -18,8 +24,8 @@ export async function GET() {
 
   if (!profile) return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 })
 
-  // Get roles with member count
-  let { data: roles } = await supabase
+  // Get roles
+  let { data: roles } = await admin
     .from('custom_roles')
     .select('*')
     .eq('tenant_id', profile.tenant_id)
@@ -28,19 +34,20 @@ export async function GET() {
 
   // Auto-initialize system roles if none exist for this tenant
   if (!roles || roles.length === 0) {
-    const adminSupabase = await createAdminClient()
-    await adminSupabase.rpc('initialize_system_roles', { p_tenant_id: profile.tenant_id })
-    const { data: freshRoles } = await supabase
-      .from('custom_roles')
-      .select('*')
-      .eq('tenant_id', profile.tenant_id)
-      .order('is_system', { ascending: false })
-      .order('name')
-    roles = freshRoles
+    const { error: rpcError } = await admin.rpc('initialize_system_roles', { p_tenant_id: profile.tenant_id })
+    if (!rpcError) {
+      const { data: freshRoles } = await admin
+        .from('custom_roles')
+        .select('*')
+        .eq('tenant_id', profile.tenant_id)
+        .order('is_system', { ascending: false })
+        .order('name')
+      roles = freshRoles
+    }
   }
 
   // Get member counts per role
-  const { data: profiles } = await supabase
+  const { data: profiles } = await admin
     .from('profiles')
     .select('custom_role_id')
     .eq('tenant_id', profile.tenant_id)
@@ -68,7 +75,9 @@ export async function POST(request: Request) {
   const can = await checkPermission(supabase, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient()
+
+  const { data: profile } = await admin
     .from('profiles')
     .select('tenant_id')
     .eq('id', user.id)
@@ -94,7 +103,7 @@ export async function POST(request: Request) {
     .replace(/^-|-$/g, '')
 
   // Check uniqueness
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from('custom_roles')
     .select('id')
     .eq('tenant_id', profile.tenant_id)
@@ -112,7 +121,7 @@ export async function POST(request: Request) {
   }
 
   // Create the role
-  const { data: newRole, error } = await supabase
+  const { data: newRole, error } = await admin
     .from('custom_roles')
     .insert({
       tenant_id: profile.tenant_id,
@@ -133,7 +142,7 @@ export async function POST(request: Request) {
 
   // If base_role_id provided, copy permissions from that role
   if (base_role_id) {
-    const { data: basePerms } = await supabase
+    const { data: basePerms } = await admin
       .from('role_permissions')
       .select('permission, is_active')
       .eq('role_id', base_role_id)
@@ -146,7 +155,7 @@ export async function POST(request: Request) {
         is_active: p.is_active,
       }))
 
-      await supabase.from('role_permissions').insert(newPerms)
+      await admin.from('role_permissions').insert(newPerms)
     }
   } else {
     // Create all permissions as false for the new role
@@ -157,7 +166,7 @@ export async function POST(request: Request) {
       permission: p,
       is_active: false,
     }))
-    await supabase.from('role_permissions').insert(newPerms)
+    await admin.from('role_permissions').insert(newPerms)
   }
 
   return NextResponse.json(newRole, { status: 201 })

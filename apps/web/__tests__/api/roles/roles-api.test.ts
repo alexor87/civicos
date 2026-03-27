@@ -31,6 +31,13 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    from: (...args: any[]) => fromHandler(args[0]),
+    rpc: mockRpc,
+  })),
+}))
+
 // ── checkPermission mock ────────────────────────────────────────────────────────
 
 const mockCheckPermission = vi.fn()

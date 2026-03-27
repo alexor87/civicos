@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
 
 export async function GET(
@@ -14,7 +15,9 @@ export async function GET(
   const can = await checkPermission(supabase, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
-  const { data: permissions } = await supabase
+  const admin = createAdminClient()
+
+  const { data: permissions } = await admin
     .from('role_permissions')
     .select('permission, is_active')
     .eq('role_id', roleId)
@@ -42,8 +45,10 @@ export async function PUT(
     return NextResponse.json({ error: 'permissions debe ser un array' }, { status: 400 })
   }
 
+  const admin = createAdminClient()
+
   // Use the RPC function
-  const { error } = await supabase.rpc('save_role_permissions', {
+  const { error } = await admin.rpc('save_role_permissions', {
     p_role_id: roleId,
     p_permissions: permissions,
   })

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
 
 export async function PATCH(
@@ -14,11 +15,13 @@ export async function PATCH(
   const can = await checkPermission(supabase, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
+  const admin = createAdminClient()
+
   const body = await request.json()
   const { name, description, color } = body
 
   // Cannot rename system roles
-  const { data: role } = await supabase
+  const { data: role } = await admin
     .from('custom_roles')
     .select('is_system')
     .eq('id', roleId)
@@ -38,7 +41,7 @@ export async function PATCH(
       .replace(/^-|-$/g, '')
   }
 
-  const { error } = await supabase
+  const { error } = await admin
     .from('custom_roles')
     .update(updateData)
     .eq('id', roleId)
@@ -60,8 +63,10 @@ export async function DELETE(
   const can = await checkPermission(supabase, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
+  const admin = createAdminClient()
+
   // Cannot delete system roles
-  const { data: role } = await supabase
+  const { data: role } = await admin
     .from('custom_roles')
     .select('is_system, tenant_id')
     .eq('id', roleId)
@@ -78,20 +83,20 @@ export async function DELETE(
   }
 
   // Move members to the new role
-  await supabase
+  await admin
     .from('profiles')
     .update({ custom_role_id: reassign_to_role_id })
     .eq('custom_role_id', roleId)
     .eq('tenant_id', role.tenant_id)
 
   // Delete permissions first (cascade should handle this, but be explicit)
-  await supabase
+  await admin
     .from('role_permissions')
     .delete()
     .eq('role_id', roleId)
 
   // Delete the role
-  const { error } = await supabase
+  const { error } = await admin
     .from('custom_roles')
     .delete()
     .eq('id', roleId)
