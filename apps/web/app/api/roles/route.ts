@@ -19,12 +19,24 @@ export async function GET() {
   if (!profile) return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 })
 
   // Get roles with member count
-  const { data: roles } = await supabase
+  let { data: roles } = await supabase
     .from('custom_roles')
     .select('*')
     .eq('tenant_id', profile.tenant_id)
     .order('is_system', { ascending: false })
     .order('name')
+
+  // Auto-initialize system roles if none exist for this tenant
+  if (!roles || roles.length === 0) {
+    await supabase.rpc('initialize_system_roles', { p_tenant_id: profile.tenant_id })
+    const { data: freshRoles } = await supabase
+      .from('custom_roles')
+      .select('*')
+      .eq('tenant_id', profile.tenant_id)
+      .order('is_system', { ascending: false })
+      .order('name')
+    roles = freshRoles
+  }
 
   // Get member counts per role
   const { data: profiles } = await supabase
