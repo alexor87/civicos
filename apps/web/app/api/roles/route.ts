@@ -10,14 +10,12 @@ async function canManageRoles(
   supabase: any,
   userId: string
 ): Promise<boolean> {
-  // Try RPC first (SECURITY DEFINER — always works)
   const { data: rpcResult, error: rpcError } = await supabase.rpc(
     'check_user_permission',
     { p_user_id: userId, p_permission: 'roles.manage' }
   )
   if (!rpcError && rpcResult !== null) return rpcResult === true
 
-  // Fallback: read profile directly and check super_admin
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -27,32 +25,15 @@ async function canManageRoles(
   return profile?.role === 'super_admin'
 }
 
-/**
- * Query helper: tries admin client first, falls back to server client.
- */
-async function queryWithFallback<T>(
-  adminQuery: () => Promise<{ data: T | null; error: any }>,
-  serverQuery: () => Promise<{ data: T | null; error: any }>
-): Promise<T | null> {
-  const { data: d1 } = await adminQuery()
-  if (d1) return d1
-  const { data: d2 } = await serverQuery()
-  return d2
-}
-
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  // Permission check via SECURITY DEFINER RPC
   const can = await canManageRoles(supabase, user.id)
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
-  let admin: ReturnType<typeof createAdminClient>
-  try { admin = createAdminClient() } catch { admin = null as any }
-
-  // Get tenant_id
+  // Get tenant_id (profiles_select_own policy — always works)
   const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id')
@@ -60,71 +41,18 @@ export async function GET() {
     .single()
 
   if (!profile) return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 })
-  const tenantId = profile.tenant_id
 
-  // Get roles — try admin (bypasses RLS), fallback to server client
-  let roles = await queryWithFallback(
-    () => admin
-      ? admin.from('custom_roles').select('*').eq('tenant_id', tenantId).order('is_system', { ascending: false }).order('name')
-      : Promise.resolve({ data: null, error: 'no admin' }),
-    () => supabase.from('custom_roles').select('*').eq('tenant_id', tenantId).order('is_system', { ascending: false }).order('name')
-  )
+  // Single SECURITY DEFINER RPC: auto-inits roles if needed + returns roles with member counts
+  const { data: roles, error } = await supabase.rpc('get_tenant_roles', {
+    p_tenant_id: profile.tenant_id,
+  })
 
-  // Auto-initialize system roles if none exist
-  if (!roles || (Array.isArray(roles) && roles.length === 0)) {
-    const { error: rpcError } = await supabase.rpc('initialize_system_roles', { p_tenant_id: tenantId })
-
-    if (rpcError) {
-      console.warn('[roles/GET] Server client RPC failed:', rpcError.message)
-      if (admin) {
-        const { error: adminRpcError } = await admin.rpc('initialize_system_roles', { p_tenant_id: tenantId })
-        if (adminRpcError) {
-          console.error('[roles/GET] Admin RPC also failed:', adminRpcError.message)
-          return NextResponse.json(
-            { error: 'No se pudieron inicializar los roles del sistema' },
-            { status: 500 }
-          )
-        }
-      } else {
-        return NextResponse.json(
-          { error: 'No se pudieron inicializar los roles del sistema' },
-          { status: 500 }
-        )
-      }
-    }
-
-    // Re-fetch after initialization
-    roles = await queryWithFallback(
-      () => admin
-        ? admin.from('custom_roles').select('*').eq('tenant_id', tenantId).order('is_system', { ascending: false }).order('name')
-        : Promise.resolve({ data: null, error: 'no admin' }),
-      () => supabase.from('custom_roles').select('*').eq('tenant_id', tenantId).order('is_system', { ascending: false }).order('name')
-    )
+  if (error) {
+    console.error('[roles/GET] get_tenant_roles RPC failed:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Get member counts per role
-  const allProfiles = await queryWithFallback(
-    () => admin
-      ? admin.from('profiles').select('custom_role_id').eq('tenant_id', tenantId)
-      : Promise.resolve({ data: null, error: 'no admin' }),
-    () => supabase.from('profiles').select('custom_role_id').eq('tenant_id', tenantId)
-  )
-
-  const memberCounts: Record<string, number> = {}
-  if (Array.isArray(allProfiles)) {
-    allProfiles.forEach((p: { custom_role_id: string | null }) => {
-      if (p.custom_role_id) {
-        memberCounts[p.custom_role_id] = (memberCounts[p.custom_role_id] || 0) + 1
-      }
-    })
-  }
-
-  const rolesWithCount = (Array.isArray(roles) ? roles : []).map((r: any) => ({
-    ...r,
-    member_count: memberCounts[r.id] || 0,
-  }))
-
-  return NextResponse.json(rolesWithCount)
+  return NextResponse.json(roles ?? [])
 }
 
 export async function POST(request: Request) {

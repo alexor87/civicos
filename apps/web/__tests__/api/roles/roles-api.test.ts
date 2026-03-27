@@ -155,7 +155,6 @@ describe('GET /api/roles', () => {
   })
 
   it('devuelve 403 sin permiso roles.manage', async () => {
-    // RPC returns false (no permission)
     mockRpc.mockImplementation((name: string) => {
       if (name === 'check_user_permission') {
         return Promise.resolve({ data: false, error: null })
@@ -167,146 +166,60 @@ describe('GET /api/roles', () => {
     expect(res.status).toBe(403)
   })
 
-  it('usa admin RPC como fallback cuando server RPC falla y no hay roles', async () => {
-    let rpcCallCount = 0
+  it('devuelve 500 cuando get_tenant_roles RPC falla', async () => {
     mockRpc.mockImplementation((name: string) => {
-      rpcCallCount++
       if (name === 'check_user_permission') {
         return Promise.resolve({ data: true, error: null })
       }
-      if (name === 'initialize_system_roles') {
-        // First init call (server) fails, second (admin) succeeds
-        if (rpcCallCount <= 2) return Promise.resolve({ error: { message: 'function not found' } })
-        return Promise.resolve({ error: null })
+      if (name === 'get_tenant_roles') {
+        return Promise.resolve({ data: null, error: { message: 'function error' } })
       }
       return Promise.resolve({ data: null, error: null })
     })
-
-    let queryCount = 0
-    fromHandler = (table: string) => {
-      if (table === 'profiles') {
-        return {
-          select: (...args: any[]) => {
-            if (args[0] === 'tenant_id') return makeChain({ tenant_id: 'tenant-1' })
-            return makeChain([])
-          },
-        }
-      }
-      if (table === 'custom_roles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({
-                order: () => {
-                  queryCount++
-                  // First two queries return empty (admin then server fallback), third returns roles after init
-                  if (queryCount <= 2) {
-                    return { then: (r: any) => r({ data: [], error: null }) }
-                  }
-                  return {
-                    then: (r: any) => r({
-                      data: [{ id: 'role-1', name: 'Super Admin', is_system: true }],
-                      error: null,
-                    }),
-                  }
-                },
-              }),
-            }),
-          }),
-        }
-      }
-      return makeChain(null)
-    }
-
     const { GET } = await import('@/app/api/roles/route')
     const res = await GET()
-    expect(res.status).toBe(200)
-    // Both server and admin RPCs were called
-    expect(mockRpc).toHaveBeenCalledWith('initialize_system_roles', { p_tenant_id: 'tenant-1' })
+    expect(res.status).toBe(500)
   })
 
-  it('devuelve 500 cuando ambos RPCs fallan', async () => {
+  it('devuelve lista de roles desde get_tenant_roles RPC', async () => {
+    const mockRoles = [
+      { id: 'role-1', name: 'Super Admin', is_system: true, member_count: 2 },
+      { id: 'role-2', name: 'Custom', is_system: false, member_count: 0 },
+    ]
     mockRpc.mockImplementation((name: string) => {
       if (name === 'check_user_permission') {
         return Promise.resolve({ data: true, error: null })
       }
-      // Both init RPCs fail
-      return Promise.resolve({ error: { message: 'function not found' } })
+      if (name === 'get_tenant_roles') {
+        return Promise.resolve({ data: mockRoles, error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
     })
-
-    fromHandler = (table: string) => {
-      if (table === 'profiles') {
-        return {
-          select: (...args: any[]) => {
-            if (args[0] === 'tenant_id') return makeChain({ tenant_id: 'tenant-1' })
-            return makeChain([])
-          },
-        }
-      }
-      if (table === 'custom_roles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({
-                order: () => ({
-                  then: (r: any) => r({ data: [], error: null }),
-                }),
-              }),
-            }),
-          }),
-        }
-      }
-      return makeChain(null)
-    }
-
-    const { GET } = await import('@/app/api/roles/route')
-    const res = await GET()
-    expect(res.status).toBe(500)
-    const body = await res.json()
-    expect(body.error).toContain('inicializar')
-  })
-
-  it('devuelve lista de roles con member_count', async () => {
-    fromHandler = (table: string) => {
-      if (table === 'profiles') {
-        // First call: get tenant_id, second call: get member counts
-        const profileChain = makeChain({ tenant_id: 'tenant-1' })
-        let callCount = 0
-        return {
-          select: (...args: any[]) => {
-            callCount++
-            if (args[0] === 'tenant_id') return makeChain({ tenant_id: 'tenant-1' })
-            // custom_role_id select for member counts
-            return makeChain([{ custom_role_id: 'role-1' }, { custom_role_id: 'role-1' }, { custom_role_id: null }])
-          },
-        }
-      }
-      if (table === 'custom_roles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({
-                order: () => ({
-                  then: (r: any) => r({
-                    data: [
-                      { id: 'role-1', name: 'Super Admin', is_system: true },
-                      { id: 'role-2', name: 'Custom', is_system: false },
-                    ],
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }
-      }
-      return makeChain(null)
-    }
     const { GET } = await import('@/app/api/roles/route')
     const res = await GET()
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(Array.isArray(body)).toBe(true)
+    expect(body.length).toBe(2)
+    expect(body[0].member_count).toBe(2)
+    expect(mockRpc).toHaveBeenCalledWith('get_tenant_roles', { p_tenant_id: 'tenant-1' })
+  })
+
+  it('devuelve array vacío si RPC retorna null', async () => {
+    mockRpc.mockImplementation((name: string) => {
+      if (name === 'check_user_permission') {
+        return Promise.resolve({ data: true, error: null })
+      }
+      if (name === 'get_tenant_roles') {
+        return Promise.resolve({ data: null, error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
+    const { GET } = await import('@/app/api/roles/route')
+    const res = await GET()
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual([])
   })
 })
 
