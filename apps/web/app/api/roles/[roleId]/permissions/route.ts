@@ -12,10 +12,10 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const can = await checkPermission(supabase, user.id, 'roles.manage')
-  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-
   const admin = createAdminClient()
+
+  const can = await checkPermission(admin, user.id, 'roles.manage')
+  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const { data: permissions } = await admin
     .from('role_permissions')
@@ -35,7 +35,9 @@ export async function PUT(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const can = await checkPermission(supabase, user.id, 'roles.manage')
+  const admin = createAdminClient()
+
+  const can = await checkPermission(admin, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const body = await request.json()
@@ -44,8 +46,6 @@ export async function PUT(
   if (!Array.isArray(permissions)) {
     return NextResponse.json({ error: 'permissions debe ser un array' }, { status: 400 })
   }
-
-  const admin = createAdminClient()
 
   // Use the RPC function
   const { error } = await admin.rpc('save_role_permissions', {

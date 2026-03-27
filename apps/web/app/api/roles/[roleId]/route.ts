@@ -12,10 +12,10 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const can = await checkPermission(supabase, user.id, 'roles.manage')
-  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-
   const admin = createAdminClient()
+
+  const can = await checkPermission(admin, user.id, 'roles.manage')
+  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const body = await request.json()
   const { name, description, color } = body
@@ -60,10 +60,10 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const can = await checkPermission(supabase, user.id, 'roles.manage')
-  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-
   const admin = createAdminClient()
+
+  const can = await checkPermission(admin, user.id, 'roles.manage')
+  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   // Cannot delete system roles
   const { data: role } = await admin

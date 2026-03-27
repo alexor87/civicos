@@ -8,13 +8,12 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const can = await checkPermission(supabase, user.id, 'roles.manage')
-  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-
-  // Use admin client for data queries — bypasses RLS which fails when
-  // JWT lacks tenant_id claim (enrich-jwt hook not registered).
-  // Safe because auth + permission already verified above.
+  // Admin client bypasses RLS — needed because JWT lacks tenant_id claim
+  // (enrich-jwt hook not registered). Safe: auth verified above.
   const admin = createAdminClient()
+
+  const can = await checkPermission(admin, user.id, 'roles.manage')
+  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const { data: profile } = await admin
     .from('profiles')
@@ -72,10 +71,10 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const can = await checkPermission(supabase, user.id, 'roles.manage')
-  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-
   const admin = createAdminClient()
+
+  const can = await checkPermission(admin, user.id, 'roles.manage')
+  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const { data: profile } = await admin
     .from('profiles')
