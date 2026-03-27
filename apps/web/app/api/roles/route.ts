@@ -1,11 +1,34 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { checkPermission } from '@/lib/auth/check-permission'
+
+/**
+ * Permission check via SECURITY DEFINER RPC (bypasses RLS entirely).
+ * Falls back to a direct profile check if the RPC doesn't exist yet.
+ */
+async function canManageRoles(
+  supabase: any,
+  userId: string
+): Promise<boolean> {
+  // Try RPC first (SECURITY DEFINER — always works)
+  const { data: rpcResult, error: rpcError } = await supabase.rpc(
+    'check_user_permission',
+    { p_user_id: userId, p_permission: 'roles.manage' }
+  )
+  if (!rpcError && rpcResult !== null) return rpcResult === true
+
+  // Fallback: read profile directly and check super_admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
+
+  return profile?.role === 'super_admin'
+}
 
 /**
  * Query helper: tries admin client first, falls back to server client.
- * Needed because admin client may be misconfigured in production.
  */
 async function queryWithFallback<T>(
   adminQuery: () => Promise<{ data: T | null; error: any }>,
@@ -22,17 +45,14 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  // Permission check via SECURITY DEFINER RPC
+  const can = await canManageRoles(supabase, user.id)
+  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+
   let admin: ReturnType<typeof createAdminClient>
   try { admin = createAdminClient() } catch { admin = null as any }
 
-  // Permission check: try server client first (known to work), admin as fallback
-  let can = await checkPermission(supabase, user.id, 'roles.manage')
-  if (!can && admin) {
-    can = await checkPermission(admin, user.id, 'roles.manage')
-  }
-  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-
-  // Get tenant_id via server client (works reliably)
+  // Get tenant_id
   const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id')
@@ -52,12 +72,10 @@ export async function GET() {
 
   // Auto-initialize system roles if none exist
   if (!roles || (Array.isArray(roles) && roles.length === 0)) {
-    // Try RPC via server client (SECURITY DEFINER — works with any authenticated user)
     const { error: rpcError } = await supabase.rpc('initialize_system_roles', { p_tenant_id: tenantId })
 
     if (rpcError) {
       console.warn('[roles/GET] Server client RPC failed:', rpcError.message)
-      // Try via admin client
       if (admin) {
         const { error: adminRpcError } = await admin.rpc('initialize_system_roles', { p_tenant_id: tenantId })
         if (adminRpcError) {
@@ -114,15 +132,12 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  // Permission check via SECURITY DEFINER RPC
+  const can = await canManageRoles(supabase, user.id)
+  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+
   let admin: ReturnType<typeof createAdminClient>
   try { admin = createAdminClient() } catch { admin = null as any }
-
-  // Permission check
-  let can = await checkPermission(supabase, user.id, 'roles.manage')
-  if (!can && admin) {
-    can = await checkPermission(admin, user.id, 'roles.manage')
-  }
-  if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const { data: profile } = await supabase
     .from('profiles')

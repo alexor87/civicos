@@ -9,6 +9,8 @@ function createMockSupabase(opts: {
   const { profile = null, sysRole = null, perms = [] } = opts
 
   return {
+    // RPC not available — forces fallback to direct queries
+    rpc: vi.fn(() => Promise.resolve({ data: null, error: { message: 'function not found' } })),
     from: vi.fn((table: string) => {
       if (table === 'profiles') {
         return {

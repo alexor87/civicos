@@ -2,13 +2,21 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Server-side permission check.
- * Used in API routes and server components.
+ * Tries SECURITY DEFINER RPC first (bypasses RLS), falls back to direct queries.
  */
 export async function checkPermission(
   supabase: SupabaseClient,
   userId: string,
   permission: string
 ): Promise<boolean> {
+  // Try RPC first (SECURITY DEFINER — bypasses RLS)
+  const { data: rpcResult, error: rpcError } = await supabase.rpc(
+    'check_user_permission',
+    { p_user_id: userId, p_permission: permission }
+  )
+  if (!rpcError && rpcResult !== null) return rpcResult === true
+
+  // Fallback: direct queries (may fail if RLS blocks)
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, custom_role_id, tenant_id')

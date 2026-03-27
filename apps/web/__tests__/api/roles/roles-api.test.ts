@@ -38,7 +38,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   })),
 }))
 
-// ── checkPermission mock ────────────────────────────────────────────────────────
+// ── checkPermission mock (used by [roleId] routes, not by main route) ────────
 
 const mockCheckPermission = vi.fn()
 
@@ -72,7 +72,13 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
   mockCheckPermission.mockResolvedValue(true)
-  mockRpc.mockResolvedValue({ error: null })
+  // Default: RPC check_user_permission returns true, other RPCs succeed
+  mockRpc.mockImplementation((name: string) => {
+    if (name === 'check_user_permission') {
+      return Promise.resolve({ data: true, error: null })
+    }
+    return Promise.resolve({ data: null, error: null })
+  })
   mockInitializeSystemRoles.mockResolvedValue({ success: true })
 
   // Default fromHandler: profiles returns tenant_id, custom_roles returns roles array
@@ -149,18 +155,32 @@ describe('GET /api/roles', () => {
   })
 
   it('devuelve 403 sin permiso roles.manage', async () => {
-    // Must return false for both server client and admin client calls
-    mockCheckPermission.mockResolvedValue(false)
+    // RPC returns false (no permission)
+    mockRpc.mockImplementation((name: string) => {
+      if (name === 'check_user_permission') {
+        return Promise.resolve({ data: false, error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
     const { GET } = await import('@/app/api/roles/route')
     const res = await GET()
     expect(res.status).toBe(403)
   })
 
   it('usa admin RPC como fallback cuando server RPC falla y no hay roles', async () => {
-    // First RPC call (server client) fails, second (admin) succeeds
-    mockRpc
-      .mockResolvedValueOnce({ error: { message: 'function not found' } })
-      .mockResolvedValueOnce({ error: null })
+    let rpcCallCount = 0
+    mockRpc.mockImplementation((name: string) => {
+      rpcCallCount++
+      if (name === 'check_user_permission') {
+        return Promise.resolve({ data: true, error: null })
+      }
+      if (name === 'initialize_system_roles') {
+        // First init call (server) fails, second (admin) succeeds
+        if (rpcCallCount <= 2) return Promise.resolve({ error: { message: 'function not found' } })
+        return Promise.resolve({ error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
 
     let queryCount = 0
     fromHandler = (table: string) => {
@@ -206,10 +226,13 @@ describe('GET /api/roles', () => {
   })
 
   it('devuelve 500 cuando ambos RPCs fallan', async () => {
-    // Both server and admin RPCs fail
-    mockRpc
-      .mockResolvedValueOnce({ error: { message: 'function not found' } })
-      .mockResolvedValueOnce({ error: { message: 'admin also failed' } })
+    mockRpc.mockImplementation((name: string) => {
+      if (name === 'check_user_permission') {
+        return Promise.resolve({ data: true, error: null })
+      }
+      // Both init RPCs fail
+      return Promise.resolve({ error: { message: 'function not found' } })
+    })
 
     fromHandler = (table: string) => {
       if (table === 'profiles') {
@@ -302,8 +325,12 @@ describe('POST /api/roles', () => {
   })
 
   it('devuelve 403 sin permiso', async () => {
-    // Must return false for both server client and admin client calls
-    mockCheckPermission.mockResolvedValue(false)
+    mockRpc.mockImplementation((name: string) => {
+      if (name === 'check_user_permission') {
+        return Promise.resolve({ data: false, error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
     const { POST } = await import('@/app/api/roles/route')
     const req = makeRequest('http://localhost/api/roles', {
       method: 'POST',

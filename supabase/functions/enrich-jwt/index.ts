@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
   const claims = {
     ...existingClaims,
     tenant_id: profile?.tenant_id ?? null,
-    user_role: profile?.role ?? null,
+    role: profile?.role ?? null,
     campaign_ids: profile?.campaign_ids ?? [],
   }
 
