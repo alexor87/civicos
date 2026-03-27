@@ -69,12 +69,20 @@ export async function middleware(request: NextRequest) {
 
   // Redirect unauthenticated to login
   if (!user && !isPublicPath) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    supabaseResponse.cookies.getAll().forEach(cookie => {
+      response.cookies.set(cookie.name, cookie.value, cookie)
+    })
+    return response
   }
 
   // Redirect authenticated users away from auth pages
   if (user && isPublicPath && pathname !== '/auth/callback') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const response = NextResponse.redirect(new URL('/dashboard', request.url))
+    supabaseResponse.cookies.getAll().forEach(cookie => {
+      response.cookies.set(cookie.name, cookie.value, cookie)
+    })
+    return response
   }
 
   return supabaseResponse
