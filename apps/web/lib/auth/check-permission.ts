@@ -9,12 +9,15 @@ export async function checkPermission(
   userId: string,
   permission: string
 ): Promise<boolean> {
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, custom_role_id, tenant_id')
     .eq('id', userId)
     .single()
 
+  if (profileError) {
+    console.error('[checkPermission] profile query error:', profileError.message, '| userId:', userId)
+  }
   if (!profile) return false
   if (profile.role === 'super_admin') return true
 
@@ -53,12 +56,15 @@ export async function checkPermissions(
   userId: string,
   permissions: string[]
 ): Promise<Record<string, boolean>> {
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, custom_role_id, tenant_id')
     .eq('id', userId)
     .single()
 
+  if (profileError) {
+    console.error('[checkPermissions] profile query error:', profileError.message, '| userId:', userId)
+  }
   if (!profile) {
     return Object.fromEntries(permissions.map(p => [p, false]))
   }
