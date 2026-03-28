@@ -12,7 +12,10 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const admin = createAdminClient()
+  let admin: ReturnType<typeof createAdminClient>
+  try { admin = createAdminClient() } catch {
+    return NextResponse.json({ error: 'Error de configuración del servidor' }, { status: 500 })
+  }
 
   const can = await checkPermission(admin, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
@@ -35,7 +38,10 @@ export async function PUT(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const admin = createAdminClient()
+  let admin: ReturnType<typeof createAdminClient>
+  try { admin = createAdminClient() } catch {
+    return NextResponse.json({ error: 'Error de configuración del servidor' }, { status: 500 })
+  }
 
   const can = await checkPermission(admin, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
@@ -47,11 +53,26 @@ export async function PUT(
     return NextResponse.json({ error: 'permissions debe ser un array' }, { status: 400 })
   }
 
-  // Use the RPC function
-  const { error } = await admin.rpc('save_role_permissions', {
-    p_role_id: roleId,
-    p_permissions: permissions,
-  })
+  // Get tenant_id from the role
+  const { data: role } = await admin
+    .from('custom_roles')
+    .select('tenant_id')
+    .eq('id', roleId)
+    .single()
+
+  if (!role) return NextResponse.json({ error: 'Rol no encontrado' }, { status: 404 })
+
+  // Upsert permissions directly (admin client bypasses RLS)
+  const rows = permissions.map((p: { permission: string; is_active: boolean }) => ({
+    tenant_id: role.tenant_id,
+    role_id: roleId,
+    permission: p.permission,
+    is_active: p.is_active,
+  }))
+
+  const { error } = await admin
+    .from('role_permissions')
+    .upsert(rows, { onConflict: 'tenant_id,role_id,permission' })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

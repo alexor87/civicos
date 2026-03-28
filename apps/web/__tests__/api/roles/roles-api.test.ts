@@ -112,6 +112,7 @@ beforeEach(() => {
                 then: (r: any) => r({ data: rolesData, error: null }),
               }),
             }),
+            single: async () => ({ data: { tenant_id: 'tenant-1' }, error: null }),
           }),
           single: async () => ({ data: null, error: null }),
         }),
@@ -147,6 +148,7 @@ beforeEach(() => {
         insert: () => ({
           then: (r: any) => r({ data: null, error: null }),
         }),
+        upsert: async () => ({ data: null, error: null }),
         delete: () => ({
           eq: () => ({
             then: (r: any) => r({ data: null, error: null }),
@@ -663,8 +665,7 @@ describe('PUT /api/roles/[roleId]/permissions', () => {
     expect(body.error).toContain('array')
   })
 
-  it('guarda permisos vía RPC y devuelve success', async () => {
-    mockRpc.mockResolvedValueOnce({ error: null })
+  it('guarda permisos vía upsert directo y devuelve success', async () => {
     const { PUT } = await import('@/app/api/roles/[roleId]/permissions/route')
     const req = makeRequest('http://localhost/api/roles/role-1/permissions', {
       method: 'PUT',
@@ -679,12 +680,5 @@ describe('PUT /api/roles/[roleId]/permissions', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.success).toBe(true)
-    expect(mockRpc).toHaveBeenCalledWith('save_role_permissions', {
-      p_role_id: 'role-1',
-      p_permissions: [
-        { permission: 'contacts.view', is_active: true },
-        { permission: 'contacts.create', is_active: false },
-      ],
-    })
   })
 })

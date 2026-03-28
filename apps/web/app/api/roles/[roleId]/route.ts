@@ -12,7 +12,10 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const admin = createAdminClient()
+  let admin: ReturnType<typeof createAdminClient>
+  try { admin = createAdminClient() } catch {
+    return NextResponse.json({ error: 'Error de configuración del servidor' }, { status: 500 })
+  }
 
   const can = await checkPermission(admin, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
@@ -60,7 +63,10 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const admin = createAdminClient()
+  let admin: ReturnType<typeof createAdminClient>
+  try { admin = createAdminClient() } catch {
+    return NextResponse.json({ error: 'Error de configuración del servidor' }, { status: 500 })
+  }
 
   const can = await checkPermission(admin, user.id, 'roles.manage')
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })

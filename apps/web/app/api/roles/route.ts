@@ -95,8 +95,13 @@ export async function POST(request: Request) {
   const can = await canManageRoles(supabase, user.id)
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
-  let admin: ReturnType<typeof createAdminClient>
-  try { admin = createAdminClient() } catch { admin = null as any }
+  let db: ReturnType<typeof createAdminClient>
+  try {
+    db = createAdminClient()
+  } catch {
+    console.error('[roles/POST] SUPABASE_SERVICE_ROLE_KEY missing — cannot create roles')
+    return NextResponse.json({ error: 'Error de configuración del servidor' }, { status: 500 })
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -122,9 +127,6 @@ export async function POST(request: Request) {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-
-  // Use whichever client works for custom_roles queries
-  const db = admin || supabase
 
   const { data: existing } = await db
     .from('custom_roles')
