@@ -54,6 +54,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Contactos')).toBeInTheDocument()
     expect(screen.getAllByText('Territorio').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Voluntarios')).toBeInTheDocument()
+    expect(screen.getByText('Operaciones')).toBeInTheDocument()
     expect(screen.getByText('Agentes IA')).toBeInTheDocument()
   })
 

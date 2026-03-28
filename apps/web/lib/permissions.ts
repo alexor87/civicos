@@ -48,6 +48,12 @@ export type Permission =
   | 'calendar.manage_events'
   | 'volunteers.view'
   | 'volunteers.manage'
+  | 'operations.view'
+  | 'operations.create_tasks'
+  | 'operations.create_missions'
+  | 'operations.assign_any'
+  | 'operations.assign_team'
+  | 'operations.manage_all'
 
 export const ALL_PERMISSIONS: Permission[] = [
   'contacts.view',
@@ -97,6 +103,12 @@ export const ALL_PERMISSIONS: Permission[] = [
   'calendar.manage_events',
   'volunteers.view',
   'volunteers.manage',
+  'operations.view',
+  'operations.create_tasks',
+  'operations.create_missions',
+  'operations.assign_any',
+  'operations.assign_team',
+  'operations.manage_all',
 ]
 
 // ── Permission metadata ─────────────────────────────────────────────────────
@@ -209,6 +221,18 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: 'volunteers.manage', label: 'Gestionar voluntarios', description: 'Editar asignaciones y datos de voluntarios' },
     ],
   },
+  {
+    name: 'Operaciones',
+    key: 'operations',
+    permissions: [
+      { key: 'operations.view', label: 'Ver operaciones', description: 'Acceder al módulo de Operaciones' },
+      { key: 'operations.create_tasks', label: 'Crear tareas', description: 'Crear nuevas tareas' },
+      { key: 'operations.create_missions', label: 'Crear misiones', description: 'Crear y editar misiones' },
+      { key: 'operations.assign_any', label: 'Asignar a cualquiera', description: 'Asignar tareas a cualquier miembro del tenant' },
+      { key: 'operations.assign_team', label: 'Asignar al equipo', description: 'Asignar tareas a miembros de su equipo' },
+      { key: 'operations.manage_all', label: 'Gestionar todo', description: 'Editar y eliminar cualquier tarea o misión' },
+    ],
+  },
 ]
 
 // ── Default permission matrices per role ─────────────────────────────────────
@@ -266,6 +290,10 @@ export const DEFAULT_PERMISSIONS: Record<string, Record<Permission, boolean>> = 
     'calendar.create_events',
     'volunteers.view',
     'volunteers.manage',
+    'operations.view',
+    'operations.create_tasks',
+    'operations.create_missions',
+    'operations.assign_team',
   ]),
 
   volunteer: withTrue([
@@ -275,6 +303,8 @@ export const DEFAULT_PERMISSIONS: Record<string, Record<Permission, boolean>> = 
     'canvassing.view',
     'canvassing.register_visits',
     'calendar.view',
+    'operations.view',
+    'operations.create_tasks',
   ]),
 
   analyst: withTrue([
@@ -293,6 +323,7 @@ export const DEFAULT_PERMISSIONS: Record<string, Record<Permission, boolean>> = 
     'knowledge_base.view',
     'calendar.view',
     'volunteers.view',
+    'operations.view',
   ]),
 }
 
@@ -328,4 +359,9 @@ export const PERMISSION_DEPENDENCIES: Partial<Record<Permission, Permission[]>> 
   'calendar.create_events': ['calendar.view'],
   'calendar.manage_events': ['calendar.view'],
   'volunteers.manage': ['volunteers.view'],
+  'operations.create_tasks': ['operations.view'],
+  'operations.create_missions': ['operations.view'],
+  'operations.assign_any': ['operations.create_tasks'],
+  'operations.assign_team': ['operations.create_tasks'],
+  'operations.manage_all': ['operations.view'],
 }

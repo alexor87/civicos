@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, Map, Brain, UserCircle, Mail, BarChart2, Sparkles,
-  GitBranch, Megaphone, BookOpen, CalendarDays, Settings, PanelLeftClose, PanelLeftOpen,
+  GitBranch, Megaphone, BookOpen, CalendarDays, ClipboardList, Settings, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { RealtimeSuggestionsBadge } from '@/components/dashboard/RealtimeSuggestionsBadge'
 import { usePermissions, usePermissionsLoading } from '@/hooks/usePermission'
@@ -26,6 +26,7 @@ const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: 
       { href: '/dashboard/contacts',  label: 'Contactos',   icon: Users,        permission: 'contacts.view' },
       { href: '/dashboard/calendar',  label: 'Calendario',  icon: CalendarDays, permission: 'calendar.view' },
       { href: '/dashboard/team',      label: 'Voluntarios', icon: UserCircle,   permission: 'volunteers.view' },
+      { href: '/dashboard/operations', label: 'Operaciones', icon: ClipboardList, permission: 'operations.view' },
     ],
   },
   {
