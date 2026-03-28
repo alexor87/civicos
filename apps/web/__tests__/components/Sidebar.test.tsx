@@ -57,18 +57,26 @@ describe('Sidebar', () => {
     expect(screen.getByText('Agentes IA')).toBeInTheDocument()
   })
 
-  it('muestra el nombre del usuario en el footer', () => {
+  it('muestra el enlace a configuración en el footer', () => {
     renderSidebar()
-    expect(screen.getByText('Admin User')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /configuraci/i })
+    expect(link).toBeInTheDocument()
+    expect(link).toHaveAttribute('href', '/dashboard/settings')
   })
 
-  it('muestra el label del rol', () => {
+  it('muestra el botón de colapsar sidebar', () => {
     renderSidebar()
-    expect(screen.getByText('Super Admin')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /colapsar/i })).toBeInTheDocument()
   })
 
-  it('muestra las iniciales del usuario', () => {
+  it('colapsa el sidebar al hacer click en el botón', async () => {
+    const { fireEvent } = await import('@testing-library/react')
     renderSidebar()
-    expect(screen.getByText('AU')).toBeInTheDocument()
+    const btn = screen.getByRole('button', { name: /colapsar/i })
+    fireEvent.click(btn)
+    // After collapse, nav labels should be hidden
+    expect(screen.queryByText('Contactos')).not.toBeInTheDocument()
+    // Expand button should now appear
+    expect(screen.getByRole('button', { name: /expandir/i })).toBeInTheDocument()
   })
 })
