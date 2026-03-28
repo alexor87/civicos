@@ -21,10 +21,6 @@ CREATE POLICY "role_permissions_select_via_profile" ON role_permissions
     tenant_id IN (SELECT tenant_id FROM profiles WHERE id = auth.uid())
   );
 
--- ══════════════════════════════════════════════════════════════
--- profiles: read other profiles in same tenant (for member counts)
--- ══════════════════════════════════════════════════════════════
-CREATE POLICY "profiles_select_same_tenant" ON profiles
-  FOR SELECT USING (
-    tenant_id IN (SELECT p.tenant_id FROM profiles p WHERE p.id = auth.uid())
-  );
+-- NOTE: profiles_select_same_tenant was removed — it caused infinite recursion
+-- (42P17) because it subqueried profiles inside a profiles RLS policy.
+-- Same-tenant profile reads are handled by profiles_select (tenant_id = auth_tenant_id()).
