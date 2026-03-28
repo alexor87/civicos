@@ -32,16 +32,24 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('tenant_id, role')
       .eq('id', user_id)
       .single()
 
+    // Reject login if profile doesn't exist — prevents orphaned sessions
+    if (!profile || profileError || !profile.tenant_id) {
+      return new Response(JSON.stringify({ error: 'Profile not found or incomplete' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     const claims = {
       ...existingClaims,
-      tenant_id: profile?.tenant_id ?? null,
-      user_role: profile?.role ?? null,
+      tenant_id: profile.tenant_id,
+      user_role: profile.role,
     }
 
     return new Response(JSON.stringify({ claims }), {

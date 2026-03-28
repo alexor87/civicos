@@ -7,9 +7,16 @@
 CREATE OR REPLACE FUNCTION get_tenant_roles(p_tenant_id UUID)
 RETURNS JSONB AS $$
 DECLARE
+  v_caller_tenant UUID;
   v_count INT;
   v_roles JSONB;
 BEGIN
+  -- Security: validate caller belongs to requested tenant
+  SELECT tenant_id INTO v_caller_tenant FROM profiles WHERE id = auth.uid();
+  IF v_caller_tenant IS NULL OR v_caller_tenant != p_tenant_id THEN
+    RETURN '[]'::jsonb;
+  END IF;
+
   -- Check if roles exist for this tenant
   SELECT count(*) INTO v_count FROM custom_roles WHERE tenant_id = p_tenant_id;
 

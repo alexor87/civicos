@@ -27,8 +27,18 @@ DECLARE
   v_role       TEXT;
   v_role_id    UUID;
   v_tenant_id  UUID;
+  v_caller_tenant UUID;
   v_is_active  BOOLEAN;
 BEGIN
+  -- Security: restrict cross-tenant permission checks
+  IF p_user_id != auth.uid() THEN
+    SELECT tenant_id INTO v_caller_tenant FROM profiles WHERE id = auth.uid();
+    SELECT tenant_id INTO v_tenant_id FROM profiles WHERE id = p_user_id;
+    IF v_caller_tenant IS NULL OR v_tenant_id IS NULL OR v_caller_tenant != v_tenant_id THEN
+      RETURN FALSE;
+    END IF;
+  END IF;
+
   -- Read profile directly (no RLS)
   SELECT role::TEXT, custom_role_id, tenant_id
     INTO v_role, v_role_id, v_tenant_id
