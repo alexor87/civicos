@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Briefcase, Megaphone, MapPin, Calendar } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
@@ -11,9 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
 import { toast } from 'sonner'
 
 type Template = { key: string; name: string; description: string | null; type: string }
@@ -26,18 +21,20 @@ interface Props {
 }
 
 const MISSION_TYPES = [
-  { value: 'administrative', label: 'Administrativa', icon: Briefcase },
-  { value: 'canvassing', label: 'Canvassing', icon: MapPin },
-  { value: 'communications', label: 'Comunicaciones', icon: Megaphone },
-  { value: 'event', label: 'Evento', icon: Calendar },
+  { value: 'administrative', label: 'Administrativa' },
+  { value: 'canvassing', label: 'Canvassing' },
+  { value: 'communications', label: 'Comunicaciones' },
+  { value: 'event', label: 'Evento' },
 ]
 
 const PRIORITIES = [
-  { value: 'low', label: 'Baja', color: 'bg-slate-400' },
-  { value: 'normal', label: 'Normal', color: 'bg-blue-500' },
-  { value: 'high', label: 'Alta', color: 'bg-orange-500' },
-  { value: 'urgent', label: 'Urgente', color: 'bg-red-500' },
+  { value: 'low', label: 'Baja' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'Alta' },
+  { value: 'urgent', label: 'Urgente' },
 ]
+
+const selectClass = 'w-full h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring'
 
 export function CreateMissionModal({ open, onOpenChange, campaignId, templates }: Props) {
   const router = useRouter()
@@ -48,9 +45,6 @@ export function CreateMissionModal({ open, onOpenChange, campaignId, templates }
   const [priority, setPriority] = useState('normal')
   const [dueDate, setDueDate] = useState('')
   const [templateKey, setTemplateKey] = useState('')
-
-  const selectedType = MISSION_TYPES.find(t => t.value === type)
-  const selectedPriority = PRIORITIES.find(p => p.value === priority)
 
   function reset() {
     setName('')
@@ -119,15 +113,16 @@ export function CreateMissionModal({ open, onOpenChange, campaignId, templates }
           {templates.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">Plantilla (opcional)</Label>
-              <Select value={templateKey} onValueChange={handleTemplateChange}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="Crear desde cero" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" ">Crear desde cero</SelectItem>
-                  {templates.map(t => (
-                    <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={templateKey}
+                onChange={e => handleTemplateChange(e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Crear desde cero</option>
+                {templates.map(t => (
+                  <option key={t.key} value={t.key}>{t.name}</option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -144,53 +139,27 @@ export function CreateMissionModal({ open, onOpenChange, campaignId, templates }
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">Tipo</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {selectedType && (
-                      <span className="flex items-center gap-2">
-                        <selectedType.icon className="h-3.5 w-3.5 text-slate-500" />
-                        {selectedType.label}
-                      </span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {MISSION_TYPES.map(t => (
-                    <SelectItem key={t.value} value={t.value}>
-                      <span className="flex items-center gap-2">
-                        <t.icon className="h-3.5 w-3.5 text-slate-500" />
-                        {t.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={type}
+                onChange={e => setType(e.target.value)}
+                className={selectClass}
+              >
+                {MISSION_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">Prioridad</Label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {selectedPriority && (
-                      <span className="flex items-center gap-2">
-                        <span className={cn('h-2 w-2 rounded-full', selectedPriority.color)} />
-                        {selectedPriority.label}
-                      </span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map(p => (
-                    <SelectItem key={p.value} value={p.value}>
-                      <span className="flex items-center gap-2">
-                        <span className={cn('h-2 w-2 rounded-full', p.color)} />
-                        {p.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={priority}
+                onChange={e => setPriority(e.target.value)}
+                className={selectClass}
+              >
+                {PRIORITIES.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
             </div>
           </div>
 

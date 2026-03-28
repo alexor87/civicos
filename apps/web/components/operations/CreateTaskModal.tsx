@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronsUpDown, Target, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
@@ -11,15 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Popover, PopoverTrigger, PopoverContent,
-} from '@/components/ui/popover'
-import {
-  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
-} from '@/components/ui/command'
 import { toast } from 'sonner'
 
 type Mission = { id: string; name: string }
@@ -35,15 +24,13 @@ interface Props {
 }
 
 const PRIORITIES = [
-  { value: 'low', label: 'Baja', color: 'bg-slate-400' },
-  { value: 'normal', label: 'Normal', color: 'bg-blue-500' },
-  { value: 'high', label: 'Alta', color: 'bg-orange-500' },
-  { value: 'urgent', label: 'Urgente', color: 'bg-red-500' },
+  { value: 'low', label: 'Baja' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'Alta' },
+  { value: 'urgent', label: 'Urgente' },
 ]
 
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
+const selectClass = 'w-full h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring'
 
 export function CreateTaskModal({ open, onOpenChange, campaignId, missions, members, defaultMissionId }: Props) {
   const router = useRouter()
@@ -54,12 +41,6 @@ export function CreateTaskModal({ open, onOpenChange, campaignId, missions, memb
   const [assigneeId, setAssigneeId] = useState('')
   const [priority, setPriority] = useState('normal')
   const [dueDate, setDueDate] = useState('')
-  const [missionOpen, setMissionOpen] = useState(false)
-  const [assigneeOpen, setAssigneeOpen] = useState(false)
-
-  const selectedMission = missions.find(m => m.id === missionId)
-  const selectedAssignee = members.find(m => m.id === assigneeId)
-  const selectedPriority = PRIORITIES.find(p => p.value === priority)
 
   function reset() {
     setTitle('')
@@ -126,140 +107,44 @@ export function CreateTaskModal({ open, onOpenChange, campaignId, missions, memb
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">Misión</Label>
-              <Popover open={missionOpen} onOpenChange={setMissionOpen}>
-                <PopoverTrigger
-                  className={cn(
-                    'flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors hover:bg-accent/50',
-                    !selectedMission && 'text-muted-foreground'
-                  )}
-                >
-                  <span className="flex items-center gap-2 truncate">
-                    {selectedMission ? (
-                      <>
-                        <Target className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                        <span className="truncate text-foreground">{selectedMission.name}</span>
-                      </>
-                    ) : (
-                      'Sin misión'
-                    )}
-                  </span>
-                  <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
-                </PopoverTrigger>
-                <PopoverContent className="p-0" align="start" sideOffset={4}>
-                  <Command>
-                    <CommandInput placeholder="Buscar misión..." />
-                    <CommandList>
-                      <CommandEmpty>No se encontró.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem
-                          value="__none__"
-                          onSelect={() => { setMissionId(''); setMissionOpen(false) }}
-                        >
-                          <span className="text-muted-foreground">Sin misión</span>
-                        </CommandItem>
-                        {missions.map(m => (
-                          <CommandItem
-                            key={m.id}
-                            value={m.name}
-                            onSelect={() => { setMissionId(m.id); setMissionOpen(false) }}
-                          >
-                            <Target className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                            {m.name}
-                            <Check className={cn('ml-auto h-4 w-4', missionId === m.id ? 'opacity-100' : 'opacity-0')} />
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <select
+                value={missionId}
+                onChange={e => setMissionId(e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Sin misión</option>
+                {missions.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
             </div>
-
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">Responsable</Label>
-              <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
-                <PopoverTrigger
-                  className={cn(
-                    'flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 text-sm transition-colors hover:bg-accent/50',
-                    !selectedAssignee && 'text-muted-foreground'
-                  )}
-                >
-                  <span className="flex items-center gap-2 truncate">
-                    {selectedAssignee ? (
-                      <>
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">
-                          {getInitials(selectedAssignee.full_name)}
-                        </span>
-                        <span className="truncate text-foreground">{selectedAssignee.full_name}</span>
-                      </>
-                    ) : (
-                      <>
-                        <User className="h-3.5 w-3.5 shrink-0" />
-                        Sin asignar
-                      </>
-                    )}
-                  </span>
-                  <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
-                </PopoverTrigger>
-                <PopoverContent className="p-0" align="start" sideOffset={4}>
-                  <Command>
-                    <CommandInput placeholder="Buscar miembro..." />
-                    <CommandList>
-                      <CommandEmpty>No se encontró.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem
-                          value="__none__"
-                          onSelect={() => { setAssigneeId(''); setAssigneeOpen(false) }}
-                        >
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-muted-foreground">Sin asignar</span>
-                        </CommandItem>
-                        {members.map(m => (
-                          <CommandItem
-                            key={m.id}
-                            value={m.full_name}
-                            onSelect={() => { setAssigneeId(m.id); setAssigneeOpen(false) }}
-                          >
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">
-                              {getInitials(m.full_name)}
-                            </span>
-                            {m.full_name}
-                            <Check className={cn('ml-auto h-4 w-4', assigneeId === m.id ? 'opacity-100' : 'opacity-0')} />
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <select
+                value={assigneeId}
+                onChange={e => setAssigneeId(e.target.value)}
+                className={selectClass}
+              >
+                <option value="">Sin asignar</option>
+                {members.map(m => (
+                  <option key={m.id} value={m.id}>{m.full_name}</option>
+                ))}
+              </select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">Prioridad</Label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {selectedPriority && (
-                      <span className="flex items-center gap-2">
-                        <span className={cn('h-2 w-2 rounded-full', selectedPriority.color)} />
-                        {selectedPriority.label}
-                      </span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map(p => (
-                    <SelectItem key={p.value} value={p.value}>
-                      <span className="flex items-center gap-2">
-                        <span className={cn('h-2 w-2 rounded-full', p.color)} />
-                        {p.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={priority}
+                onChange={e => setPriority(e.target.value)}
+                className={selectClass}
+              >
+                {PRIORITIES.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">Fecha límite</Label>
