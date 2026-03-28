@@ -106,7 +106,7 @@ export function CreateTaskModal({ open, onOpenChange, campaignId, missions, memb
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl overflow-visible">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Nueva tarea</DialogTitle>
           <DialogDescription>Crea una tarea y asígnala a un miembro del equipo</DialogDescription>
