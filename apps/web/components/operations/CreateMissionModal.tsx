@@ -104,7 +104,7 @@ export function CreateMissionModal({ open, onOpenChange, campaignId, templates }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl overflow-visible">
         <DialogHeader>
           <DialogTitle>Nueva misión</DialogTitle>
           <DialogDescription>Crea una misión para organizar tareas de tu equipo</DialogDescription>
