@@ -167,7 +167,7 @@ export async function POST(
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const [{ data: contacts }, { data: visits }] = await Promise.all([
     contactQuery,
-    supabase.from('visits').select('id, result').eq('campaign_id', event.campaign_id).gte('visited_at', thirtyDaysAgo),
+    supabase.from('canvass_visits').select('id, result').eq('campaign_id', event.campaign_id).gte('created_at', thirtyDaysAgo),
   ])
 
   const totalContacts = contacts?.length ?? 0
