@@ -99,11 +99,16 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ provider, model, apiKey }),
     })
 
-    const verifyData = await verifyRes.json()
-    isValid = verifyData.valid === true
-    if (!isValid) verifyError = verifyData.error ?? 'Verification failed'
-  } catch {
-    verifyError = 'Could not reach verification service'
+    if (!verifyRes.ok) {
+      const text = await verifyRes.text()
+      verifyError = `Verification service error (${verifyRes.status}): ${text.slice(0, 200)}`
+    } else {
+      const verifyData = await verifyRes.json()
+      isValid = verifyData.valid === true
+      if (!isValid) verifyError = verifyData.error || verifyData.message || 'Unknown verification error'
+    }
+  } catch (e) {
+    verifyError = `Could not reach verification service: ${e instanceof Error ? e.message : String(e)}`
   }
 
   // Build hint from last 4 chars

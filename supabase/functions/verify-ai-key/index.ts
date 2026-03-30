@@ -65,7 +65,7 @@ serve(async (req) => {
     })
 
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
+    const message = (err instanceof Error ? err.message : String(err)) || 'Unknown verification error'
     return new Response(JSON.stringify({ valid: false, error: message }), {
       status: 200, // Return 200 so client can read the error
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
