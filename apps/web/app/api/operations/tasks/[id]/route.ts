@@ -22,7 +22,7 @@ export async function GET(
 
   const { data, error } = await admin
     .from('tasks')
-    .select('*, assignee:profiles!tasks_assignee_id_fkey(id, full_name), mission:missions!tasks_mission_id_fkey(id, name)')
+    .select('*, assignee:profiles!tasks_assignee_id_fkey(id, full_name)')
     .eq('id', id)
     .single()
 
@@ -64,7 +64,7 @@ export async function PATCH(
   const body = await request.json()
   const allowedFields = [
     'title', 'description', 'status', 'priority', 'due_date',
-    'assignee_id', 'checklist', 'tags', 'sort_order', 'mission_id',
+    'assignee_id', 'checklist', 'tags', 'sort_order',
   ]
 
   const updateData: Record<string, any> = {}

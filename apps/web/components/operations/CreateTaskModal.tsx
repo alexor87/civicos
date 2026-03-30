@@ -17,22 +17,18 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 
-type Mission = { id: string; name: string }
 type Member = { id: string; full_name: string }
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   campaignId: string
-  missions: Mission[]
   members: Member[]
-  defaultMissionId?: string | null
 }
 
 const taskSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio'),
   description: z.string().optional(),
-  mission_id: z.string().optional(),
   assignee_id: z.string().optional(),
   priority: z.string().default('normal'),
   due_date: z.string().optional(),
@@ -47,11 +43,9 @@ const PRIORITIES = [
   { value: 'urgent', label: 'Urgente' },
 ]
 
-function TaskForm({ campaignId, missions, members, defaultMissionId, onSuccess, onCancel }: {
+function TaskForm({ campaignId, members, onSuccess, onCancel }: {
   campaignId: string
-  missions: Mission[]
   members: Member[]
-  defaultMissionId?: string | null
   onSuccess: () => void
   onCancel: () => void
 }) {
@@ -62,14 +56,12 @@ function TaskForm({ campaignId, missions, members, defaultMissionId, onSuccess, 
     defaultValues: {
       title: '',
       description: '',
-      mission_id: defaultMissionId ?? '',
       assignee_id: '',
       priority: 'normal',
       due_date: '',
     },
   })
 
-  const missionId = watch('mission_id')
   const assigneeId = watch('assignee_id')
   const priority = watch('priority')
 
@@ -83,7 +75,6 @@ function TaskForm({ campaignId, missions, members, defaultMissionId, onSuccess, 
           campaign_id: campaignId,
           title: data.title.trim(),
           description: data.description?.trim() || null,
-          mission_id: data.mission_id || null,
           assignee_id: data.assignee_id || null,
           priority: data.priority,
           due_date: data.due_date || null,
@@ -115,31 +106,17 @@ function TaskForm({ campaignId, missions, members, defaultMissionId, onSuccess, 
           <Textarea id="task-desc" rows={3} placeholder="Detalla qué se debe hacer..." {...register('description')} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Misión</Label>
-            <Select value={missionId || undefined} onValueChange={v => setValue('mission_id', v === ' ' ? '' : v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sin misión">{missionId && missions.find(m => m.id === missionId)?.name}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value=" ">Sin misión</SelectItem>
-                {missions.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Responsable</Label>
-            <Select value={assigneeId || undefined} onValueChange={v => setValue('assignee_id', v === ' ' ? '' : v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sin asignar">{assigneeId && members.find(m => m.id === assigneeId)?.full_name}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value=" ">Sin asignar</SelectItem>
-                {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-1.5">
+          <Label>Responsable</Label>
+          <Select value={assigneeId || undefined} onValueChange={v => setValue('assignee_id', v === ' ' ? '' : v)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Sin asignar">{assigneeId && members.find(m => m.id === assigneeId)?.full_name}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value=" ">Sin asignar</SelectItem>
+              {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -169,7 +146,7 @@ function TaskForm({ campaignId, missions, members, defaultMissionId, onSuccess, 
   )
 }
 
-export function CreateTaskModal({ open, onOpenChange, campaignId, missions, members, defaultMissionId }: Props) {
+export function CreateTaskModal({ open, onOpenChange, campaignId, members }: Props) {
   const router = useRouter()
 
   function handleSuccess() {
@@ -187,9 +164,7 @@ export function CreateTaskModal({ open, onOpenChange, campaignId, missions, memb
         {open && (
           <TaskForm
             campaignId={campaignId}
-            missions={missions}
             members={members}
-            defaultMissionId={defaultMissionId}
             onSuccess={handleSuccess}
             onCancel={() => onOpenChange(false)}
           />

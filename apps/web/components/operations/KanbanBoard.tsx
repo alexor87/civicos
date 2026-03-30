@@ -21,8 +21,6 @@ type Task = {
   due_date: string | null
   assignee_id: string | null
   assignee?: { id: string; full_name: string } | null
-  mission?: { id: string; name: string } | null
-  mission_id: string | null
   description: string | null
   checklist: { text: string; done: boolean }[]
   tags: string[]
@@ -30,14 +28,12 @@ type Task = {
   created_at: string
 }
 
-type Mission = { id: string; name: string }
 type Member = { id: string; full_name: string }
 
 interface Props {
   campaignId: string
   userId: string
   tasks: Task[]
-  missions: Mission[]
   members: Member[]
 }
 
@@ -54,17 +50,15 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: 'bg-slate-50 text-slate-600 border-slate-200',
 }
 
-export function KanbanBoard({ campaignId, userId, tasks, missions, members }: Props) {
+export function KanbanBoard({ campaignId, userId, tasks, members }: Props) {
   const router = useRouter()
   const perms = usePermissions(['operations.create_tasks'])
   const [taskModalOpen, setTaskModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [filterMission, setFilterMission] = useState('')
   const [filterAssignee, setFilterAssignee] = useState('')
   const [filterPriority, setFilterPriority] = useState('')
 
   const filtered = tasks.filter(t => {
-    if (filterMission && t.mission_id !== filterMission) return false
     if (filterAssignee && t.assignee_id !== filterAssignee) return false
     if (filterPriority && t.priority !== filterPriority) return false
     return true
@@ -87,13 +81,6 @@ export function KanbanBoard({ campaignId, userId, tasks, missions, members }: Pr
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Select value={filterMission} onValueChange={setFilterMission}>
-          <SelectTrigger className="w-48 h-9"><SelectValue placeholder="Todas las misiones" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value=" ">Todas las misiones</SelectItem>
-            {missions.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
         <Select value={filterAssignee} onValueChange={setFilterAssignee}>
           <SelectTrigger className="w-48 h-9"><SelectValue placeholder="Todos los miembros" /></SelectTrigger>
           <SelectContent>
@@ -154,9 +141,6 @@ export function KanbanBoard({ campaignId, userId, tasks, missions, members }: Pr
                           </span>
                         )}
                       </div>
-                      {task.mission && (
-                        <p className="text-xs text-slate-400 mt-2 truncate">{task.mission.name}</p>
-                      )}
                       {/* Quick status buttons */}
                       {col.key !== 'completed' && (
                         <div className="flex gap-1 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -180,7 +164,7 @@ export function KanbanBoard({ campaignId, userId, tasks, missions, members }: Pr
         })}
       </div>
 
-      <CreateTaskModal open={taskModalOpen} onOpenChange={setTaskModalOpen} campaignId={campaignId} missions={missions} members={members} />
+      <CreateTaskModal open={taskModalOpen} onOpenChange={setTaskModalOpen} campaignId={campaignId} members={members} />
       <TaskDrawer task={selectedTask} open={!!selectedTask} onClose={() => setSelectedTask(null)} members={members} userId={userId} />
     </div>
   )

@@ -22,8 +22,6 @@ type Task = {
   due_date: string | null
   assignee_id: string | null
   assignee?: { id: string; full_name: string } | null
-  mission?: { id: string; name: string } | null
-  mission_id: string | null
   checklist: { text: string; done: boolean }[]
   tags: string[]
   created_by: string
@@ -252,11 +250,6 @@ export function TaskDrawer({ task, open, onClose, members, userId }: Props) {
             )}
           </div>
 
-          {task.mission && (
-            <div className="text-sm text-slate-500">
-              Misión: <span className="font-medium text-slate-700 dark:text-slate-300">{task.mission.name}</span>
-            </div>
-          )}
         </div>
 
         {/* Description */}

@@ -36,24 +36,15 @@ export default async function BoardPage() {
   // Parallel data fetching
   const [
     { data: tasks },
-    { data: missions },
     { data: teamMembers },
   ] = await Promise.all([
-    // All tasks for the campaign with assignee and mission info
+    // All tasks for the campaign with assignee info
     adminSupabase
       .from('tasks')
-      .select('*, missions(id, name), assignee:profiles!tasks_assignee_id_fkey(id, full_name, avatar_url)')
+      .select('*, assignee:profiles!tasks_assignee_id_fkey(id, full_name, avatar_url)')
       .eq('campaign_id', activeCampaignId)
       .not('status', 'eq', 'cancelled')
       .order('created_at', { ascending: false }),
-
-    // Active missions for filter dropdown
-    adminSupabase
-      .from('missions')
-      .select('id, name, status')
-      .eq('campaign_id', activeCampaignId)
-      .eq('status', 'active')
-      .order('name'),
 
     // Team members for filter
     adminSupabase
@@ -63,17 +54,15 @@ export default async function BoardPage() {
       .order('full_name'),
   ])
 
-  // Map tasks to include mission/assignee as expected by component
+  // Map tasks
   const mappedTasks = (tasks ?? []).map((t: any) => ({
     ...t,
-    mission: t.missions ? { id: t.missions.id, name: t.missions.name } : null,
     assignee: t.assignee ?? null,
   }))
 
   return (
     <KanbanBoard
       tasks={mappedTasks}
-      missions={(missions ?? []).map((m: any) => ({ id: m.id, name: m.name }))}
       members={(teamMembers ?? []).map((m: any) => ({ id: m.id, full_name: m.full_name }))}
       campaignId={activeCampaignId}
       userId={user.id}

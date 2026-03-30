@@ -5,8 +5,8 @@ import {
 } from '@/lib/permissions'
 
 describe('permissions constants', () => {
-  it('defines 53 permissions', () => {
-    expect(ALL_PERMISSIONS).toHaveLength(53)
+  it('defines 52 permissions', () => {
+    expect(ALL_PERMISSIONS).toHaveLength(52)
   })
 
   it('all 5 system roles have defaults', () => {

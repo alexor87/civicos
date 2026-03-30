@@ -177,14 +177,14 @@ describe('GET /api/operations/tasks', () => {
     expect(body.length).toBe(2)
   })
 
-  it('aplica filtros opcionales (mission_id, status, assignee_id)', async () => {
+  it('aplica filtros opcionales (status, assignee_id)', async () => {
     const mockTasks = [{ id: 't-1', title: 'Filtered Task', status: 'pending' }]
     fromHandler = (table: string) => {
       if (table === 'tasks') return makeChain(mockTasks)
       return makeChain(null)
     }
     const { GET } = await import('@/app/api/operations/tasks/route')
-    const req = makeRequest('http://localhost/api/operations/tasks?campaign_id=camp-1&mission_id=m-1&status=pending')
+    const req = makeRequest('http://localhost/api/operations/tasks?campaign_id=camp-1&status=pending')
     const res = await GET(req)
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -302,12 +302,11 @@ describe('GET /api/operations/tasks/[id]', () => {
     expect(res.status).toBe(403)
   })
 
-  it('devuelve tarea con assignee y mission', async () => {
+  it('devuelve tarea con assignee', async () => {
     const mockTask = {
       id: 't-1',
       title: 'Test Task',
       assignee: { id: 'u-1', full_name: 'User 1' },
-      mission: { id: 'm-1', name: 'Mission 1' },
     }
     fromHandler = (table: string) => {
       if (table === 'tasks') {
@@ -328,7 +327,6 @@ describe('GET /api/operations/tasks/[id]', () => {
     const body = await res.json()
     expect(body.id).toBe('t-1')
     expect(body.assignee).toBeDefined()
-    expect(body.mission).toBeDefined()
   })
 })
 

@@ -24,8 +24,6 @@ type Task = {
   due_date: string | null
   assignee_id: string | null
   assignee?: { id: string; full_name: string } | null
-  mission?: { id: string; name: string } | null
-  mission_id: string | null
   description: string | null
   checklist: { text: string; done: boolean }[]
   tags: string[]
@@ -33,18 +31,16 @@ type Task = {
   created_at: string
 }
 
-type Mission = { id: string; name: string }
 type Member = { id: string; full_name: string }
 
 interface Props {
   campaignId: string
   userId: string
   tasks: Task[]
-  missions: Mission[]
   members: Member[]
 }
 
-type GroupBy = 'none' | 'mission' | 'assignee' | 'priority'
+type GroupBy = 'none' | 'assignee' | 'priority'
 
 const PRIORITY_LABELS: Record<string, string> = { urgent: 'Urgente', high: 'Alta', normal: 'Normal', low: 'Baja' }
 const STATUS_LABELS: Record<string, string> = { pending: 'Pendiente', in_progress: 'En progreso', completed: 'Completada', blocked: 'Bloqueada', cancelled: 'Cancelada' }
@@ -64,7 +60,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-slate-50 text-slate-400 border-slate-200',
 }
 
-export function TaskListView({ campaignId, userId, tasks, missions, members }: Props) {
+export function TaskListView({ campaignId, userId, tasks, members }: Props) {
   const router = useRouter()
   const perms = usePermissions(['operations.create_tasks'])
   const [taskModalOpen, setTaskModalOpen] = useState(false)
@@ -80,8 +76,7 @@ export function TaskListView({ campaignId, userId, tasks, missions, members }: P
     const groups: Record<string, Task[]> = {}
     for (const t of filtered) {
       let key: string
-      if (groupBy === 'mission') key = t.mission?.name ?? 'Sin misión'
-      else if (groupBy === 'assignee') key = t.assignee?.full_name ?? 'Sin asignar'
+      if (groupBy === 'assignee') key = t.assignee?.full_name ?? 'Sin asignar'
       else key = PRIORITY_LABELS[t.priority] ?? t.priority
       if (!groups[key]) groups[key] = []
       groups[key].push(t)
@@ -111,7 +106,6 @@ export function TaskListView({ campaignId, userId, tasks, missions, members }: P
           <SelectTrigger className="w-48 h-9"><SelectValue placeholder="Agrupar por..." /></SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Sin agrupar</SelectItem>
-            <SelectItem value="mission">Por misión</SelectItem>
             <SelectItem value="assignee">Por responsable</SelectItem>
             <SelectItem value="priority">Por prioridad</SelectItem>
           </SelectContent>
@@ -151,14 +145,13 @@ export function TaskListView({ campaignId, userId, tasks, missions, members }: P
                   <TableHead className="w-28">Estado</TableHead>
                   <TableHead className="w-24">Prioridad</TableHead>
                   <TableHead className="w-36">Responsable</TableHead>
-                  <TableHead className="w-32">Misión</TableHead>
                   <TableHead className="w-28">Fecha</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {group.tasks.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-slate-400 py-8">Sin tareas</TableCell>
+                    <TableCell colSpan={6} className="text-center text-slate-400 py-8">Sin tareas</TableCell>
                   </TableRow>
                 ) : (
                   group.tasks.map(task => {
@@ -191,7 +184,6 @@ export function TaskListView({ campaignId, userId, tasks, missions, members }: P
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-slate-600">{task.assignee?.full_name ?? '—'}</TableCell>
-                        <TableCell className="text-sm text-slate-500 truncate max-w-[8rem]">{task.mission?.name ?? '—'}</TableCell>
                         <TableCell className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-slate-500'}`}>
                           {task.due_date ? new Date(task.due_date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : '—'}
                         </TableCell>
@@ -205,7 +197,7 @@ export function TaskListView({ campaignId, userId, tasks, missions, members }: P
         </div>
       ))}
 
-      <CreateTaskModal open={taskModalOpen} onOpenChange={setTaskModalOpen} campaignId={campaignId} missions={missions} members={members} />
+      <CreateTaskModal open={taskModalOpen} onOpenChange={setTaskModalOpen} campaignId={campaignId} members={members} />
       <TaskDrawer task={selectedTask} open={!!selectedTask} onClose={() => setSelectedTask(null)} members={members} userId={userId} />
     </div>
   )

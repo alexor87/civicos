@@ -9,13 +9,12 @@ import {
 const OPERATIONS_PERMISSIONS = [
   'operations.view',
   'operations.create_tasks',
-  'operations.create_missions',
   'operations.assign_any',
   'operations.assign_team',
   'operations.manage_all',
 ] as const
 
-// ── All 6 operations permissions exist in ALL_PERMISSIONS ───────────────────
+// ── All 5 operations permissions exist in ALL_PERMISSIONS ───────────────────
 
 describe('Operations permissions in ALL_PERMISSIONS', () => {
   it.each(OPERATIONS_PERMISSIONS)(
@@ -25,9 +24,9 @@ describe('Operations permissions in ALL_PERMISSIONS', () => {
     }
   )
 
-  it('there are exactly 6 operations permissions', () => {
+  it('there are exactly 5 operations permissions', () => {
     const ops = ALL_PERMISSIONS.filter(p => p.startsWith('operations.'))
-    expect(ops).toHaveLength(6)
+    expect(ops).toHaveLength(5)
   })
 })
 
@@ -40,9 +39,9 @@ describe('Operations module in PERMISSION_MODULES', () => {
     expect(mod!.name).toBe('Operaciones')
   })
 
-  it('operations module has exactly 6 permissions', () => {
+  it('operations module has exactly 5 permissions', () => {
     const mod = PERMISSION_MODULES.find(m => m.key === 'operations')!
-    expect(mod.permissions).toHaveLength(6)
+    expect(mod.permissions).toHaveLength(5)
   })
 
   it('operations module contains the correct permission keys', () => {
@@ -54,10 +53,10 @@ describe('Operations module in PERMISSION_MODULES', () => {
   })
 })
 
-// ── super_admin has all 6 = true ────────────────────────────────────────────
+// ── super_admin has all 5 = true ────────────────────────────────────────────
 
 describe('super_admin operations permissions', () => {
-  it('has all 6 operations permissions set to true', () => {
+  it('has all 5 operations permissions set to true', () => {
     const perms = DEFAULT_PERMISSIONS.super_admin
     for (const perm of OPERATIONS_PERMISSIONS) {
       expect(perms[perm]).toBe(true)
@@ -65,10 +64,10 @@ describe('super_admin operations permissions', () => {
   })
 })
 
-// ── campaign_manager has all 6 = true ───────────────────────────────────────
+// ── campaign_manager has all 5 = true ───────────────────────────────────────
 
 describe('campaign_manager operations permissions', () => {
-  it('has all 6 operations permissions set to true', () => {
+  it('has all 5 operations permissions set to true', () => {
     const perms = DEFAULT_PERMISSIONS.campaign_manager
     for (const perm of OPERATIONS_PERMISSIONS) {
       expect(perms[perm]).toBe(true)
@@ -76,7 +75,7 @@ describe('campaign_manager operations permissions', () => {
   })
 })
 
-// ── field_coordinator: view, create_tasks, create_missions, assign_team = true; assign_any and manage_all = false ──
+// ── field_coordinator: view, create_tasks, assign_team = true; assign_any and manage_all = false ──
 
 describe('field_coordinator operations permissions', () => {
   it('has operations.view = true', () => {
@@ -85,10 +84,6 @@ describe('field_coordinator operations permissions', () => {
 
   it('has operations.create_tasks = true', () => {
     expect(DEFAULT_PERMISSIONS.field_coordinator['operations.create_tasks']).toBe(true)
-  })
-
-  it('has operations.create_missions = true', () => {
-    expect(DEFAULT_PERMISSIONS.field_coordinator['operations.create_missions']).toBe(true)
   })
 
   it('has operations.assign_team = true', () => {
@@ -115,10 +110,6 @@ describe('volunteer operations permissions', () => {
     expect(DEFAULT_PERMISSIONS.volunteer['operations.create_tasks']).toBe(true)
   })
 
-  it('has operations.create_missions = false', () => {
-    expect(DEFAULT_PERMISSIONS.volunteer['operations.create_missions']).toBe(false)
-  })
-
   it('has operations.assign_any = false', () => {
     expect(DEFAULT_PERMISSIONS.volunteer['operations.assign_any']).toBe(false)
   })
@@ -143,10 +134,6 @@ describe('analyst operations permissions', () => {
     expect(DEFAULT_PERMISSIONS.analyst['operations.create_tasks']).toBe(false)
   })
 
-  it('has operations.create_missions = false', () => {
-    expect(DEFAULT_PERMISSIONS.analyst['operations.create_missions']).toBe(false)
-  })
-
   it('has operations.assign_any = false', () => {
     expect(DEFAULT_PERMISSIONS.analyst['operations.assign_any']).toBe(false)
   })
@@ -165,10 +152,6 @@ describe('analyst operations permissions', () => {
 describe('Operations permission dependencies', () => {
   it('create_tasks requires view', () => {
     expect(PERMISSION_DEPENDENCIES['operations.create_tasks']).toContain('operations.view')
-  })
-
-  it('create_missions requires view', () => {
-    expect(PERMISSION_DEPENDENCIES['operations.create_missions']).toContain('operations.view')
   })
 
   it('assign_any requires create_tasks', () => {

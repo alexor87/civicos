@@ -18,7 +18,6 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const campaign_id = searchParams.get('campaign_id')
-  const mission_id = searchParams.get('mission_id')
   const status = searchParams.get('status')
   const assignee_id = searchParams.get('assignee_id')
   const due_date = searchParams.get('due_date')
@@ -32,7 +31,6 @@ export async function GET(request: Request) {
     .select('*, assignee:profiles!tasks_assignee_id_fkey(id, full_name)')
     .eq('campaign_id', campaign_id)
 
-  if (mission_id) query = query.eq('mission_id', mission_id)
   if (status) query = query.eq('status', status)
   if (assignee_id) query = query.eq('assignee_id', assignee_id)
   if (due_date) query = query.lte('due_date', due_date)
@@ -60,7 +58,7 @@ export async function POST(request: Request) {
   if (!can) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const body = await request.json()
-  const { campaign_id, title, mission_id, assignee_id, due_date, priority, description, tags } = body
+  const { campaign_id, title, assignee_id, due_date, priority, description, tags } = body
 
   if (!campaign_id || !title) {
     return NextResponse.json({ error: 'campaign_id y title son requeridos' }, { status: 400 })
@@ -82,7 +80,6 @@ export async function POST(request: Request) {
     created_by: user.id,
   }
 
-  if (mission_id) insertData.mission_id = mission_id
   if (assignee_id) insertData.assignee_id = assignee_id
   if (due_date) insertData.due_date = due_date
   if (priority) insertData.priority = priority
