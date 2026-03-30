@@ -4,11 +4,8 @@ import { EventForm } from '@/components/dashboard/calendar/EventForm'
 
 export const metadata = { title: 'Nuevo evento · CivicOS' }
 
-interface Props {
-  searchParams: { date?: string }
-}
-
-export default function NewCalendarEventPage({ searchParams }: Props) {
+export default async function NewCalendarEventPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+  const { date } = await searchParams
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
       {/* Header */}
@@ -31,7 +28,7 @@ export default function NewCalendarEventPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <EventForm defaultDate={searchParams.date} />
+      <EventForm defaultDate={date} />
     </div>
   )
 }

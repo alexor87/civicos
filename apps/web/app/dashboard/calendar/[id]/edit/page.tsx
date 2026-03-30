@@ -6,11 +6,8 @@ import { EventForm } from '@/components/dashboard/calendar/EventForm'
 
 export const metadata = { title: 'Editar evento · CivicOS' }
 
-interface Props {
-  params: { id: string }
-}
-
-export default async function EditCalendarEventPage({ params }: Props) {
+export default async function EditCalendarEventPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -18,7 +15,7 @@ export default async function EditCalendarEventPage({ params }: Props) {
   const { data: event } = await supabase
     .from('calendar_events')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!event) redirect('/dashboard/calendar')
