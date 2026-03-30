@@ -26,7 +26,7 @@ const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: 
       { href: '/dashboard/contacts',  label: 'Contactos',   icon: Users,        permission: 'contacts.view' },
       { href: '/dashboard/calendar',  label: 'Calendario',  icon: CalendarDays, permission: 'calendar.view' },
       { href: '/dashboard/team',      label: 'Voluntarios', icon: UserCircle,   permission: 'volunteers.view' },
-      { href: '/dashboard/operations', label: 'Operaciones', icon: ClipboardList, permission: 'operations.view' },
+      { href: '/dashboard/operations', label: 'Tareas', icon: ClipboardList, permission: 'operations.view' },
     ],
   },
   {

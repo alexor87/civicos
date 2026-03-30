@@ -220,10 +220,10 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
   {
-    name: 'Operaciones',
+    name: 'Tareas',
     key: 'operations',
     permissions: [
-      { key: 'operations.view', label: 'Ver operaciones', description: 'Acceder al módulo de Operaciones' },
+      { key: 'operations.view', label: 'Ver tareas', description: 'Acceder al módulo de Tareas' },
       { key: 'operations.create_tasks', label: 'Crear tareas', description: 'Crear nuevas tareas' },
       { key: 'operations.assign_any', label: 'Asignar a cualquiera', description: 'Asignar tareas a cualquier miembro del tenant' },
       { key: 'operations.assign_team', label: 'Asignar al equipo', description: 'Asignar tareas a miembros de su equipo' },

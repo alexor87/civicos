@@ -36,7 +36,7 @@ describe('Operations module in PERMISSION_MODULES', () => {
   it('operations module exists', () => {
     const mod = PERMISSION_MODULES.find(m => m.key === 'operations')
     expect(mod).toBeDefined()
-    expect(mod!.name).toBe('Operaciones')
+    expect(mod!.name).toBe('Tareas')
   })
 
   it('operations module has exactly 5 permissions', () => {

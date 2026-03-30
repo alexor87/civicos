@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
 import { OperationsHome } from '@/components/operations/OperationsHome'
 
-export const metadata = { title: 'Operaciones · CivicOS' }
+export const metadata = { title: 'Tareas · CivicOS' }
 
 export default async function OperationsPage() {
   const supabase = await createClient()
