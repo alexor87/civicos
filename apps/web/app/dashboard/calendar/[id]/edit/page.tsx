@@ -20,20 +20,22 @@ export default async function EditCalendarEventPage({ params }: { params: Promis
 
   if (!event) redirect('/dashboard/calendar')
 
-  // Fetch linked contacts for this event
+  // Fetch linked contact IDs, then fetch contact details separately
   const { data: participants } = await supabase
     .from('event_participants')
-    .select('contact_id, contacts(id, first_name, last_name)')
+    .select('contact_id')
     .eq('event_id', id)
     .not('contact_id', 'is', null)
 
-  const linkedContacts = (participants ?? [])
-    .filter((p: any) => p.contacts)
-    .map((p: any) => ({
-      id: p.contacts.id,
-      first_name: p.contacts.first_name,
-      last_name: p.contacts.last_name,
-    }))
+  const contactIds = (participants ?? []).map((p: any) => p.contact_id).filter(Boolean)
+  let linkedContacts: { id: string; first_name: string; last_name: string }[] = []
+  if (contactIds.length > 0) {
+    const { data: contactsData } = await supabase
+      .from('contacts')
+      .select('id, first_name, last_name')
+      .in('id', contactIds)
+    linkedContacts = (contactsData ?? []) as any
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">

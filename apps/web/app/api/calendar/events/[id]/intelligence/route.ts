@@ -21,16 +21,22 @@ export async function GET(
 
   if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
 
-  // Fetch linked contacts via event_participants
+  // Fetch linked contact IDs, then fetch contact details separately
   const { data: linkedParticipants } = await supabase
     .from('event_participants')
-    .select('contact_id, contacts(id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status)')
+    .select('contact_id')
     .eq('event_id', id)
     .not('contact_id', 'is', null)
 
-  const linkedContacts = (linkedParticipants ?? [])
-    .filter((p: any) => p.contacts)
-    .map((p: any) => p.contacts)
+  const linkedContactIds = (linkedParticipants ?? []).map((p: any) => p.contact_id).filter(Boolean)
+  let linkedContacts: any[] = []
+  if (linkedContactIds.length > 0) {
+    const { data: lc } = await supabase
+      .from('contacts')
+      .select('id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status')
+      .in('id', linkedContactIds)
+    linkedContacts = lc ?? []
+  }
 
   // Build contact filter based on available location fields
   let contactQuery = supabase
@@ -132,16 +138,22 @@ export async function POST(
     .update({ intelligence_status: 'generating', updated_at: new Date().toISOString() })
     .eq('id', eventId)
 
-  // Fetch linked contacts for this event
+  // Fetch linked contact IDs, then fetch contact details separately
   const { data: briefingParticipants } = await supabase
     .from('event_participants')
-    .select('contact_id, contacts(id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status, notes)')
+    .select('contact_id')
     .eq('event_id', eventId)
     .not('contact_id', 'is', null)
 
-  const briefingLinkedContacts = (briefingParticipants ?? [])
-    .filter((p: any) => p.contacts)
-    .map((p: any) => p.contacts)
+  const briefingContactIds = (briefingParticipants ?? []).map((p: any) => p.contact_id).filter(Boolean)
+  let briefingLinkedContacts: any[] = []
+  if (briefingContactIds.length > 0) {
+    const { data: blc } = await supabase
+      .from('contacts')
+      .select('id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status, notes')
+      .in('id', briefingContactIds)
+    briefingLinkedContacts = blc ?? []
+  }
 
   // Fetch CRM data for the zone
   let contactQuery = supabase
