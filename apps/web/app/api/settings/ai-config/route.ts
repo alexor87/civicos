@@ -86,18 +86,25 @@ export async function POST(req: NextRequest) {
   }
 
   // Verify the key works by calling verify-ai-key Edge Function
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const verifyRes = await fetch(`${supabaseUrl}/functions/v1/verify-ai-key`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-    },
-    body: JSON.stringify({ provider, model, apiKey }),
-  })
+  let isValid = false
+  let verifyError: string | null = null
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const verifyRes = await fetch(`${supabaseUrl}/functions/v1/verify-ai-key`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+      },
+      body: JSON.stringify({ provider, model, apiKey }),
+    })
 
-  const verifyData = await verifyRes.json()
-  const isValid = verifyData.valid === true
+    const verifyData = await verifyRes.json()
+    isValid = verifyData.valid === true
+    if (!isValid) verifyError = verifyData.error ?? 'Verification failed'
+  } catch {
+    verifyError = 'Could not reach verification service'
+  }
 
   // Build hint from last 4 chars
   const hint = apiKey.length > 4
@@ -157,7 +164,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     success: true,
     is_valid: isValid,
-    error: isValid ? null : verifyData.error,
+    error: isValid ? null : verifyError,
   })
 }
 

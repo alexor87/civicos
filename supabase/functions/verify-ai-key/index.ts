@@ -53,6 +53,7 @@ serve(async (req) => {
     // Call AI with override config (doesn't read DB)
     await callAI(
       supabase,
+      'verify', // dummy tenant ID, not used with override
       'verify', // dummy campaign ID, not used with override
       [{ role: 'user', content: 'Say OK' }],
       { maxTokens: 10 },
