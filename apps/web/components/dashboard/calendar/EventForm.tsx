@@ -3,37 +3,44 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarDays, MapPin, FileText, Loader2 } from 'lucide-react'
-import { EVENT_TYPE_CONFIG } from './eventTypes'
+import { EVENT_TYPE_CONFIG, type CalendarEvent } from './eventTypes'
 
 interface Props {
   defaultDate?: string  // YYYY-MM-DD
+  eventId?: string
+  initialEvent?: CalendarEvent
 }
 
 type EventTypeKey = keyof typeof EVENT_TYPE_CONFIG
 
 const EVENT_TYPES = Object.entries(EVENT_TYPE_CONFIG) as [EventTypeKey, (typeof EVENT_TYPE_CONFIG)[EventTypeKey]][]
 
-export function EventForm({ defaultDate }: Props) {
+function toLocalInput(iso: string) {
+  return iso.slice(0, 16) // "YYYY-MM-DDTHH:mm"
+}
+
+export function EventForm({ defaultDate, eventId, initialEvent }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
+  const isEdit = !!eventId
 
   const todayDate  = defaultDate ?? new Date().toISOString().slice(0, 10)
   const defaultStart = `${todayDate}T09:00`
   const defaultEnd   = `${todayDate}T10:00`
 
   const [form, setForm] = useState({
-    event_type:          'internal_meeting' as EventTypeKey,
-    title:               '',
-    all_day:             false,
-    start_at:            defaultStart,
-    end_at:              defaultEnd,
-    location_text:       '',
-    municipality_name:   '',
-    neighborhood_name:   '',
-    description:         '',
-    internal_notes:      '',
-    expected_attendance: '',
+    event_type:          (initialEvent?.event_type ?? 'internal_meeting') as EventTypeKey,
+    title:               initialEvent?.title ?? '',
+    all_day:             initialEvent?.all_day ?? false,
+    start_at:            initialEvent ? toLocalInput(initialEvent.start_at) : defaultStart,
+    end_at:              initialEvent ? toLocalInput(initialEvent.end_at) : defaultEnd,
+    location_text:       initialEvent?.location_text ?? '',
+    municipality_name:   initialEvent?.municipality_name ?? '',
+    neighborhood_name:   initialEvent?.neighborhood_name ?? '',
+    description:         initialEvent?.description ?? '',
+    internal_notes:      initialEvent?.internal_notes ?? '',
+    expected_attendance: initialEvent?.expected_attendance != null ? String(initialEvent.expected_attendance) : '',
   })
 
   function set(field: string, value: unknown) {
@@ -48,8 +55,9 @@ export function EventForm({ defaultDate }: Props) {
     setError(null)
 
     try {
-      const res = await fetch('/api/calendar/events', {
-        method:  'POST',
+      const url = isEdit ? `/api/calendar/events/${eventId}` : '/api/calendar/events'
+      const res = await fetch(url, {
+        method:  isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           ...form,
@@ -66,7 +74,7 @@ export function EventForm({ defaultDate }: Props) {
 
       if (!res.ok) {
         const d = await res.json()
-        setError(d.error ?? 'Error creando evento')
+        setError(d.error ?? (isEdit ? 'Error guardando cambios' : 'Error creando evento'))
         return
       }
 
@@ -273,9 +281,9 @@ export function EventForm({ defaultDate }: Props) {
           data-testid="submit-button"
         >
           {submitting ? (
-            <><Loader2 className="h-4 w-4 animate-spin" />Creando…</>
+            <><Loader2 className="h-4 w-4 animate-spin" />{isEdit ? 'Guardando…' : 'Creando…'}</>
           ) : (
-            'Crear evento'
+            isEdit ? 'Guardar cambios' : 'Crear evento'
           )}
         </button>
       </div>

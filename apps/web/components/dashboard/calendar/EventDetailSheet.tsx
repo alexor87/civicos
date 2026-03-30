@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, MapPin, Clock, Users, FileText, X, Star, CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
+import { CalendarDays, MapPin, Clock, Users, FileText, X, Star, CheckCircle2, Pencil } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { EVENT_TYPE_CONFIG, CalendarEvent } from './eventTypes'
 import { EventIntelligencePanel } from './EventIntelligencePanel'
@@ -86,6 +87,15 @@ export function EventDetailSheet({ event, onClose, onComplete }: Props) {
                 {event.title}
               </SheetTitle>
             </div>
+            {event.status !== 'completed' && event.status !== 'cancelled' && (
+              <Link
+                href={`/dashboard/calendar/${event.id}/edit`}
+                className="flex-shrink-0 h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary hover:border-primary transition-colors"
+                title="Editar evento"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </div>
 
           {/* Tabs */}
