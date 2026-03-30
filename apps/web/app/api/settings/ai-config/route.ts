@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI, type AiProvider } from '@/lib/ai/call-ai'
 
 // GET — Return current AI config (without the actual key)
 export async function GET() {
@@ -85,39 +86,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Campaign not found' }, { status: 403 })
   }
 
-  // Verify the key works by calling verify-ai-key Edge Function
+  const adminSupabase = createAdminClient()
+
+  // Verify the key works by calling the provider directly (override skips DB)
   let isValid = false
   let verifyError: string | null = null
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const verifyRes = await fetch(`${supabaseUrl}/functions/v1/verify-ai-key`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-      },
-      body: JSON.stringify({ provider, model, apiKey }),
-    })
-
-    if (!verifyRes.ok) {
-      const text = await verifyRes.text()
-      verifyError = `Verification service error (${verifyRes.status}): ${text.slice(0, 200)}`
-    } else {
-      const verifyData = await verifyRes.json()
-      isValid = verifyData.valid === true
-      if (!isValid) verifyError = verifyData.error || verifyData.message || 'Unknown verification error'
-    }
+    await callAI(
+      adminSupabase,
+      'verify',
+      'verify',
+      [{ role: 'user', content: 'Say OK' }],
+      { maxTokens: 10 },
+      { provider: provider as AiProvider, model, apiKey },
+    )
+    isValid = true
   } catch (e) {
-    verifyError = `Could not reach verification service: ${e instanceof Error ? e.message : String(e)}`
+    verifyError = e instanceof Error ? e.message : String(e)
   }
 
   // Build hint from last 4 chars
   const hint = apiKey.length > 4
     ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`
     : '****'
-
-  // Encrypt and upsert
-  const adminSupabase = createAdminClient()
 
   // Encrypt the key via DB function
   const { data: encrypted } = await adminSupabase.rpc('encrypt_ai_key', { raw: apiKey })
