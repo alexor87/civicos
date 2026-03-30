@@ -32,6 +32,32 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Update linked contacts if provided
+  if ('linked_contact_ids' in body && data) {
+    const linkedContactIds: string[] = body.linked_contact_ids ?? []
+    const tenantId = (data as any).tenant_id
+
+    // Remove existing contact participants for this event
+    await supabase
+      .from('event_participants')
+      .delete()
+      .eq('event_id', id)
+      .not('contact_id', 'is', null)
+
+    // Insert new ones
+    if (linkedContactIds.length > 0) {
+      const participants = linkedContactIds.map((contactId: string) => ({
+        tenant_id:  tenantId,
+        event_id:   id,
+        contact_id: contactId,
+        role:       'attendee',
+        status:     'confirmed',
+      }))
+      await supabase.from('event_participants').insert(participants)
+    }
+  }
+
   return NextResponse.json(data)
 }
 

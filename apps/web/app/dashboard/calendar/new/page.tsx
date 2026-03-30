@@ -1,11 +1,25 @@
 import { ArrowLeft, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { EventForm } from '@/components/dashboard/calendar/EventForm'
 
 export const metadata = { title: 'Nuevo evento · CivicOS' }
 
 export default async function NewCalendarEventPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const { date } = await searchParams
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('campaign_ids')
+    .eq('id', user.id)
+    .single()
+
+  const campaignId = profile?.campaign_ids?.[0] ?? undefined
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
       {/* Header */}
@@ -28,7 +42,7 @@ export default async function NewCalendarEventPage({ searchParams }: { searchPar
         </div>
       </div>
 
-      <EventForm defaultDate={date} />
+      <EventForm defaultDate={date} campaignId={campaignId} />
     </div>
   )
 }

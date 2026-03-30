@@ -80,5 +80,19 @@ export async function POST(request: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Save linked contacts as event participants
+  const linkedContactIds: string[] = body.linked_contact_ids ?? []
+  if (linkedContactIds.length > 0 && data) {
+    const participants = linkedContactIds.map(contactId => ({
+      tenant_id:  tenantId,
+      event_id:   data.id,
+      contact_id: contactId,
+      role:       'attendee',
+      status:     'confirmed',
+    }))
+    await supabase.from('event_participants').insert(participants)
+  }
+
   return NextResponse.json(data, { status: 201 })
 }

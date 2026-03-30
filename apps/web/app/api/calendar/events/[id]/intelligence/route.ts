@@ -21,6 +21,17 @@ export async function GET(
 
   if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
 
+  // Fetch linked contacts via event_participants
+  const { data: linkedParticipants } = await supabase
+    .from('event_participants')
+    .select('contact_id, contacts(id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status)')
+    .eq('event_id', id)
+    .not('contact_id', 'is', null)
+
+  const linkedContacts = (linkedParticipants ?? [])
+    .filter((p: any) => p.contacts)
+    .map((p: any) => p.contacts)
+
   // Build contact filter based on available location fields
   let contactQuery = supabase
     .from('contacts')
@@ -70,6 +81,14 @@ export async function GET(
       undecidedCount: undecided,
       undecidedPct:   totalContacts > 0 ? Math.round((undecided / totalContacts) * 100) : 0,
     },
+    linkedContacts: linkedContacts.map((c: any) => ({
+      id: c.id,
+      name: `${c.first_name} ${c.last_name}`,
+      sympathy_level: c.sympathy_level,
+      status: c.status,
+      phone: c.phone,
+      email: c.email,
+    })),
     canvassing: {
       totalVisits:         visits?.length ?? 0,
       mostFrequentResult,
@@ -113,6 +132,17 @@ export async function POST(
     .update({ intelligence_status: 'generating', updated_at: new Date().toISOString() })
     .eq('id', eventId)
 
+  // Fetch linked contacts for this event
+  const { data: briefingParticipants } = await supabase
+    .from('event_participants')
+    .select('contact_id, contacts(id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status, notes)')
+    .eq('event_id', eventId)
+    .not('contact_id', 'is', null)
+
+  const briefingLinkedContacts = (briefingParticipants ?? [])
+    .filter((p: any) => p.contacts)
+    .map((p: any) => p.contacts)
+
   // Fetch CRM data for the zone
   let contactQuery = supabase
     .from('contacts')
@@ -132,6 +162,18 @@ export async function POST(
   const sympathizers   = contacts?.filter(c => (c.sympathy_level as number) >= 4).length ?? 0
   const undecided      = contacts?.filter(c => c.intention_vote === 'undecided' || !c.intention_vote).length ?? 0
 
+  // Build linked contacts info for the prompt
+  const linkedContactsInfo = briefingLinkedContacts.length > 0
+    ? `\nCONTACTOS VINCULADOS AL EVENTO:\n${briefingLinkedContacts.map((c: any, i: number) =>
+        `${i + 1}. ${c.first_name} ${c.last_name}` +
+        (c.status ? ` — Estado: ${c.status}` : '') +
+        (c.sympathy_level ? ` — Nivel simpatía: ${c.sympathy_level}/5` : '') +
+        (c.intention_vote ? ` — Intención voto: ${c.intention_vote}` : '') +
+        (c.municipality ? ` — Municipio: ${c.municipality}` : '') +
+        (c.notes ? ` — Notas: ${c.notes}` : '')
+      ).join('\n')}\n`
+    : ''
+
   const prompt = `Eres el estratega político jefe de la campaña. Genera un briefing ejecutivo para el siguiente evento:
 
 EVENTO: ${event.title}
@@ -147,7 +189,7 @@ DATOS CRM DE LA ZONA:
 - Simpatizantes (nivel 4-5): ${sympathizers} (${totalContacts > 0 ? Math.round(sympathizers/totalContacts*100) : 0}%)
 - Indecisos: ${undecided} (${totalContacts > 0 ? Math.round(undecided/totalContacts*100) : 0}%)
 - Visitas de canvassing últimos 30 días: ${visits?.length ?? 0}
-
+${linkedContactsInfo}
 Genera un briefing JSON con exactamente esta estructura:
 {
   "summary": "Resumen ejecutivo en 2-3 oraciones del contexto y oportunidad",

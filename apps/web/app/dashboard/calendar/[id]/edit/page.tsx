@@ -20,6 +20,21 @@ export default async function EditCalendarEventPage({ params }: { params: Promis
 
   if (!event) redirect('/dashboard/calendar')
 
+  // Fetch linked contacts for this event
+  const { data: participants } = await supabase
+    .from('event_participants')
+    .select('contact_id, contacts(id, first_name, last_name)')
+    .eq('event_id', id)
+    .not('contact_id', 'is', null)
+
+  const linkedContacts = (participants ?? [])
+    .filter((p: any) => p.contacts)
+    .map((p: any) => ({
+      id: p.contacts.id,
+      first_name: p.contacts.first_name,
+      last_name: p.contacts.last_name,
+    }))
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
       <div className="mb-8">
@@ -41,7 +56,7 @@ export default async function EditCalendarEventPage({ params }: { params: Promis
         </div>
       </div>
 
-      <EventForm eventId={event.id} initialEvent={event} />
+      <EventForm eventId={event.id} initialEvent={event} campaignId={event.campaign_id} initialContacts={linkedContacts} />
     </div>
   )
 }

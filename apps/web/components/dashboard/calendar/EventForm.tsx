@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, MapPin, FileText, Loader2 } from 'lucide-react'
+import { CalendarDays, MapPin, FileText, Loader2, Users } from 'lucide-react'
 import { EVENT_TYPE_CONFIG, type CalendarEvent } from './eventTypes'
+import { ContactMultiSelect, type LinkedContact } from './ContactMultiSelect'
 
 interface Props {
   defaultDate?: string  // YYYY-MM-DD
   eventId?: string
   initialEvent?: CalendarEvent
+  campaignId?: string
+  initialContacts?: LinkedContact[]
 }
 
 type EventTypeKey = keyof typeof EVENT_TYPE_CONFIG
@@ -19,10 +22,11 @@ function toLocalInput(iso: string) {
   return iso.slice(0, 16) // "YYYY-MM-DDTHH:mm"
 }
 
-export function EventForm({ defaultDate, eventId, initialEvent }: Props) {
+export function EventForm({ defaultDate, eventId, initialEvent, campaignId, initialContacts }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
+  const [linkedContacts, setLinkedContacts] = useState<LinkedContact[]>(initialContacts ?? [])
   const isEdit = !!eventId
 
   const todayDate  = defaultDate ?? new Date().toISOString().slice(0, 10)
@@ -69,6 +73,7 @@ export function EventForm({ defaultDate, eventId, initialEvent }: Props) {
           neighborhood_name:  form.neighborhood_name || null,
           description:        form.description || null,
           internal_notes:     form.internal_notes || null,
+          linked_contact_ids: linkedContacts.map(c => c.id),
         }),
       })
 
@@ -230,6 +235,24 @@ export function EventForm({ defaultDate, eventId, initialEvent }: Props) {
           </div>
         </div>
       </div>
+
+      {/* ── Sección 3.5: Contactos vinculados ────────────────────── */}
+      {EVENT_TYPE_CONFIG[form.event_type]?.activatesIntelligence && campaignId && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+            <Users className="h-4 w-4 text-slate-400" />
+            Contactos vinculados
+          </h3>
+          <p className="text-xs text-slate-500 -mt-2">
+            Vincula contactos del CRM para enriquecer el briefing de inteligencia
+          </p>
+          <ContactMultiSelect
+            value={linkedContacts}
+            onChange={setLinkedContacts}
+            campaignId={campaignId}
+          />
+        </div>
+      )}
 
       {/* ── Sección 4: Notas ─────────────────────────────────────── */}
       <div className="space-y-4">

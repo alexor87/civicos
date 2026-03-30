@@ -3,6 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Loader2, Sparkles, AlertCircle, Users, MapPin } from 'lucide-react'
 
+interface LinkedContactInfo {
+  id: string
+  name: string
+  sympathy_level: number | null
+  status: string | null
+  phone: string | null
+  email: string | null
+}
+
 interface IntelligenceData {
   contacts: {
     total: number
@@ -10,6 +19,7 @@ interface IntelligenceData {
     undecidedCount: number
     undecidedPct: number
   }
+  linkedContacts: LinkedContactInfo[]
   canvassing: {
     totalVisits: number
     mostFrequentResult: string | null
@@ -94,11 +104,46 @@ export function EventIntelligencePanel({ eventId }: Props) {
 
   if (!data) return null
 
-  const { contacts, canvassing } = data
+  const { contacts, canvassing, linkedContacts } = data
   const totalSympathy = Object.values(contacts.sympathyDist).reduce((s, v) => s + v, 0)
 
   return (
     <div className="space-y-6">
+
+      {/* Linked Contacts */}
+      {linkedContacts && linkedContacts.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            Contactos vinculados ({linkedContacts.length})
+          </h4>
+          <div className="space-y-2">
+            {linkedContacts.map(c => (
+              <div key={c.id} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{c.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {c.status && (
+                      <span className="text-[10px] text-slate-500">{c.status}</span>
+                    )}
+                    {c.sympathy_level && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{
+                        backgroundColor: (SYMPATHY_LABELS[c.sympathy_level]?.color ?? '#94A3B8') + '20',
+                        color: SYMPATHY_LABELS[c.sympathy_level]?.color ?? '#94A3B8',
+                      }}>
+                        {SYMPATHY_LABELS[c.sympathy_level]?.label ?? `Nivel ${c.sympathy_level}`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {(c.phone || c.email) && (
+                  <span className="text-[10px] text-slate-400 text-right">{c.phone || c.email}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* CRM Zone Data */}
       <div>
