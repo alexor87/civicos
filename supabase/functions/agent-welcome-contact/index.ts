@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.78.0'
+import { callAI, AiNotConfiguredError } from '../_shared/ai-router.ts'
 
 // Agent 1 — Welcome & Contact Qualification
 // Trigger: INSERT on contacts table (via Supabase webhook)
@@ -20,8 +20,6 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
-
-  const claude = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
 
   // Log agent run start
   const { data: runData } = await supabase
@@ -45,18 +43,11 @@ Deno.serve(async (req: Request) => {
     // Step 1: Analyze contact and generate classification
     steps.push({ step: 'analyze', started_at: new Date().toISOString() })
 
-    const analysisResponse = await claude.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 1024,
-      system: `Eres un asistente de campaña electoral inteligente.
-Analiza el perfil de un nuevo contacto y:
-1. Sugiere tags relevantes basados en su perfil (máximo 5 tags)
-2. Evalúa su potencial de simpatizante (alto/medio/bajo)
-3. Sugiere el canal de bienvenida más apropiado
-4. Genera un mensaje de bienvenida personalizado y breve (máximo 160 caracteres para SMS)
-Responde SOLO en JSON con esta estructura exacta:
-{"tags": [], "potential": "alto|medio|bajo", "channel": "sms|email", "welcome_message": "...", "is_high_value": false, "reasoning": "..."}`,
-      messages: [
+    const aiResult = await callAI(
+      supabase,
+      contact.tenant_id,
+      contact.campaign_id,
+      [
         {
           role: 'user',
           content: `Analiza este nuevo contacto en la campaña:
@@ -70,11 +61,20 @@ Estado inicial: ${contact.status}
 Notas: ${contact.notes || 'Ninguna'}`,
         },
       ],
-    })
+      {
+        maxTokens: 1024,
+        system: `Eres un asistente de campaña electoral inteligente.
+Analiza el perfil de un nuevo contacto y:
+1. Sugiere tags relevantes basados en su perfil (máximo 5 tags)
+2. Evalúa su potencial de simpatizante (alto/medio/bajo)
+3. Sugiere el canal de bienvenida más apropiado
+4. Genera un mensaje de bienvenida personalizado y breve (máximo 160 caracteres para SMS)
+Responde SOLO en JSON con esta estructura exacta:
+{"tags": [], "potential": "alto|medio|bajo", "channel": "sms|email", "welcome_message": "...", "is_high_value": false, "reasoning": "..."}`,
+      },
+    )
 
-    const analysisText = analysisResponse.content[0].type === 'text'
-      ? analysisResponse.content[0].text
-      : '{}'
+    const analysisText = aiResult.content || '{}'
 
     let analysis: {
       tags: string[]

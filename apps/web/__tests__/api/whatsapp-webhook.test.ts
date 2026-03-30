@@ -10,7 +10,7 @@ const {
   mockChatbotQuery,
   mockTwilioCreate,
   mockValidateRequest,
-  mockAnthropicCreate,
+  mockCallAI,
 } = vi.hoisted(() => ({
   mockGetUser:         vi.fn().mockResolvedValue({ data: { user: null } }),
   mockCampaignQuery:   vi.fn(),
@@ -19,8 +19,8 @@ const {
   mockChatbotQuery:    vi.fn(),
   mockTwilioCreate:    vi.fn().mockResolvedValue({ sid: 'SM_reply' }),
   mockValidateRequest: vi.fn().mockReturnValue(true),
-  mockAnthropicCreate: vi.fn().mockResolvedValue({
-    content: [{ type: 'text', text: 'Hola, ¿en qué te puedo ayudar?' }],
+  mockCallAI: vi.fn().mockResolvedValue({
+    content: 'Hola, ¿en qué te puedo ayudar?',
   }),
 }))
 
@@ -66,10 +66,13 @@ vi.mock('twilio', () => ({
   ),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: mockAnthropicCreate }
-  },
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { POST } from '@/app/api/webhooks/whatsapp/route'
@@ -103,8 +106,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockValidateRequest.mockReturnValue(true)
   mockTwilioCreate.mockResolvedValue({ sid: 'SM_reply' })
-  mockAnthropicCreate.mockResolvedValue({
-    content: [{ type: 'text', text: 'Hola, ¿en qué te puedo ayudar?' }],
+  mockCallAI.mockResolvedValue({
+    content: 'Hola, ¿en qué te puedo ayudar?',
   })
   mockConvInsert.mockResolvedValue({ error: null })
 })
@@ -150,7 +153,7 @@ describe('POST /api/webhooks/whatsapp', () => {
     const text = await res.text()
     expect(text).toBe('<Response/>')
     expect(mockConvInsert).toHaveBeenCalledTimes(1)
-    expect(mockAnthropicCreate).not.toHaveBeenCalled()
+    expect(mockCallAI).not.toHaveBeenCalled()
   })
 
   it('calls Claude and sends reply when chatbot is enabled', async () => {
@@ -172,7 +175,7 @@ describe('POST /api/webhooks/whatsapp', () => {
     const res  = await POST(makeRequest(body))
     const text = await res.text()
     expect(text).toContain('<Message>')
-    expect(mockAnthropicCreate).toHaveBeenCalledTimes(1)
+    expect(mockCallAI).toHaveBeenCalledTimes(1)
     expect(mockTwilioCreate).toHaveBeenCalledTimes(1)
     expect(mockConvInsert).toHaveBeenCalledTimes(2) // inbound + outbound
   })

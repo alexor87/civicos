@@ -14,7 +14,7 @@ const {
   mockVolunteersCount,
   mockSuggestionsSelect,
   mockSuggestionsInsert,
-  mockAnthropicCreate,
+  mockCallAI,
 } = vi.hoisted(() => ({
   mockGetUser:            vi.fn(),
   mockCampaignsSelect:    vi.fn(),
@@ -27,7 +27,7 @@ const {
   mockVolunteersCount:    vi.fn(),
   mockSuggestionsSelect:  vi.fn(),
   mockSuggestionsInsert:  vi.fn(),
-  mockAnthropicCreate:    vi.fn(),
+  mockCallAI:             vi.fn(),
 }))
 
 // Helper: builds a fully-chainable Supabase query builder that resolves via `then`
@@ -105,10 +105,13 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: mockAnthropicCreate }
-  },
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { POST } from '@/app/api/ai/analytics/route'
@@ -142,8 +145,8 @@ const CLAUDE_SUGGESTIONS = [
 ]
 
 function mockClaudeResponse(suggestions = CLAUDE_SUGGESTIONS) {
-  mockAnthropicCreate.mockResolvedValueOnce({
-    content: [{ type: 'text', text: JSON.stringify(suggestions) }],
+  mockCallAI.mockResolvedValueOnce({
+    content: JSON.stringify(suggestions),
   })
 }
 
@@ -207,7 +210,7 @@ describe('POST /api/ai/analytics — metrics', () => {
     const res  = await POST(makeRequest())
     const body = await res.json()
 
-    expect(mockAnthropicCreate).toHaveBeenCalledTimes(1)
+    expect(mockCallAI).toHaveBeenCalledTimes(1)
     expect(body.processed).toBe(1)
     expect(body.suggestions_created).toBe(1)
     expect(mockSuggestionsInsert).toHaveBeenCalledTimes(1)
@@ -271,8 +274,8 @@ describe('POST /api/ai/analytics — stale draft campaigns', () => {
       estimated_impact: 'Recuperar ventana de comunicación',
       action_payload: { campaign_id: 'email1', campaign_name: 'Campaña Agosto', days_stale: 8 },
     }]
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(communicationsSuggestion) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(communicationsSuggestion),
     })
 
     const res  = await POST(makeRequest())
@@ -313,8 +316,8 @@ describe('POST /api/ai/analytics — inactive volunteers', () => {
       estimated_impact: 'Reactivar voluntarios puede aumentar visitas en 30%',
       action_payload: { volunteer_ids: ['v1', 'v2'], days_inactive: 14 },
     }]
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(volunteersSuggestion) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(volunteersSuggestion),
     })
 
     const res  = await POST(makeRequest())
@@ -340,8 +343,8 @@ describe('POST /api/ai/analytics — resilience', () => {
     mockVolunteersCount.mockResolvedValue({ data: [] })
 
     // Claude returns invalid JSON
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: 'Lo siento, no pude analizar los datos.' }],
+    mockCallAI.mockResolvedValueOnce({
+      content: 'Lo siento, no pude analizar los datos.',
     })
 
     const res  = await POST(makeRequest())

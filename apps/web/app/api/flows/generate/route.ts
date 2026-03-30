@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 import { TRIGGER_CONFIG, ACTION_CONFIG, renderVariables } from '@/components/dashboard/flows/flowTypes'
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
 const SYSTEM_PROMPT = `Eres un asistente experto en automatizaciones para campañas electorales en Colombia.
 El usuario describe en lenguaje natural lo que quiere automatizar.
@@ -74,15 +73,13 @@ export async function POST(req: NextRequest) {
       ?? (campaign as { name?: string } | null)?.name
       ?? 'el candidato'
 
-    // Llamar a Claude
-    const response = await anthropic.messages.create({
-      model:      'claude-sonnet-4-6',
-      max_tokens: 2000,
-      system:     SYSTEM_PROMPT,
-      messages:   [{ role: 'user', content: naturalLanguageInput }],
-    })
+    // Llamar a AI
+    const adminSupabase = createAdminClient()
+    const aiResult = await callAI(adminSupabase, profile.tenant_id, campaignId, [
+      { role: 'user', content: naturalLanguageInput },
+    ], { system: SYSTEM_PROMPT, maxTokens: 2000 })
 
-    const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
+    const rawText = aiResult.content || ''
 
     let flowConfig: Record<string, unknown>
     try {

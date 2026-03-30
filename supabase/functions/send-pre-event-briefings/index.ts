@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.78.0'
+import { callAI, AiNotConfiguredError } from '../_shared/ai-router.ts'
 
 // Pre-event briefing generator
 // Trigger: pg_cron every 30 minutes
@@ -23,8 +23,6 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
-  const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
-
   const now    = new Date()
   const in1h   = new Date(now.getTime() + 1 * 60 * 60 * 1000)
   const in3h   = new Date(now.getTime() + 3 * 60 * 60 * 1000)
@@ -113,13 +111,16 @@ Genera un briefing JSON:
 
 Responde SOLO con el JSON.`
 
-        const response = await anthropic.messages.create({
-          model:      'claude-sonnet-4-5',
-          max_tokens: 1024,
-          messages:   [{ role: 'user', content: prompt }],
-        })
+        // Lookup tenant_id from campaign
+        const { data: eventCampaign } = await supabase
+          .from('campaigns')
+          .select('tenant_id')
+          .eq('id', event.campaign_id)
+          .single()
 
-        const text     = (response.content[0] as { type: string; text: string }).text.trim()
+        const aiResult = await callAI(supabase, eventCampaign?.tenant_id, event.campaign_id, [{ role: 'user', content: prompt }], { maxTokens: 1024 })
+
+        const text     = (aiResult.content || '').trim()
         const briefing = JSON.parse(text)
 
         await supabase

@@ -16,7 +16,7 @@ const {
   mockAgentRunUpdate,
   mockSuggestionsSelect,
   mockSuggestionsInsert,
-  mockAnthropicCreate,
+  mockCallAI,
 } = vi.hoisted(() => ({
   mockGetUser:           vi.fn(),
   mockProfileSelect:     vi.fn(),
@@ -31,7 +31,7 @@ const {
   mockAgentRunUpdate:    vi.fn(),
   mockSuggestionsSelect: vi.fn(),
   mockSuggestionsInsert: vi.fn(),
-  mockAnthropicCreate:   vi.fn(),
+  mockCallAI:            vi.fn(),
 }))
 
 function makeChain(terminalFn: ReturnType<typeof vi.fn>) {
@@ -89,10 +89,13 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: mockAnthropicCreate }
-  },
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { POST } from '@/app/api/agents/campaign-monitor/route'
@@ -184,8 +187,8 @@ describe('POST /api/agents/campaign-monitor — happy path', () => {
   it('creates a daily report suggestion with correct module', async () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_REPORT) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_REPORT),
     })
 
     const res  = await POST(makeRequest('secret123'))
@@ -213,8 +216,8 @@ describe('POST /api/agents/campaign-monitor — alert levels', () => {
     mockVisitsPrev24h.mockResolvedValue({ count: 50 })
     // Few active volunteers too → 2 alerts → rojo → high
     mockWeekVisits.mockResolvedValue({ data: [] })
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify({ ...CLAUDE_REPORT, title: 'Alerta roja' }) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify({ ...CLAUDE_REPORT, title: 'Alerta roja' }),
     })
 
     await POST(makeRequest('secret123'))
@@ -228,8 +231,8 @@ describe('POST /api/agents/campaign-monitor — alert levels', () => {
   it('inserts low priority when no alerts', async () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_REPORT) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_REPORT),
     })
 
     await POST(makeRequest('secret123'))
@@ -246,8 +249,8 @@ describe('POST /api/agents/campaign-monitor — deduplication', () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
     mockSuggestionsSelect.mockResolvedValue({ data: [{ id: 'existing-report' }] })
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_REPORT) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_REPORT),
     })
 
     const res  = await POST(makeRequest('secret123'))
@@ -264,8 +267,8 @@ describe('POST /api/agents/campaign-monitor — resilience', () => {
   it('uses fallback report when Claude returns invalid JSON', async () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: 'invalid json ~~' }],
+    mockCallAI.mockResolvedValueOnce({
+      content: 'invalid json ~~',
     })
 
     const res  = await POST(makeRequest('secret123'))

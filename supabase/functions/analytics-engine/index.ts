@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.78.0'
+import { callAI, AiNotConfiguredError } from '../_shared/ai-router.ts'
 
 // Analytics Engine — Motor Sugerencias IA v1
 // Triggered by: pg_cron daily at 08:00 UTC (via net.http_post)
@@ -30,8 +30,6 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
-  const claude = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
-
   // Fetch active campaigns
   const { data: campaigns } = await supabase
     .from('campaigns')
@@ -118,12 +116,9 @@ REGLAS: Solo genera sugerencias para problemas reales. Máximo 4. Si todo está 
 Responde ÚNICAMENTE con un array JSON (sin texto extra):
 [{"type":"...","module":"crm|canvassing|communications|volunteers","priority":"critical|high|medium|low","title":"...","description":"...","reasoning":"...","estimated_impact":"...","action_payload":{}}]`
 
-      const response = await claude.messages.create({
-        model: 'claude-sonnet-4-5', max_tokens: 2048,
-        messages: [{ role: 'user', content: prompt }],
-      })
+      const aiResult = await callAI(supabase, campaign.tenant_id, campaign.id, [{ role: 'user', content: prompt }], { maxTokens: 2048 })
 
-      const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
+      const text = aiResult.content || '[]'
       let suggestions: AnalyticsSuggestion[] = []
       try { suggestions = JSON.parse(text); if (!Array.isArray(suggestions)) suggestions = [] }
       catch { suggestions = [] }

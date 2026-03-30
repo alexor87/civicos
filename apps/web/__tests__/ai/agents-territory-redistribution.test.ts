@@ -15,7 +15,7 @@ const {
   mockAgentRunUpdate,
   mockSuggestionsSelect,
   mockSuggestionsInsert,
-  mockAnthropicCreate,
+  mockCallAI,
 } = vi.hoisted(() => ({
   mockGetUser:           vi.fn(),
   mockProfileSelect:     vi.fn(),
@@ -29,7 +29,7 @@ const {
   mockAgentRunUpdate:    vi.fn(),
   mockSuggestionsSelect: vi.fn(),
   mockSuggestionsInsert: vi.fn(),
-  mockAnthropicCreate:   vi.fn(),
+  mockCallAI:            vi.fn(),
 }))
 
 function makeChain(terminalFn: ReturnType<typeof vi.fn>) {
@@ -93,10 +93,13 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: mockAnthropicCreate }
-  },
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { POST } from '@/app/api/agents/territory-redistribution/route'
@@ -183,7 +186,7 @@ describe('POST /api/agents/territory-redistribution — coverage adequate', () =
 
     expect(res.status).toBe(200)
     expect(body.proposals_created).toBe(0)
-    expect(mockAnthropicCreate).not.toHaveBeenCalled()
+    expect(mockCallAI).not.toHaveBeenCalled()
   })
 })
 
@@ -207,8 +210,8 @@ describe('POST /api/agents/territory-redistribution — low coverage', () => {
       .mockResolvedValueOnce({ count: 100 })  // Norte contacts
     mockRecentVisits.mockResolvedValue({ data: [] })
 
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_PROPOSAL) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_PROPOSAL),
     })
 
     const res  = await POST(makeRequest('secret123'))
@@ -233,8 +236,8 @@ describe('POST /api/agents/territory-redistribution — HITL', () => {
     mockTerritoriesSelect.mockResolvedValue({ data: [{ id: 't1', name: 'Sur', priority: 'high' }] })
     mockVisitCount.mockResolvedValue({ count: 5 })
     mockContactCount.mockResolvedValue({ count: 100 })
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_PROPOSAL) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_PROPOSAL),
     })
 
     await POST(makeRequest('secret123'))
@@ -257,8 +260,8 @@ describe('POST /api/agents/territory-redistribution — deduplication', () => {
     mockVisitCount.mockResolvedValue({ count: 5 })
     mockContactCount.mockResolvedValue({ count: 100 })
     mockSuggestionsSelect.mockResolvedValue({ data: [{ id: 'existing' }] })  // already exists
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_PROPOSAL) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_PROPOSAL),
     })
 
     const res  = await POST(makeRequest('secret123'))
@@ -278,8 +281,8 @@ describe('POST /api/agents/territory-redistribution — resilience', () => {
     mockTerritoriesSelect.mockResolvedValue({ data: [{ id: 't1', name: 'Sur', priority: 'high' }] })
     mockVisitCount.mockResolvedValue({ count: 5 })
     mockContactCount.mockResolvedValue({ count: 100 })
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: 'no es JSON' }],
+    mockCallAI.mockResolvedValueOnce({
+      content: 'no es JSON',
     })
 
     const res  = await POST(makeRequest('secret123'))

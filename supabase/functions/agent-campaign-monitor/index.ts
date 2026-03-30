@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.78.0'
+import { callAI, AiNotConfiguredError } from '../_shared/ai-router.ts'
 
 // Agent 5 — Monitoreo de Indicadores de Campaña
 // Trigger: daily cron at 07:00 UTC OR manual HTTP POST with x-cron-secret
@@ -19,8 +19,6 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
-  const claude = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
-
   const { data: campaigns } = await supabase
     .from('campaigns')
     .select('id, tenant_id, name, election_date')
@@ -149,13 +147,15 @@ Responde en JSON:
   "estimated_impact": "..."
 }`
 
-      const response = await claude.messages.create({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
-      })
+      const aiResult = await callAI(
+        supabase,
+        campaign.tenant_id,
+        campaign.id,
+        [{ role: 'user', content: prompt }],
+        { maxTokens: 1000 },
+      )
 
-      const text = response.content[0].type === 'text' ? response.content[0].text : '{}'
+      const text = aiResult.content || '{}'
       let report: {
         summary: string
         alert_level: string

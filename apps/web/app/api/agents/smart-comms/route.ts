@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 import { resolveThresholds } from '@/lib/agents/thresholds'
 import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ processed: 0, suggestions_created: 0 })
   }
 
-  const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  const adminSupabase = createAdminClient()
   let suggestionsCreated = 0
 
   for (const campaign of campaigns) {
@@ -139,12 +140,11 @@ ${smsSummary}
 Genera hasta 3 sugerencias. Responde SOLO con array JSON:
 [{"type":"...","module":"comunicaciones","priority":"critical|high|medium|low","title":"...","description":"...","reasoning":"...","estimated_impact":"...","action_payload":{}}]`
 
-      const response = await claude.messages.create({
-        model: 'claude-sonnet-4-5', max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }],
-      })
+      const aiResult = await callAI(adminSupabase, campaign.tenant_id, campaign.id, [
+        { role: 'user', content: prompt },
+      ], { maxTokens: 1200 })
 
-      const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
+      const text = aiResult.content || '[]'
       let suggestions: { type: string; module: string; priority: string; title: string; description: string; reasoning: string; estimated_impact: string; action_payload: Record<string, unknown> }[] = []
       try { suggestions = JSON.parse(text); if (!Array.isArray(suggestions)) suggestions = [] } catch { suggestions = [] }
 

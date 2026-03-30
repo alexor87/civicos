@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.78.0'
+import { callAI, AiNotConfiguredError } from '../_shared/ai-router.ts'
 
 // Agent 2 — Canvassing Follow-up
 // Trigger: INSERT/UPDATE on canvass_visits where result IN ('no_home', 'follow_up')
@@ -25,8 +25,6 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
-
-  const claude = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
 
   // Log agent run
   const { data: runData } = await supabase
@@ -68,14 +66,12 @@ Deno.serve(async (req: Request) => {
       completed_at: new Date().toISOString(),
     })
 
-    // Generate recommendation with Claude
-    const analysisResponse = await claude.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 512,
-      system: `Eres un coordinador de campaña experto. Analiza los intentos de visita fallidos y recomienda la mejor acción.
-Responde SOLO en JSON:
-{"action": "retry_visit|switch_channel|escalate", "recommended_channel": "phone|sms|email", "best_time": "mañana|tarde|noche", "message_draft": "...", "priority": "high|medium|low", "reasoning": "..."}`,
-      messages: [
+    // Generate recommendation with AI
+    const aiResult = await callAI(
+      supabase,
+      visit.tenant_id,
+      visit.campaign_id,
+      [
         {
           role: 'user',
           content: `Visita de canvassing fallida:
@@ -88,11 +84,15 @@ Ciudad: ${contact?.city || 'Desconocida'}
 Notas de la visita: ${visit.notes || 'Sin notas'}`,
         },
       ],
-    })
+      {
+        maxTokens: 512,
+        system: `Eres un coordinador de campaña experto. Analiza los intentos de visita fallidos y recomienda la mejor acción.
+Responde SOLO en JSON:
+{"action": "retry_visit|switch_channel|escalate", "recommended_channel": "phone|sms|email", "best_time": "mañana|tarde|noche", "message_draft": "...", "priority": "high|medium|low", "reasoning": "..."}`,
+      },
+    )
 
-    const analysisText = analysisResponse.content[0].type === 'text'
-      ? analysisResponse.content[0].text
-      : '{}'
+    const analysisText = aiResult.content || '{}'
 
     let recommendation: {
       action: string

@@ -42,12 +42,15 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
-// ── Anthropic mock ─────────────────────────────────────────────────────────────
-const mockClaudeCreate = vi.fn()
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(function () {
-    return { messages: { create: mockClaudeCreate } }
-  }),
+// ── AI mock ───────────────────────────────────────────────────────────────────
+const { mockClaudeCreate } = vi.hoisted(() => ({ mockClaudeCreate: vi.fn() }))
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockClaudeCreate,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { analyzeSmartComms } from '@/app/dashboard/comunicaciones/smart-comms-action'
@@ -84,7 +87,7 @@ const REPORT_JSON = JSON.stringify({
 })
 
 function makeClaudeResponse(text: string) {
-  return { content: [{ type: 'text', text }] }
+  return { content: text }
 }
 
 function setupHappyPath(topic?: string) {
@@ -147,8 +150,8 @@ describe('analyzeSmartComms', () => {
   it('accepts optional topic and includes it in the Claude prompt', async () => {
     setupHappyPath()
     await analyzeSmartComms('empleo y educación', 'formal')
-    const callArg = mockClaudeCreate.mock.calls[0][0]
-    expect(callArg.messages[0].content).toContain('empleo y educación')
+    const messages = mockClaudeCreate.mock.calls[0][3]
+    expect(messages[0].content).toContain('empleo y educación')
   })
 
   it('saves run to agent_runs table', async () => {

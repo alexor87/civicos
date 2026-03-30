@@ -10,7 +10,7 @@ const {
   mockContactsCount,
   mockSupportersCount,
   mockVisitsCount,
-  mockAnthropicStream,
+  mockCallAI,
 } = vi.hoisted(() => ({
   mockGetUser:          vi.fn(),
   mockProfileSelect:    vi.fn(),
@@ -20,7 +20,7 @@ const {
   mockContactsCount:    vi.fn(),
   mockSupportersCount:  vi.fn(),
   mockVisitsCount:      vi.fn(),
-  mockAnthropicStream:  vi.fn(),
+  mockCallAI:           vi.fn(),
 }))
 
 function makeChain(terminalFn: ReturnType<typeof vi.fn>) {
@@ -64,13 +64,13 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
-// Mock Anthropic streaming
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = {
-      stream: mockAnthropicStream,
-    }
-  },
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { POST } from '@/app/api/ai/chat/route'
@@ -81,16 +81,6 @@ function makeRequest(body: object) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-}
-
-function makeAsyncIterable(texts: string[]) {
-  return {
-    [Symbol.asyncIterator]: async function* () {
-      for (const text of texts) {
-        yield { type: 'content_block_delta', delta: { type: 'text_delta', text } }
-      }
-    },
-  }
 }
 
 const VALID_BODY = {
@@ -144,20 +134,20 @@ describe('POST /api/ai/chat — auth', () => {
 describe('POST /api/ai/chat — happy path', () => {
   beforeEach(() => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-    mockProfileSelect.mockResolvedValue({ data: { role: 'campaign_manager', campaign_ids: ['camp1'] } })
+    mockProfileSelect.mockResolvedValue({ data: { role: 'campaign_manager', campaign_ids: ['camp1'], tenant_id: 'tenant-1' } })
   })
 
-  it('returns streaming Response with text/plain content-type', async () => {
+  it('returns Response with text/plain content-type', async () => {
     mockDefaults()
-    mockAnthropicStream.mockReturnValue(makeAsyncIterable(['Hola', ' campaña']))
+    mockCallAI.mockResolvedValue({ content: 'Hola campaña' })
     const res = await POST(makeRequest(VALID_BODY))
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toContain('text/plain')
   })
 
-  it('streams the text from Anthropic', async () => {
+  it('returns the text from callAI', async () => {
     mockDefaults()
-    mockAnthropicStream.mockReturnValue(makeAsyncIterable(['Todo ', 'bien']))
+    mockCallAI.mockResolvedValue({ content: 'Todo bien' })
     const res = await POST(makeRequest(VALID_BODY))
     const text = await readStream(res)
     expect(text).toBe('Todo bien')
@@ -165,23 +155,26 @@ describe('POST /api/ai/chat — happy path', () => {
 
   it('system prompt includes campaign name', async () => {
     mockDefaults()
-    mockAnthropicStream.mockReturnValue(makeAsyncIterable(['ok']))
+    mockCallAI.mockResolvedValue({ content: 'ok' })
     await POST(makeRequest(VALID_BODY))
-    const callArgs = mockAnthropicStream.mock.calls[0][0]
-    expect(callArgs.system).toContain('Prueba')
+    const callArgs = mockCallAI.mock.calls[0]
+    // callAI(supabase, tenantId, campaignId, messages, { system, maxTokens })
+    const options = callArgs[4]
+    expect(options.system).toContain('Prueba')
   })
 
-  it('sends full conversation history to Anthropic', async () => {
+  it('sends full conversation history to callAI', async () => {
     mockDefaults()
-    mockAnthropicStream.mockReturnValue(makeAsyncIterable(['ok']))
+    mockCallAI.mockResolvedValue({ content: 'ok' })
     const messages = [
       { role: 'user', content: 'Primera pregunta' },
       { role: 'assistant', content: 'Primera respuesta' },
       { role: 'user', content: 'Segunda pregunta' },
     ]
     await POST(makeRequest({ campaign_id: 'camp1', messages }))
-    const callArgs = mockAnthropicStream.mock.calls[0][0]
-    expect(callArgs.messages).toHaveLength(3)
+    const callArgs = mockCallAI.mock.calls[0]
+    // callAI(supabase, tenantId, campaignId, messages, options)
+    expect(callArgs[3]).toHaveLength(3)
   })
 
   it('system prompt includes recent suggestions when present', async () => {
@@ -191,17 +184,18 @@ describe('POST /api/ai/chat — happy path', () => {
     mockContactsCount.mockResolvedValue({ count: 50 })
     mockSupportersCount.mockResolvedValue({ count: 20 })
     mockVisitsCount.mockResolvedValue({ count: 3 })
-    mockAnthropicStream.mockReturnValue(makeAsyncIterable(['ok']))
+    mockCallAI.mockResolvedValue({ content: 'ok' })
     await POST(makeRequest(VALID_BODY))
-    const callArgs = mockAnthropicStream.mock.calls[0][0]
-    expect(callArgs.system).toContain('Alerta visitas')
+    const callArgs = mockCallAI.mock.calls[0]
+    const options = callArgs[4]
+    expect(options.system).toContain('Alerta visitas')
   })
 })
 
 describe('POST /api/ai/chat — errors', () => {
   beforeEach(() => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-    mockProfileSelect.mockResolvedValue({ data: { role: 'super_admin', campaign_ids: [] } })
+    mockProfileSelect.mockResolvedValue({ data: { role: 'super_admin', campaign_ids: [], tenant_id: 'tenant-1' } })
   })
 
   it('returns 400 when messages missing', async () => {
@@ -209,9 +203,9 @@ describe('POST /api/ai/chat — errors', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 500 when Anthropic throws', async () => {
+  it('returns 500 when callAI throws', async () => {
     mockDefaults()
-    mockAnthropicStream.mockImplementation(() => { throw new Error('API down') })
+    mockCallAI.mockRejectedValue(new Error('API down'))
     const res = await POST(makeRequest(VALID_BODY))
     expect(res.status).toBe(500)
   })

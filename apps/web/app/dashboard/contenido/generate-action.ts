@@ -1,7 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI, AiNotConfiguredError } from '@/lib/ai/call-ai'
 import { type EmailBlock } from '@/lib/email-blocks'
 
 // ── Map Claude flat output → EmailBlock ───────────────────────────────────────
@@ -278,14 +279,16 @@ export async function generateContent(
   const builtPrompt = buildPrompt(type, prompt, tone, campaignContext)
 
   try {
-    const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-    const response = await claude.messages.create({
-      model:      'claude-sonnet-4-6',
-      max_tokens: 2048,
-      messages:   [{ role: 'user', content: builtPrompt }],
-    })
+    const adminSupabase = createAdminClient()
+    const aiResult = await callAI(
+      adminSupabase,
+      profile.tenant_id,
+      campaignId,
+      [{ role: 'user', content: builtPrompt }],
+      { maxTokens: 2048 },
+    )
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
+    const text = aiResult.content || ''
     const parsed = JSON.parse(text)
 
     if (type === 'email') {

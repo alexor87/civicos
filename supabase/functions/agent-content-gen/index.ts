@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.78.0'
+import { callAI, AiNotConfiguredError } from '../_shared/ai-router.ts'
 
 // Agent 6 — Generación de Contenido de Campaña
 // Trigger: explicit HTTP POST from UI (Campaign Manager or Field Coordinator)
@@ -113,8 +113,6 @@ Deno.serve(async (req: Request) => {
     .eq('campaign_id', campaign_id)
     .single()
 
-  const claude = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
-
   // Log run start
   const { data: runData } = await supabase
     .from('agent_runs')
@@ -154,16 +152,15 @@ ${additional_context ? `Contexto adicional: ${additional_context}` : ''}
 
 Genera el contenido en formato estructurado y listo para usar.`
 
-    const response = await claude.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: contentConfig.maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    })
+    const aiResult = await callAI(
+      supabase,
+      campaign.tenant_id,
+      campaign_id,
+      [{ role: 'user', content: userPrompt }],
+      { system: systemPrompt, maxTokens: contentConfig.maxTokens },
+    )
 
-    const generatedContent = response.content[0].type === 'text'
-      ? response.content[0].text
-      : ''
+    const generatedContent = aiResult.content || ''
 
     // Save completed run
     await supabase
@@ -176,7 +173,6 @@ Genera el contenido en formato estructurado y listo para usar.`
           content_label: contentConfig.label,
           topic,
           content: generatedContent,
-          tokens_used: response.usage.output_tokens,
         },
         completed_at: new Date().toISOString(),
       })
@@ -189,7 +185,6 @@ Genera el contenido en formato estructurado y listo para usar.`
         content_type,
         content_label: contentConfig.label,
         content: generatedContent,
-        tokens_used: response.usage.output_tokens,
       }),
       { headers: { 'Content-Type': 'application/json' } }
     )

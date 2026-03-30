@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -125,11 +127,9 @@ async function collectMetrics(
   }
 }
 
-// ── Claude analysis ───────────────────────────────────────────────────────────
+// ── AI analysis ──────────────────────────────────────────────────────────────
 
-async function analyzeWithClaude(metrics: CampaignMetrics): Promise<AnalyticsSuggestion[]> {
-  const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-
+async function analyzeWithAI(adminSupabase: SupabaseClient, metrics: CampaignMetrics): Promise<AnalyticsSuggestion[]> {
   const staleDraftsSummary = metrics.stale_draft_campaigns.length > 0
     ? metrics.stale_draft_campaigns.map(d => `  - "${d.name}" lleva ${d.days_stale} días en borrador`).join('\n')
     : '  - Ninguna'
@@ -170,13 +170,11 @@ Devuelve ÚNICAMENTE un array JSON con esta estructura exacta (sin texto extra):
   }
 ]`
 
-  const response = await claude.messages.create({
-    model:      'claude-sonnet-4-5',
-    max_tokens: 2048,
-    messages:   [{ role: 'user', content: prompt }],
-  })
+  const aiResult = await callAI(adminSupabase, metrics.tenant_id, metrics.campaign_id, [
+    { role: 'user', content: prompt },
+  ], { maxTokens: 2048 })
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
+  const text = aiResult.content || '[]'
 
   try {
     const parsed = JSON.parse(text)
@@ -220,12 +218,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ processed: 0, suggestions_created: 0 })
   }
 
+  const adminSupabase = createAdminClient()
   let suggestionsCreated = 0
 
   for (const campaign of campaigns) {
     try {
       const metrics          = await collectMetrics(supabase, campaign)
-      const suggestions      = await analyzeWithClaude(metrics)
+      const suggestions      = await analyzeWithAI(adminSupabase, metrics)
       const existingTypes    = await getExistingActiveTypes(supabase, campaign.id)
 
       for (const sug of suggestions) {

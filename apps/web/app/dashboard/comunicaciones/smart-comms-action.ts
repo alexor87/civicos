@@ -1,7 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 import { type ContentTone } from '@/app/dashboard/contenido/generate-action'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -138,14 +139,16 @@ Devuelve ÚNICAMENTE este JSON (sin texto extra):
   // ── Call Claude ────────────────────────────────────────────────────────────
 
   try {
-    const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-    const response = await claude.messages.create({
-      model:      'claude-sonnet-4-6',
-      max_tokens: 1024,
-      messages:   [{ role: 'user', content: prompt }],
-    })
+    const adminSupabase = createAdminClient()
+    const aiResult = await callAI(
+      adminSupabase,
+      profile.tenant_id,
+      campaignId,
+      [{ role: 'user', content: prompt }],
+      { maxTokens: 1024 },
+    )
 
-    const text   = response.content[0].type === 'text' ? response.content[0].text : ''
+    const text = aiResult.content || ''
     const parsed = JSON.parse(text)
 
     const report: SmartCommsReport = {

@@ -41,12 +41,15 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
-// ── Anthropic mock ─────────────────────────────────────────────────────────────
-const mockClaudeCreate = vi.fn()
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(function () {
-    return { messages: { create: mockClaudeCreate } }
-  }),
+// ── AI mock ───────────────────────────────────────────────────────────────────
+const { mockCallAI } = vi.hoisted(() => ({ mockCallAI: vi.fn() }))
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { generateCampaignBrief } from '@/app/dashboard/ai/campaign-brief-action'
@@ -70,7 +73,7 @@ const BRIEF_JSON = JSON.stringify({
 })
 
 function makeClaudeResponse(text: string) {
-  return { content: [{ type: 'text', text }] }
+  return { content: text }
 }
 
 function setupHappyPath() {
@@ -79,7 +82,7 @@ function setupHappyPath() {
   mockCampaignSingle.mockResolvedValueOnce(CAMPAIGN_OK)
   mockEmailList.mockResolvedValueOnce({ data: [], error: null })
   mockListDefault.mockResolvedValue({ data: [], error: null })
-  mockClaudeCreate.mockResolvedValueOnce(makeClaudeResponse(BRIEF_JSON))
+  mockCallAI.mockResolvedValueOnce(makeClaudeResponse(BRIEF_JSON))
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -144,7 +147,7 @@ describe('generateCampaignBrief', () => {
     mockCampaignSingle.mockResolvedValueOnce(CAMPAIGN_OK)
     mockListDefault.mockResolvedValue({ data: [], error: null })
     mockEmailList.mockResolvedValueOnce({ data: [], error: null })
-    mockClaudeCreate.mockRejectedValueOnce(new Error('API overloaded'))
+    mockCallAI.mockRejectedValueOnce(new Error('API overloaded'))
     const result = await generateCampaignBrief()
     expect(result.error).toBeTruthy()
     expect(result.brief).toBeUndefined()
@@ -156,7 +159,7 @@ describe('generateCampaignBrief', () => {
     mockCampaignSingle.mockResolvedValueOnce(CAMPAIGN_OK)
     mockListDefault.mockResolvedValue({ data: [], error: null })
     mockEmailList.mockResolvedValueOnce({ data: [], error: null })
-    mockClaudeCreate.mockResolvedValueOnce(makeClaudeResponse('not valid json {{{'))
+    mockCallAI.mockResolvedValueOnce(makeClaudeResponse('not valid json {{{'))
     const result = await generateCampaignBrief()
     expect(result.error).toBeTruthy()
   })

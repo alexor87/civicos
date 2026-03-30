@@ -28,10 +28,13 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(function () {
-    return { messages: { create: mockClaudeCreate } }
-  }),
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockClaudeCreate,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { generateContent } from '@/app/dashboard/contenido/generate-action'
@@ -79,7 +82,7 @@ beforeEach(() => {
     data: { id: 'camp1', name: 'Campaña María González', candidate_name: 'María González', key_topics: ['empleo', 'salud'], description: 'Campaña presidencial 2026' },
   })
   mockClaudeCreate.mockResolvedValue({
-    content: [{ type: 'text', text: JSON.stringify(MOCK_EMAIL_RESPONSE) }],
+    content: JSON.stringify(MOCK_EMAIL_RESPONSE),
   })
 })
 
@@ -108,7 +111,7 @@ describe('generateContent', () => {
 
   it('generates canvassing script with intro, questions and closing', async () => {
     mockClaudeCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(MOCK_SCRIPT_RESPONSE) }],
+      content: JSON.stringify(MOCK_SCRIPT_RESPONSE),
     })
     const result = await generateContent('script', 'Script para zona norte', 'cercano')
     expect(result.error).toBeUndefined()
@@ -119,7 +122,7 @@ describe('generateContent', () => {
 
   it('generates SMS text for tipo sms', async () => {
     mockClaudeCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(MOCK_SMS_RESPONSE) }],
+      content: JSON.stringify(MOCK_SMS_RESPONSE),
     })
     const result = await generateContent('sms', 'Recordatorio del mitin', 'urgente')
     expect(result.error).toBeUndefined()
@@ -129,7 +132,7 @@ describe('generateContent', () => {
 
   it('generates talking points as array', async () => {
     mockClaudeCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(MOCK_TALKING_POINTS_RESPONSE) }],
+      content: JSON.stringify(MOCK_TALKING_POINTS_RESPONSE),
     })
     const result = await generateContent('talking_points', 'Propuestas de empleo y salud', 'formal')
     expect(result.error).toBeUndefined()
@@ -139,8 +142,8 @@ describe('generateContent', () => {
 
   it('includes campaign context (candidate_name, key_topics) in the Claude call', async () => {
     await generateContent('email', 'Mitin electoral', 'formal')
-    const callArgs = mockClaudeCreate.mock.calls[0][0]
-    const prompt = callArgs.messages[0].content as string
+    const messages = mockClaudeCreate.mock.calls[0][3]
+    const prompt = messages[0].content as string
     expect(prompt).toContain('María González')
     expect(prompt).toContain('empleo')
   })
@@ -153,7 +156,7 @@ describe('generateContent', () => {
 
   it('handles malformed Claude JSON response gracefully', async () => {
     mockClaudeCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: 'not json {{{{' }],
+      content: 'not json {{{{',
     })
     const result = await generateContent('email', 'Mitin', 'formal')
     expect(result.error).toBeDefined()

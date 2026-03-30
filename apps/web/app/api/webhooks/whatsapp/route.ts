@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import twilio from 'twilio'
-import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 
 // Twilio sends URL-encoded form data for webhooks
 function parseTwilioBody(body: string): Record<string, string> {
@@ -93,20 +94,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Generate AI reply
-  const anthropic = new Anthropic()
+  const adminSupabase = createAdminClient()
   let replyText   = chatbotConfig.fallback_message
 
   try {
-    const aiResponse = await anthropic.messages.create({
-      model:      'claude-sonnet-4-5',
-      max_tokens: 500,
-      system:     chatbotConfig.system_prompt || 'Eres un asistente de campaña. Responde de forma breve y útil.',
-      messages:   [{ role: 'user', content: messageBody }],
+    const aiResult = await callAI(adminSupabase, campaign.tenant_id, campaign.id, [
+      { role: 'user', content: messageBody },
+    ], {
+      system: chatbotConfig.system_prompt || 'Eres un asistente de campaña. Responde de forma breve y útil.',
+      maxTokens: 500,
     })
 
-    const firstContent = aiResponse.content[0]
-    if (firstContent.type === 'text') {
-      replyText = firstContent.text
+    if (aiResult.content) {
+      replyText = aiResult.content
     }
   } catch {
     replyText = chatbotConfig.fallback_message

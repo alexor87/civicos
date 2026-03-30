@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_ids, role')
+    .select('campaign_ids, role, tenant_id')
     .eq('id', user.id)
     .single()
 
@@ -80,40 +81,18 @@ ${agentRunsSummary}
 
 Responde siempre en español. Sé conciso, directo y enfócate en acciones concretas para mejorar la campaña. Si no tienes datos suficientes para responder algo, dilo claramente.`
 
-  const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-
   try {
-    const stream = claude.messages.stream({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages.map(m => ({ role: m.role, content: m.content })),
-    })
+    const adminSupabase = createAdminClient()
+    const aiResult = await callAI(adminSupabase, profile.tenant_id, campaign_id,
+      messages.map(m => ({ role: m.role, content: m.content })),
+      { system: systemPrompt, maxTokens: 1024 }
+    )
 
-    const encoder = new TextEncoder()
-    const readable = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of stream) {
-            if (
-              chunk.type === 'content_block_delta' &&
-              chunk.delta.type === 'text_delta'
-            ) {
-              controller.enqueue(encoder.encode(chunk.delta.text))
-            }
-          }
-          controller.close()
-        } catch (err) {
-          controller.error(err)
-        }
-      },
-    })
+    const responseText = aiResult.content || ''
 
-    return new Response(readable, {
+    return new Response(responseText, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
-        'X-Content-Type-Options': 'nosniff',
       },
     })
   } catch (err) {

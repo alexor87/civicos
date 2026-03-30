@@ -28,7 +28,11 @@ const CAMPAIGN_EMPTY = {
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('IntegrationsForm', () => {
-  beforeEach(() => { mockFetch.mockReset() })
+  beforeEach(() => {
+    mockFetch.mockReset()
+    // Default: AI config fetch returns unconfigured
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ configured: false }) })
+  })
 
   it('muestra mensaje cuando no hay campaña', () => {
     render(<IntegrationsForm campaign={null} />)
@@ -42,28 +46,26 @@ describe('IntegrationsForm', () => {
     expect(screen.getByText(/modelo de ia/i)).toBeInTheDocument()
   })
 
-  it('muestra badge "Conectado" cuando los campos están llenos', () => {
+  it('muestra badge "Conectado" para Resend y Twilio cuando campos llenos', () => {
     render(<IntegrationsForm campaign={CAMPAIGN_FULL} />)
     const badges = screen.getAllByText('Conectado')
-    expect(badges.length).toBeGreaterThanOrEqual(2) // Resend + Twilio + Claude
+    expect(badges.length).toBeGreaterThanOrEqual(2) // Resend + Twilio
   })
 
   it('muestra badge "Sin configurar" cuando campos vacíos', () => {
     render(<IntegrationsForm campaign={CAMPAIGN_EMPTY} />)
     const badges = screen.getAllByText('Sin configurar')
-    expect(badges.length).toBe(2) // Resend + Twilio
+    expect(badges.length).toBeGreaterThanOrEqual(2) // Resend + Twilio
   })
 
-  it('muestra resumen de integraciones configuradas', () => {
+  it('muestra texto de resumen', () => {
     render(<IntegrationsForm campaign={CAMPAIGN_FULL} />)
-    expect(screen.getByText(/2 de 3 integraciones configuradas/i)).toBeInTheDocument()
+    expect(screen.getByText(/configura las integraciones/i)).toBeInTheDocument()
   })
 
   it('expande la tarjeta de Resend al hacer click', () => {
     render(<IntegrationsForm campaign={CAMPAIGN_FULL} />)
-    // Initially collapsed — no input visible
     expect(screen.queryByLabelText(/dominio verificado/i)).not.toBeInTheDocument()
-    // Click to expand
     fireEvent.click(screen.getByText(/email — resend/i))
     expect(screen.getByLabelText(/dominio verificado/i)).toBeInTheDocument()
   })
@@ -91,7 +93,7 @@ describe('IntegrationsForm', () => {
   })
 
   it('guardar Resend llama a PATCH /api/settings/integrations', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true })
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ configured: false }) })
     render(<IntegrationsForm campaign={CAMPAIGN_FULL} />)
     fireEvent.click(screen.getByText(/email — resend/i))
     fireEvent.click(screen.getByRole('button', { name: /^guardar$/i }))
@@ -102,13 +104,64 @@ describe('IntegrationsForm', () => {
   })
 
   it('probar conexión de Twilio llama al endpoint correcto', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true })
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ configured: false }) })
     render(<IntegrationsForm campaign={CAMPAIGN_FULL} />)
     fireEvent.click(screen.getByText(/sms — twilio/i))
     fireEvent.click(screen.getByRole('button', { name: /probar conexión/i }))
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith('/api/settings/integrations/test-twilio', expect.objectContaining({ method: 'POST' }))
+    })
+  })
+
+  // ── AI Config Card ──────────────────────────────────────────────────────
+
+  it('AI card muestra "Sin configurar" cuando no hay config', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ configured: false }) })
+    render(<IntegrationsForm campaign={CAMPAIGN_FULL} />)
+
+    await waitFor(() => {
+      const badges = screen.getAllByText('Sin configurar')
+      expect(badges.length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  it('AI card muestra "Conectado" cuando config es válida', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        configured: true,
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-5-20250514',
+        api_key_hint: 'sk-a...xy12',
+        is_valid: true,
+        id: 'config-1',
+      }),
+    })
+    render(<IntegrationsForm campaign={CAMPAIGN_FULL} />)
+
+    await waitFor(() => {
+      // Should show at least 3 "Conectado" badges (Resend + Twilio + AI)
+      const badges = screen.getAllByText('Conectado')
+      expect(badges.length).toBeGreaterThanOrEqual(3)
+    })
+  })
+
+  it('AI card expande y muestra selector de proveedor', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ configured: false }) })
+    render(<IntegrationsForm campaign={CAMPAIGN_EMPTY} />)
+
+    // Wait for AI config to load (loading spinner gone, badge appears)
+    await waitFor(() => {
+      const badges = screen.getAllByText('Sin configurar')
+      // CAMPAIGN_EMPTY: Resend + Twilio + AI = 3
+      expect(badges.length).toBeGreaterThanOrEqual(3)
+    })
+
+    fireEvent.click(screen.getByText(/modelo de ia/i))
+
+    await waitFor(() => {
+      expect(screen.getByText(/selecciona un proveedor/i)).toBeInTheDocument()
     })
   })
 })

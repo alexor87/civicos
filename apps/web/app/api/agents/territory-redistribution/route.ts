@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 import { resolveThresholds } from '@/lib/agents/thresholds'
 import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   if (!campaigns?.length) return NextResponse.json({ processed: 0, proposals_created: 0 })
 
-  const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  const adminSupabase = createAdminClient()
   let proposalsCreated = 0
 
   for (const campaign of campaigns) {
@@ -146,12 +147,11 @@ ${daysToElection !== null ? `DÍAS PARA LA ELECCIÓN: ${daysToElection}` : ''}
 Genera UNA propuesta en JSON:
 {"title":"...","description":"...","reasoning":"...","estimated_impact":"...","redistribution_plan":[{"from_territory":"...","to_territory":"...","volunteers":0,"reason":"..."}],"priority":"critical|high|medium"}`
 
-      const response = await claude.messages.create({
-        model: 'claude-sonnet-4-5', max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }],
-      })
+      const aiResult = await callAI(adminSupabase, campaign.tenant_id, campaign.id, [
+        { role: 'user', content: prompt },
+      ], { maxTokens: 1200 })
 
-      const text = response.content[0].type === 'text' ? response.content[0].text : '{}'
+      const text = aiResult.content || '{}'
       let proposal: { title: string; description: string; reasoning: string; estimated_impact: string; redistribution_plan: unknown[]; priority: string }
       try { proposal = JSON.parse(text) }
       catch {

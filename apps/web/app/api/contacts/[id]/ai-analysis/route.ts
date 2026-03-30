@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 
 // Simple in-memory cache keyed by contactId
 const cache = new Map<string, { data: unknown; expiresAt: number }>()
@@ -15,6 +16,14 @@ export async function GET(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('campaign_ids, tenant_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Check cache (only for regular analysis, not plan generation)
   if (!wantPlan) {
@@ -33,6 +42,15 @@ export async function GET(
 
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  // Validate campaign ownership
+  const campaignIds: string[] = profile.campaign_ids ?? []
+  if (!campaignIds.includes(contact.campaign_id as string)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const campaignId = contact.campaign_id as string
+  const adminSupabase = createAdminClient()
+
   // Fetch recent visits for context
   const { data: visits } = await supabase
     .from('canvass_visits')
@@ -41,20 +59,15 @@ export async function GET(
     .order('created_at', { ascending: false })
     .limit(5)
 
-  const client = new Anthropic()
-
   const visitsText = (visits ?? [])
     .map(v => `- ${v.created_at.split('T')[0]}: resultado=${v.result}, simpatía=${v.sympathy_level ?? 'N/A'}, notas="${v.notes ?? ''}"`)
     .join('\n') || 'Sin visitas previas.'
 
   if (wantPlan) {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 300,
-      messages: [
-        {
-          role: 'user',
-          content: `Eres un estratega político. Genera un plan de alcance breve (3-4 oraciones) y accionable para este contacto de campaña.
+    const aiResult = await callAI(adminSupabase, profile.tenant_id, campaignId, [
+      {
+        role: 'user',
+        content: `Eres un estratega político. Genera un plan de alcance breve (3-4 oraciones) y accionable para este contacto de campaña.
 
 Contacto: ${contact.first_name} ${contact.last_name}
 Estado: ${contact.status}
@@ -65,22 +78,18 @@ Historial de visitas:
 ${visitsText}
 
 Responde solo con el plan en texto plano, sin formato markdown, en español.`,
-        },
-      ],
-    })
+      },
+    ], { maxTokens: 300 })
 
-    const plan = message.content[0]?.type === 'text' ? message.content[0].text : ''
+    const plan = aiResult.content || ''
     return NextResponse.json({ plan })
   }
 
   // Regular analysis
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 400,
-    messages: [
-      {
-        role: 'user',
-        content: `Eres un analista político. Analiza este contacto de campaña y responde en JSON estricto con este formato exacto:
+  const aiResult = await callAI(adminSupabase, profile.tenant_id, campaignId, [
+    {
+      role: 'user',
+      content: `Eres un analista político. Analiza este contacto de campaña y responde en JSON estricto con este formato exacto:
 {"tags": ["tag1","tag2","tag3"], "insight": "texto insight"}
 
 Genera 3-5 tags cortos que describan al contacto (ej: "Pro-infraestructura", "Votante frecuente", "Zona rural").
@@ -95,11 +104,10 @@ Historial de visitas:
 ${visitsText}
 
 Responde SOLO con el JSON, sin markdown ni explicaciones adicionales.`,
-      },
-    ],
-  })
+    },
+  ], { maxTokens: 400 })
 
-  const raw = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
+  const raw = aiResult.content || '{}'
   let result: { tags: string[]; insight: string }
   try {
     result = JSON.parse(raw)

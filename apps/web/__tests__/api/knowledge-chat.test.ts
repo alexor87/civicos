@@ -7,7 +7,7 @@ const {
   mockProfileSingle,
   mockRpc,
   mockOpenAIEmbeddings,
-  mockAnthropicStream,
+  mockCallAI,
 } = vi.hoisted(() => ({
   mockGetUser:          vi.fn(),
   mockProfileSingle:    vi.fn(),
@@ -15,7 +15,7 @@ const {
   mockOpenAIEmbeddings: vi.fn().mockResolvedValue({
     data: [{ embedding: new Array(1536).fill(0.1) }],
   }),
-  mockAnthropicStream: vi.fn(),
+  mockCallAI:          vi.fn(),
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -41,22 +41,13 @@ vi.mock('openai', () => ({
   },
 }))
 
-// Mock Anthropic stream
-const mockAsyncIterator = (chunks: string[]) => ({
-  [Symbol.asyncIterator]: async function* () {
-    for (const text of chunks) {
-      yield {
-        type:  'content_block_delta',
-        delta: { type: 'text_delta', text },
-      }
-    }
-  },
-})
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { stream: mockAnthropicStream }
-  },
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { POST } from '@/app/api/knowledge/chat/route'
@@ -95,7 +86,7 @@ describe('POST /api/knowledge/chat', () => {
 
     expect(res.status).toBe(200)
     expect(text).toContain('No tengo información')
-    expect(mockAnthropicStream).not.toHaveBeenCalled()
+    expect(mockCallAI).not.toHaveBeenCalled()
   })
 
   it('streams Claude response with document context when chunks found', async () => {
@@ -107,19 +98,20 @@ describe('POST /api/knowledge/chat', () => {
       ],
       error: null,
     })
-    mockAnthropicStream.mockReturnValueOnce(
-      mockAsyncIterator(['Las propuestas del candidato son: ', 'mejorar la seguridad.'])
-    )
+    mockCallAI.mockResolvedValueOnce({
+      content: 'Las propuestas del candidato son: mejorar la seguridad.',
+    })
 
     const res  = await POST(makeRequest({ messages: validMessages, campaign_id: 'c1' }))
     const text = await res.text()
 
     expect(res.status).toBe(200)
     expect(text).toContain('Las propuestas del candidato son: ')
-    expect(mockAnthropicStream).toHaveBeenCalledTimes(1)
+    expect(mockCallAI).toHaveBeenCalledTimes(1)
     // Verify system prompt includes document content
-    const callArgs = mockAnthropicStream.mock.calls[0][0]
-    expect(callArgs.system).toContain('mejorar la seguridad')
+    const callArgs = mockCallAI.mock.calls[0]
+    const options = callArgs[4]
+    expect(options.system).toContain('mejorar la seguridad')
   })
 
   it('includes all chunks in system prompt', async () => {
@@ -132,12 +124,13 @@ describe('POST /api/knowledge/chat', () => {
       ],
       error: null,
     })
-    mockAnthropicStream.mockReturnValueOnce(mockAsyncIterator(['OK']))
+    mockCallAI.mockResolvedValueOnce({ content: 'OK' })
 
     await POST(makeRequest({ messages: validMessages, campaign_id: 'c1' }))
 
-    const callArgs = mockAnthropicStream.mock.calls[0][0]
-    expect(callArgs.system).toContain('Contenido A')
-    expect(callArgs.system).toContain('Contenido B')
+    const callArgs = mockCallAI.mock.calls[0]
+    const options = callArgs[4]
+    expect(options.system).toContain('Contenido A')
+    expect(options.system).toContain('Contenido B')
   })
 })

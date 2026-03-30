@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 
 // GET /api/calendar/events/[id]/intelligence — CRM data for the event zone
 export async function GET(
@@ -98,6 +99,14 @@ export async function POST(
 
   if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
   // Mark as generating
   await supabase
     .from('calendar_events')
@@ -151,14 +160,12 @@ Genera un briefing JSON con exactamente esta estructura:
 Responde SOLO con el JSON, sin texto adicional.`
 
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const response = await anthropic.messages.create({
-      model:       'claude-sonnet-4-5',
-      max_tokens:  1024,
-      messages: [{ role: 'user', content: prompt }],
-    })
+    const adminSupabase = createAdminClient()
+    const aiResult = await callAI(adminSupabase, profile.tenant_id, event.campaign_id, [
+      { role: 'user', content: prompt },
+    ], { maxTokens: 1024 })
 
-    const text = (response.content[0] as { type: string; text: string }).text.trim()
+    const text = (aiResult.content || '').trim()
     const briefing = JSON.parse(text)
 
     await supabase

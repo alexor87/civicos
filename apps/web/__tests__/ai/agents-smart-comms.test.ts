@@ -15,7 +15,7 @@ const {
   mockAgentRunUpdate,
   mockSuggestionsSelect,
   mockSuggestionsInsert,
-  mockAnthropicCreate,
+  mockCallAI,
 } = vi.hoisted(() => ({
   mockGetUser:           vi.fn(),
   mockProfileSelect:     vi.fn(),
@@ -29,7 +29,7 @@ const {
   mockAgentRunUpdate:    vi.fn(),
   mockSuggestionsSelect: vi.fn(),
   mockSuggestionsInsert: vi.fn(),
-  mockAnthropicCreate:   vi.fn(),
+  mockCallAI:            vi.fn(),
 }))
 
 function makeChain(terminalFn: ReturnType<typeof vi.fn>) {
@@ -89,10 +89,13 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: mockAnthropicCreate }
-  },
+vi.mock('@/lib/ai/call-ai', () => ({
+  callAI: mockCallAI,
+  AiNotConfiguredError: class extends Error { constructor(msg: string) { super(msg); this.name = 'AiNotConfiguredError' } },
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({})),
 }))
 
 import { POST } from '@/app/api/agents/smart-comms/route'
@@ -187,8 +190,8 @@ describe('POST /api/agents/smart-comms — happy path', () => {
   it('calls Claude and inserts suggestion', async () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_SUGGESTION) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_SUGGESTION),
     })
 
     const res  = await POST(makeRequest({ secret: 'secret123' }))
@@ -197,7 +200,7 @@ describe('POST /api/agents/smart-comms — happy path', () => {
     expect(res.status).toBe(200)
     expect(body.processed).toBe(1)
     expect(body.suggestions_created).toBe(1)
-    expect(mockAnthropicCreate).toHaveBeenCalledTimes(1)
+    expect(mockCallAI).toHaveBeenCalledTimes(1)
     expect(mockSuggestionsInsert).toHaveBeenCalledTimes(1)
   })
 })
@@ -209,8 +212,8 @@ describe('POST /api/agents/smart-comms — deduplication', () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
     mockSuggestionsSelect.mockResolvedValue({ data: [{ type: 'reactivate_inactive' }] })
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: JSON.stringify(CLAUDE_SUGGESTION) }],
+    mockCallAI.mockResolvedValueOnce({
+      content: JSON.stringify(CLAUDE_SUGGESTION),
     })
 
     const res  = await POST(makeRequest({ secret: 'secret123' }))
@@ -227,8 +230,8 @@ describe('POST /api/agents/smart-comms — resilience', () => {
   it('handles malformed Claude JSON gracefully', async () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
-    mockAnthropicCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: 'Not JSON at all' }],
+    mockCallAI.mockResolvedValueOnce({
+      content: 'Not JSON at all',
     })
 
     const res  = await POST(makeRequest({ secret: 'secret123' }))

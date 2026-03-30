@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { callAI } from '@/lib/ai/call-ai'
 import { resolveThresholds } from '@/lib/agents/thresholds'
 import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   if (!campaigns?.length) return NextResponse.json({ processed: 0, reports_created: 0 })
 
-  const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  const adminSupabase = createAdminClient()
   let reportsCreated = 0
 
   for (const campaign of campaigns) {
@@ -132,12 +133,11 @@ Nivel: ${alertLevel.toUpperCase()}
 Responde SOLO con JSON:
 {"title":"...","description":"...","reasoning":"...","estimated_impact":"..."}`
 
-      const response = await claude.messages.create({
-        model: 'claude-sonnet-4-5', max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }],
-      })
+      const aiResult = await callAI(adminSupabase, campaign.tenant_id, campaign.id, [
+        { role: 'user', content: prompt },
+      ], { maxTokens: 600 })
 
-      const text = response.content[0].type === 'text' ? response.content[0].text : '{}'
+      const text = aiResult.content || '{}'
       let report: { title: string; description: string; reasoning: string; estimated_impact: string }
       try { report = JSON.parse(text) }
       catch {
