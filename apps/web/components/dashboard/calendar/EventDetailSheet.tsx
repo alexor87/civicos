@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { CalendarDays, MapPin, Clock, Users, FileText, X, Star, CheckCircle2, Pencil } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { EVENT_TYPE_CONFIG, CalendarEvent } from './eventTypes'
@@ -21,6 +21,7 @@ function formatDateTime(iso: string, allDay: boolean) {
 }
 
 export function EventDetailSheet({ event, onClose, onComplete }: Props) {
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>('details')
   const [completing, setCompleting] = useState(false)
   const [postData, setPostData]     = useState({ actual_attendance: '', post_event_notes: '', post_event_rating: 0 })
@@ -87,15 +88,6 @@ export function EventDetailSheet({ event, onClose, onComplete }: Props) {
                 {event.title}
               </SheetTitle>
             </div>
-            {event.status !== 'completed' && event.status !== 'cancelled' && (
-              <Link
-                href={`/dashboard/calendar/${event.id}/edit`}
-                className="flex-shrink-0 h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-primary hover:border-primary transition-colors"
-                title="Editar evento"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Link>
-            )}
           </div>
 
           {/* Tabs */}
@@ -163,6 +155,16 @@ export function EventDetailSheet({ event, onClose, onComplete }: Props) {
                   <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-1">Notas internas</p>
                   <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{event.internal_notes}</p>
                 </div>
+              )}
+
+              {event.status !== 'completed' && event.status !== 'cancelled' && (
+                <button
+                  onClick={() => { onClose(); router.push(`/dashboard/calendar/${event.id}/edit`) }}
+                  className="w-full flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium text-sm py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Editar evento
+                </button>
               )}
             </div>
           )}
