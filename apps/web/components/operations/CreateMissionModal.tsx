@@ -121,7 +121,9 @@ function MissionForm({ campaignId, templates, onSuccess, onCancel }: {
           <div className="space-y-1.5">
             <Label>Plantilla (opcional)</Label>
             <Select value={templateKey || undefined} onValueChange={v => setValue('template_key', v === ' ' ? '' : v)}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Crear desde cero" /></SelectTrigger>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Crear desde cero">{templateKey && templates.find(t => t.key === templateKey)?.name}</SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value=" ">Crear desde cero</SelectItem>
                 {templates.map(t => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}

@@ -119,7 +119,9 @@ function TaskForm({ campaignId, missions, members, defaultMissionId, onSuccess, 
           <div className="space-y-1.5">
             <Label>Misión</Label>
             <Select value={missionId || undefined} onValueChange={v => setValue('mission_id', v === ' ' ? '' : v)}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Sin misión" /></SelectTrigger>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sin misión">{missionId && missions.find(m => m.id === missionId)?.name}</SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value=" ">Sin misión</SelectItem>
                 {missions.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
@@ -129,7 +131,9 @@ function TaskForm({ campaignId, missions, members, defaultMissionId, onSuccess, 
           <div className="space-y-1.5">
             <Label>Responsable</Label>
             <Select value={assigneeId || undefined} onValueChange={v => setValue('assignee_id', v === ' ' ? '' : v)}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sin asignar">{assigneeId && members.find(m => m.id === assigneeId)?.full_name}</SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value=" ">Sin asignar</SelectItem>
                 {members.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
