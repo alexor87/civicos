@@ -51,10 +51,10 @@ export async function GET(
   // Canvassing visits in the zone (last 30 days)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   let visitsQuery = supabase
-    .from('visits')
+    .from('canvass_visits')
     .select('id, result')
     .eq('campaign_id', event.campaign_id)
-    .gte('visited_at', thirtyDaysAgo)
+    .gte('created_at', thirtyDaysAgo)
 
   const [{ data: contacts }, { data: visits }] = await Promise.all([
     contactQuery,
