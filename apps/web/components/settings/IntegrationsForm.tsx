@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Mail, MessageSquare, Brain, ChevronDown, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Circle, Trash2 } from 'lucide-react'
 
 interface Campaign {
-  id:              string
-  resend_domain?:  string | null
-  twilio_sid?:     string | null
-  twilio_token?:   string | null
-  twilio_from?:    string | null
+  id:                     string
+  resend_domain?:         string | null
+  twilio_sid?:            string | null
+  twilio_token?:          string | null
+  twilio_from?:           string | null
+  twilio_whatsapp_from?:  string | null
 }
 
 interface Props {
@@ -315,12 +316,18 @@ export function IntegrationsForm({ campaign }: Props) {
   const [testingTwilio, setTestingTwilio] = useState(false)
   const [twilioOpen,    setTwilioOpen]    = useState(false)
 
+  // WhatsApp state
+  const [whatsappFrom,     setWhatsappFrom]     = useState(campaign?.twilio_whatsapp_from ?? '')
+  const [savingWhatsApp,   setSavingWhatsApp]   = useState(false)
+  const [whatsappOpen,     setWhatsappOpen]     = useState(false)
+
   if (!campaign) {
     return <p className="text-sm text-[#6a737d]">No hay campaña activa.</p>
   }
 
-  const resendStatus = getStatus([resendDomain])
-  const twilioStatus = getStatus([twilioSid, twilioToken, twilioFrom])
+  const resendStatus   = getStatus([resendDomain])
+  const twilioStatus   = getStatus([twilioSid, twilioToken, twilioFrom])
+  const whatsappStatus = getStatus([twilioSid, twilioToken, whatsappFrom])
 
   // ── Save handlers ──────────────────────────────────────────────────────
   const saveResend = async () => {
@@ -350,6 +357,21 @@ export function IntegrationsForm({ campaign }: Props) {
     setSavingTwilio(false)
     if (res.ok) toast.success('Configuración de SMS guardada')
     else toast.error('Error al guardar configuración de SMS')
+  }
+
+  const saveWhatsApp = async () => {
+    setSavingWhatsApp(true)
+    const res = await fetch('/api/settings/integrations', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        campaign_id: campaign.id,
+        twilio_whatsapp_from: whatsappFrom || null,
+      }),
+    })
+    setSavingWhatsApp(false)
+    if (res.ok) toast.success('Configuración de WhatsApp guardada')
+    else toast.error('Error al guardar configuración de WhatsApp')
   }
 
   // ── Test handlers ──────────────────────────────────────────────────────
@@ -525,6 +547,70 @@ export function IntegrationsForm({ campaign }: Props) {
                 {savingTwilio ? 'Guardando…' : 'Guardar'}
               </Button>
               {twilioStatus !== 'unconfigured' && (
+                <Button size="sm" variant="outline" onClick={testTwilio} disabled={testingTwilio}>
+                  {testingTwilio && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {testingTwilio ? 'Probando…' : 'Probar conexión'}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        )}
+      </Card>
+      {/* ── WhatsApp Card ──────────────────────────────────────────────────── */}
+      <Card className="border border-slate-200 rounded-xl overflow-hidden">
+        <CardHeader
+          className="cursor-pointer hover:bg-slate-50/50 transition-colors py-4 px-5"
+          onClick={() => setWhatsappOpen(!whatsappOpen)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-5 w-5 text-[#25D366]" />
+              <div>
+                <p className="text-sm font-semibold text-slate-900">WhatsApp — Twilio Business</p>
+                {whatsappFrom && <p className="text-xs text-slate-500 mt-0.5">Número: {whatsappFrom}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <StatusBadge status={whatsappStatus} />
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${whatsappOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+        </CardHeader>
+        {whatsappOpen && (
+          <CardContent className="border-t border-slate-100 pt-4 space-y-4">
+            {twilioStatus === 'connected' ? (
+              <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+                <CheckCircle className="h-3 w-3" />
+                Usa las mismas credenciales de Twilio configuradas en SMS
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                <AlertCircle className="h-3 w-3" />
+                Primero configura las credenciales de Twilio en la sección de SMS
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="twilio_whatsapp_from">Número de WhatsApp Business</Label>
+              <Input
+                id="twilio_whatsapp_from"
+                value={whatsappFrom}
+                onChange={e => setWhatsappFrom(e.target.value)}
+                placeholder="+5731xxxxxxx"
+              />
+              <p className="text-xs text-muted-foreground">
+                El número aprobado como WhatsApp Sender en{' '}
+                <a href="https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  console.twilio.com
+                </a>{' '}
+                → WhatsApp Senders.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={saveWhatsApp} disabled={savingWhatsApp}>
+                {savingWhatsApp && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {savingWhatsApp ? 'Guardando…' : 'Guardar'}
+              </Button>
+              {whatsappStatus !== 'unconfigured' && (
                 <Button size="sm" variant="outline" onClick={testTwilio} disabled={testingTwilio}>
                   {testingTwilio && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {testingTwilio ? 'Probando…' : 'Probar conexión'}
