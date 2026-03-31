@@ -49,6 +49,9 @@ export const stepLocationSchema = z.object({
   address: z.string().optional(),
   voting_place: z.string().optional(),
   voting_table: z.string().optional(),
+  location_lat: z.number().nullable().optional(),
+  location_lng: z.number().nullable().optional(),
+  geocoding_status: z.string().optional(),
 })
 
 /* ── Step 3: Political ── */

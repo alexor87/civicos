@@ -9,6 +9,23 @@ vi.mock('@/components/perfil/GeoSelector', () => ({
   GeoSelector: () => <div data-testid="geo-selector">GeoSelector Mock</div>,
 }))
 
+// Mock useGeocoding hook
+vi.mock('@/hooks/useGeocoding', () => ({
+  useGeocoding: () => ({
+    state: { status: 'idle' },
+    manualPin: null,
+    geocode: vi.fn(),
+    handleMapClick: vi.fn(),
+    handlePinDrag: vi.fn(),
+    finalCoords: null,
+  }),
+}))
+
+// Mock dynamic GeocodingMap
+vi.mock('next/dynamic', () => ({
+  default: () => () => <div data-testid="geocoding-map">Map Mock</div>,
+}))
+
 // Mock fetch for geo data
 global.fetch = vi.fn().mockResolvedValue({
   ok: true,
@@ -20,6 +37,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
     defaultValues: {
       first_name: '', last_name: '', document_type: 'CC',
       document_number: '', phone: '', status: 'unknown',
+      location_lat: null, location_lng: null, geocoding_status: 'pending',
     },
   })
   return <FormProvider {...methods}>{children}</FormProvider>
@@ -39,5 +57,10 @@ describe('StepLocation', () => {
   it('renders voting table field', () => {
     render(<StepLocation />, { wrapper: Wrapper })
     expect(screen.getByLabelText(/mesa/i)).toBeInTheDocument()
+  })
+
+  it('shows placeholder when no municipality selected', () => {
+    render(<StepLocation />, { wrapper: Wrapper })
+    expect(screen.getByText(/selecciona un municipio/i)).toBeInTheDocument()
   })
 })

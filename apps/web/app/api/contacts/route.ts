@@ -109,6 +109,9 @@ export async function POST(request: Request) {
     district: data.district_barrio || null,
     voting_place: data.voting_place || null,
     voting_table: data.voting_table || null,
+    location_lat: data.location_lat ?? null,
+    location_lng: data.location_lng ?? null,
+    geocoding_status: data.geocoding_status || 'pending',
     status: data.status || 'unknown',
     notes: data.notes || null,
     tags,
@@ -117,6 +120,18 @@ export async function POST(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: 'db_error', message: error.message }, { status: 500 })
+  }
+
+  // Update PostGIS geo column if coordinates are available
+  if (data.location_lat && data.location_lng && inserted?.id) {
+    const rpc = data.geocoding_status === 'manual_pin'
+      ? 'update_contact_geo_manual'
+      : 'update_contact_geo'
+    await supabase.rpc(rpc, {
+      p_contact_id: inserted.id,
+      p_lat: data.location_lat,
+      p_lng: data.location_lng,
+    })
   }
 
   return NextResponse.json({ id: inserted!.id }, { status: 201 })
