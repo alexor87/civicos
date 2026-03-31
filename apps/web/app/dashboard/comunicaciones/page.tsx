@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus, Mail, MessageSquare, Send, FileText, AlertCircle, TrendingUp, Inbox, LayoutTemplate } from 'lucide-react'
 import { SmartCommsPanel } from '@/components/dashboard/comunicaciones/SmartCommsPanel'
+import { ServiceSetupModal } from '@/components/dashboard/comunicaciones/ServiceSetupModal'
 // WhatsApp icon via MessageSquare with green tint handled via className
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
@@ -31,6 +32,17 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
     .single()
 
   const campaignId = profile?.campaign_ids?.[0] ?? ''
+
+  // Fetch integration config to detect unconfigured services
+  const { data: campaignConfig } = await supabase
+    .from('campaigns')
+    .select('resend_domain, twilio_sid, twilio_token, twilio_from, twilio_whatsapp_from')
+    .eq('id', campaignId)
+    .single()
+
+  const emailConfigured    = !!campaignConfig?.resend_domain
+  const smsConfigured      = !!(campaignConfig?.twilio_sid && campaignConfig?.twilio_token && campaignConfig?.twilio_from)
+  const whatsappConfigured = !!(campaignConfig?.twilio_sid && campaignConfig?.twilio_token && campaignConfig?.twilio_whatsapp_from)
 
   const [{ data: allEmailCampaigns }, { data: smsCampaigns }, { data: whatsappCampaigns }] = await Promise.all([
     supabase.from('email_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
@@ -62,6 +74,11 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Service setup modal for unconfigured channels */}
+      {isEmailTab && !emailConfigured && <ServiceSetupModal channel="email" isConfigured={false} />}
+      {isSmsTab && !smsConfigured && <ServiceSetupModal channel="sms" isConfigured={false} />}
+      {isWhatsAppTab && !whatsappConfigured && <ServiceSetupModal channel="whatsapp" isConfigured={false} />}
+
       <div className="p-6 lg:p-8 space-y-6">
 
         {/* Header */}
