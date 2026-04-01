@@ -2,7 +2,9 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import twilio from 'twilio'
+import { getIntegrationConfig } from '@/lib/get-integration-config'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
@@ -108,16 +110,19 @@ export async function sendSmsCampaign(campaignId: string) {
 
   const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
 
-  // Load Twilio credentials from campaign settings
-  const { data: campaignSettings } = await supabase
-    .from('campaigns')
-    .select('twilio_sid, twilio_token, twilio_from')
-    .eq('id', activeCampaignId)
-    .single()
+  // Load Twilio credentials from tenant integrations
+  const adminSupabase = createAdminClient()
+  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
 
-  const twilioSid   = campaignSettings?.twilio_sid   ?? process.env.TWILIO_ACCOUNT_SID ?? ''
-  const twilioToken = campaignSettings?.twilio_token  ?? process.env.TWILIO_AUTH_TOKEN  ?? ''
-  const fromNumber  = campaignSettings?.twilio_from   ?? process.env.TWILIO_FROM_NUMBER ?? ''
+  let twilioToken = process.env.TWILIO_AUTH_TOKEN ?? ''
+  if (integrationConfig?.twilio_token) {
+    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.twilio_token })
+    if (decrypted) twilioToken = decrypted
+    else twilioToken = integrationConfig.twilio_token
+  }
+
+  const twilioSid  = integrationConfig?.twilio_sid  ?? process.env.TWILIO_ACCOUNT_SID ?? ''
+  const fromNumber = integrationConfig?.twilio_from  ?? process.env.TWILIO_FROM_NUMBER ?? ''
 
   if (!twilioSid || !twilioToken || !fromNumber) {
     return { error: 'Configura las credenciales de Twilio en Configuración → Integraciones' }
@@ -194,7 +199,7 @@ export async function sendTestSms(campaignId: string, toPhone: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name, campaign_ids')
+    .select('tenant_id, role, full_name, campaign_ids')
     .eq('id', user.id)
     .single()
 
@@ -203,16 +208,23 @@ export async function sendTestSms(campaignId: string, toPhone: string) {
 
   const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
 
-  const [{ data: smsCampaign }, { data: campaignSettings }] = await Promise.all([
-    supabase.from('sms_campaigns').select('body_text').eq('id', campaignId).single(),
-    supabase.from('campaigns').select('twilio_sid, twilio_token, twilio_from').eq('id', activeCampaignId).single(),
-  ])
+  const { data: smsCampaign } = await supabase
+    .from('sms_campaigns').select('body_text').eq('id', campaignId).single()
 
   if (!smsCampaign) return { error: 'Campaña SMS no encontrada' }
 
-  const twilioSid   = campaignSettings?.twilio_sid   ?? process.env.TWILIO_ACCOUNT_SID ?? ''
-  const twilioToken = campaignSettings?.twilio_token  ?? process.env.TWILIO_AUTH_TOKEN  ?? ''
-  const fromNumber  = campaignSettings?.twilio_from   ?? process.env.TWILIO_FROM_NUMBER ?? ''
+  const adminSupabase2 = createAdminClient()
+  const integrationConfig2 = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
+
+  let twilioToken = process.env.TWILIO_AUTH_TOKEN ?? ''
+  if (integrationConfig2?.twilio_token) {
+    const { data: decrypted } = await adminSupabase2.rpc('decrypt_integration_key', { encrypted: integrationConfig2.twilio_token })
+    if (decrypted) twilioToken = decrypted
+    else twilioToken = integrationConfig2.twilio_token
+  }
+
+  const twilioSid  = integrationConfig2?.twilio_sid  ?? process.env.TWILIO_ACCOUNT_SID ?? ''
+  const fromNumber = integrationConfig2?.twilio_from  ?? process.env.TWILIO_FROM_NUMBER ?? ''
 
   if (!twilioSid || !twilioToken || !fromNumber) {
     return { error: 'Configura las credenciales de Twilio en Configuración → Integraciones' }

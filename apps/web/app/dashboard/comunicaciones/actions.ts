@@ -2,7 +2,9 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
+import { getIntegrationConfig } from '@/lib/get-integration-config'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
@@ -146,8 +148,20 @@ export async function sendCampaign(campaignId: string) {
     return { error: 'No hay destinatarios con email en este segmento' }
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY)
-  const fromAddress = process.env.EMAIL_FROM ?? 'noreply@civicos.app'
+  // Get Resend API key from tenant integrations
+  const adminSupabase = createAdminClient()
+  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
+  let resendApiKey = process.env.RESEND_API_KEY ?? ''
+  if (integrationConfig?.resend_api_key) {
+    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.resend_api_key })
+    if (decrypted) resendApiKey = decrypted
+    else resendApiKey = integrationConfig.resend_api_key
+  }
+
+  const resend = new Resend(resendApiKey)
+  const fromAddress = integrationConfig?.resend_domain
+    ? `noreply@${integrationConfig.resend_domain}`
+    : (process.env.EMAIL_FROM ?? 'noreply@civicos.app')
 
   let sent = 0
   let failed = 0
@@ -192,7 +206,7 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('tenant_id, campaign_ids, role, full_name')
     .eq('id', user.id)
     .single()
 
@@ -211,8 +225,20 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
     .replace(/\{nombre\}/gi, profile?.full_name?.split(' ')[0] ?? 'Usuario')
     .replace(/\{apellido\}/gi, profile?.full_name?.split(' ')[1] ?? '')
 
-  const resend = new Resend(process.env.RESEND_API_KEY)
-  const fromAddress = process.env.EMAIL_FROM ?? 'noreply@civicos.app'
+  const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
+  const adminSupabase = createAdminClient()
+  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
+  let resendApiKey = process.env.RESEND_API_KEY ?? ''
+  if (integrationConfig?.resend_api_key) {
+    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.resend_api_key })
+    if (decrypted) resendApiKey = decrypted
+    else resendApiKey = integrationConfig.resend_api_key
+  }
+
+  const resend = new Resend(resendApiKey)
+  const fromAddress = integrationConfig?.resend_domain
+    ? `noreply@${integrationConfig.resend_domain}`
+    : (process.env.EMAIL_FROM ?? 'noreply@civicos.app')
 
   try {
     await resend.emails.send({

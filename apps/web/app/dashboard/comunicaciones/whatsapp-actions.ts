@@ -2,7 +2,9 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import twilio from 'twilio'
+import { getIntegrationConfig } from '@/lib/get-integration-config'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
@@ -115,16 +117,19 @@ export async function sendWhatsAppCampaign(campaignId: string) {
 
   const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
 
-  const { data: campaignSettings } = await supabase
-    .from('campaigns')
-    .select('twilio_sid, twilio_token, twilio_whatsapp_from')
-    .eq('id', activeCampaignId)
-    .single()
+  // Load credentials from tenant integrations
+  const adminSupabase = createAdminClient()
+  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
 
-  const twilioSid      = campaignSettings?.twilio_sid            ?? process.env.TWILIO_ACCOUNT_SID   ?? ''
-  const twilioToken    = campaignSettings?.twilio_token          ?? process.env.TWILIO_AUTH_TOKEN    ?? ''
-  const whatsappFrom   = (campaignSettings as Record<string, unknown>)?.twilio_whatsapp_from as string
-                         ?? process.env.TWILIO_WHATSAPP_FROM ?? ''
+  let twilioToken = process.env.TWILIO_AUTH_TOKEN ?? ''
+  if (integrationConfig?.twilio_token) {
+    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.twilio_token })
+    if (decrypted) twilioToken = decrypted
+    else twilioToken = integrationConfig.twilio_token
+  }
+
+  const twilioSid    = integrationConfig?.twilio_sid            ?? process.env.TWILIO_ACCOUNT_SID   ?? ''
+  const whatsappFrom = integrationConfig?.twilio_whatsapp_from  ?? process.env.TWILIO_WHATSAPP_FROM ?? ''
 
   if (!twilioSid || !twilioToken || !whatsappFrom) {
     return { error: 'Configura el número de WhatsApp en Configuración → Integraciones' }

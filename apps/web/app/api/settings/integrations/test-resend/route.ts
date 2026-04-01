@@ -1,34 +1,50 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getIntegrationConfig } from '@/lib/get-integration-config'
 
-export async function POST(request: Request) {
+export async function POST() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const body = await request.json()
-  const { campaign_id } = body
-
-  const { data: campaign } = await supabase
-    .from('campaigns')
-    .select('resend_domain')
-    .eq('id', campaign_id)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id, campaign_ids')
+    .eq('id', user.id)
     .single()
 
-  if (!campaign?.resend_domain) {
+  const tenantId = profile?.tenant_id
+  const campaignId = profile?.campaign_ids?.[0] ?? null
+  if (!tenantId) return NextResponse.json({ error: 'Sin tenant' }, { status: 400 })
+
+  const adminSupabase = createAdminClient()
+  const config = await getIntegrationConfig(adminSupabase, tenantId, campaignId)
+
+  if (!config?.resend_domain) {
     return NextResponse.json({ error: 'No hay dominio configurado en Resend' }, { status: 400 })
   }
 
-  // Verify by attempting to send a test email via Resend
+  // Decrypt API key, fallback to env var
+  let apiKey = process.env.RESEND_API_KEY ?? ''
+  if (config.resend_api_key) {
+    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: config.resend_api_key })
+    if (decrypted) apiKey = decrypted
+  }
+
+  if (!apiKey) {
+    return NextResponse.json({ error: 'No hay API key de Resend configurada' }, { status: 400 })
+  }
+
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `test@${campaign.resend_domain}`,
+        from: `test@${config.resend_domain}`,
         to: user.email,
         subject: 'CivicOS — Prueba de conexión',
         text: 'Esta es una prueba de conexión exitosa con Resend desde CivicOS.',

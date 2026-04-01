@@ -10,17 +10,23 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Mail, MessageSquare, Brain, ChevronDown, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Circle, Trash2 } from 'lucide-react'
 
-interface Campaign {
+interface IntegrationConfig {
   id:                     string
-  resend_domain?:         string | null
-  twilio_sid?:            string | null
-  twilio_token?:          string | null
-  twilio_from?:           string | null
-  twilio_whatsapp_from?:  string | null
+  tenant_id:              string
+  campaign_id:            string | null
+  resend_api_key:         string | null
+  resend_api_key_hint:    string | null
+  resend_domain:          string | null
+  twilio_sid:             string | null
+  twilio_token:           string | null
+  twilio_token_hint:      string | null
+  twilio_from:            string | null
+  twilio_whatsapp_from:   string | null
 }
 
 interface Props {
-  campaign: Campaign | null
+  integrationConfig: IntegrationConfig | null
+  campaignId: string | null
 }
 
 type IntegrationStatus = 'connected' | 'unconfigured' | 'unverified'
@@ -300,74 +306,103 @@ function AiConfigCard() {
 
 // ── Main Component ──────────────────────────────────────────────────────────
 
-export function IntegrationsForm({ campaign }: Props) {
+export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
+  const config = integrationConfig
+
   // Resend state
-  const [resendDomain,  setResendDomain]  = useState(campaign?.resend_domain  ?? '')
+  const [resendApiKey,  setResendApiKey]  = useState('')
+  const [resendDomain,  setResendDomain]  = useState(config?.resend_domain  ?? '')
+  const [showResendKey, setShowResendKey] = useState(false)
   const [savingResend,  setSavingResend]  = useState(false)
   const [testingResend, setTestingResend] = useState(false)
   const [resendOpen,    setResendOpen]    = useState(false)
 
   // Twilio state
-  const [twilioSid,     setTwilioSid]     = useState(campaign?.twilio_sid     ?? '')
-  const [twilioToken,   setTwilioToken]   = useState(campaign?.twilio_token   ?? '')
-  const [twilioFrom,    setTwilioFrom]    = useState(campaign?.twilio_from    ?? '')
+  const [twilioSid,     setTwilioSid]     = useState(config?.twilio_sid     ?? '')
+  const [twilioToken,   setTwilioToken]   = useState('')
+  const [twilioFrom,    setTwilioFrom]    = useState(config?.twilio_from    ?? '')
   const [showToken,     setShowToken]     = useState(false)
   const [savingTwilio,  setSavingTwilio]  = useState(false)
   const [testingTwilio, setTestingTwilio] = useState(false)
   const [twilioOpen,    setTwilioOpen]    = useState(false)
 
   // WhatsApp state
-  const [whatsappFrom,     setWhatsappFrom]     = useState(campaign?.twilio_whatsapp_from ?? '')
+  const [whatsappFrom,     setWhatsappFrom]     = useState(config?.twilio_whatsapp_from ?? '')
   const [savingWhatsApp,   setSavingWhatsApp]   = useState(false)
   const [whatsappOpen,     setWhatsappOpen]     = useState(false)
 
-  if (!campaign) {
-    return <p className="text-sm text-[#6a737d]">No hay campaña activa.</p>
-  }
+  // Resend status: needs both API key and domain
+  const resendHasKey    = !!(config?.resend_api_key_hint || resendApiKey)
+  const resendHasDomain = !!resendDomain.trim()
+  const resendStatus: IntegrationStatus = resendHasKey && resendHasDomain
+    ? 'connected'
+    : (resendHasKey || resendHasDomain ? 'unverified' : 'unconfigured')
 
-  const resendStatus   = getStatus([resendDomain])
-  const twilioStatus   = getStatus([twilioSid, twilioToken, twilioFrom])
-  const whatsappStatus = getStatus([twilioSid, twilioToken, whatsappFrom])
+  // Twilio status: needs SID, token, and from number
+  const twilioHasToken = !!(config?.twilio_token_hint || twilioToken)
+  const twilioStatus: IntegrationStatus = twilioSid.trim() && twilioHasToken && twilioFrom.trim()
+    ? 'connected'
+    : (twilioSid.trim() || twilioHasToken || twilioFrom.trim() ? 'unverified' : 'unconfigured')
+
+  // WhatsApp status: needs Twilio creds + WhatsApp number
+  const whatsappStatus: IntegrationStatus = twilioStatus === 'connected' && whatsappFrom.trim()
+    ? 'connected'
+    : (whatsappFrom.trim() ? 'unverified' : 'unconfigured')
 
   // ── Save handlers ──────────────────────────────────────────────────────
   const saveResend = async () => {
     setSavingResend(true)
+    const payload: Record<string, unknown> = {
+      resend_domain: resendDomain || null,
+    }
+    if (resendApiKey) {
+      payload.resend_api_key = resendApiKey
+    }
+    if (campaignId) payload.campaign_id = campaignId
     const res = await fetch('/api/settings/integrations', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaign_id: campaign.id, resend_domain: resendDomain || null }),
+      body: JSON.stringify(payload),
     })
     setSavingResend(false)
-    if (res.ok) toast.success('Configuración de email guardada')
-    else toast.error('Error al guardar configuración de email')
+    if (res.ok) {
+      toast.success('Configuración de email guardada')
+      if (resendApiKey) setResendApiKey('')
+    } else toast.error('Error al guardar configuración de email')
   }
 
   const saveTwilio = async () => {
     setSavingTwilio(true)
+    const payload: Record<string, unknown> = {
+      twilio_sid:   twilioSid   || null,
+      twilio_from:  twilioFrom  || null,
+    }
+    if (twilioToken) {
+      payload.twilio_token = twilioToken
+    }
+    if (campaignId) payload.campaign_id = campaignId
     const res = await fetch('/api/settings/integrations', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        campaign_id: campaign.id,
-        twilio_sid:   twilioSid   || null,
-        twilio_token: twilioToken || null,
-        twilio_from:  twilioFrom  || null,
-      }),
+      body: JSON.stringify(payload),
     })
     setSavingTwilio(false)
-    if (res.ok) toast.success('Configuración de SMS guardada')
-    else toast.error('Error al guardar configuración de SMS')
+    if (res.ok) {
+      toast.success('Configuración de SMS guardada')
+      if (twilioToken) setTwilioToken('')
+    } else toast.error('Error al guardar configuración de SMS')
   }
 
   const saveWhatsApp = async () => {
     setSavingWhatsApp(true)
+    const payload: Record<string, unknown> = {
+      twilio_whatsapp_from: whatsappFrom || null,
+    }
+    if (campaignId) payload.campaign_id = campaignId
     const res = await fetch('/api/settings/integrations', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        campaign_id: campaign.id,
-        twilio_whatsapp_from: whatsappFrom || null,
-      }),
+      body: JSON.stringify(payload),
     })
     setSavingWhatsApp(false)
     if (res.ok) toast.success('Configuración de WhatsApp guardada')
@@ -381,7 +416,7 @@ export function IntegrationsForm({ campaign }: Props) {
       const res = await fetch('/api/settings/integrations/test-resend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaign.id }),
+        body: JSON.stringify({}),
       })
       if (res.ok) toast.success('Conexión con Resend verificada')
       else {
@@ -400,7 +435,7 @@ export function IntegrationsForm({ campaign }: Props) {
       const res = await fetch('/api/settings/integrations/test-twilio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaign.id }),
+        body: JSON.stringify({}),
       })
       if (res.ok) toast.success('Conexión con Twilio verificada')
       else {
@@ -417,7 +452,7 @@ export function IntegrationsForm({ campaign }: Props) {
     <div className="space-y-6 max-w-2xl">
       {/* Summary */}
       <p className="text-sm text-slate-500">
-        Configura las integraciones de tu campaña
+        Configura las integraciones de tu tenant
       </p>
 
       {/* ── AI Model Card ─────────────────────────────────────────────────── */}
@@ -445,8 +480,41 @@ export function IntegrationsForm({ campaign }: Props) {
         </CardHeader>
         {resendOpen && (
           <CardContent className="border-t border-slate-100 pt-4 space-y-4">
+            {config?.resend_api_key_hint && (
+              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+                <span>API Key: <code className="font-mono">{config.resend_api_key_hint}</code></span>
+                <CheckCircle className="h-3 w-3 text-emerald-500" />
+              </div>
+            )}
             <div className="space-y-1.5">
-              <Label htmlFor="resend_domain">Dominio verificado en Resend</Label>
+              <Label htmlFor="resend_api_key">API Key</Label>
+              <div className="relative">
+                <Input
+                  id="resend_api_key"
+                  type={showResendKey ? 'text' : 'password'}
+                  value={resendApiKey}
+                  onChange={e => setResendApiKey(e.target.value)}
+                  placeholder={config?.resend_api_key_hint ? 'Dejar vacío para mantener la actual' : 're_...'}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowResendKey(!showResendKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                  aria-label={showResendKey ? 'Ocultar key' : 'Mostrar key'}
+                >
+                  {showResendKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tu API key se encripta antes de guardarla. Encuéntrala en{' '}
+                <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  resend.com/api-keys
+                </a>
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="resend_domain">Dominio verificado</Label>
               <Input
                 id="resend_domain"
                 value={resendDomain}
@@ -454,7 +522,7 @@ export function IntegrationsForm({ campaign }: Props) {
                 placeholder="Ej: campaña.com"
               />
               <p className="text-xs text-muted-foreground">
-                El dominio desde el que se envían los emails de la campaña.
+                El dominio desde el que se envían los emails.
               </p>
             </div>
             <div className="flex gap-2">
@@ -495,6 +563,12 @@ export function IntegrationsForm({ campaign }: Props) {
         </CardHeader>
         {twilioOpen && (
           <CardContent className="border-t border-slate-100 pt-4 space-y-4">
+            {config?.twilio_token_hint && (
+              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+                <span>Auth Token: <code className="font-mono">{config.twilio_token_hint}</code></span>
+                <CheckCircle className="h-3 w-3 text-emerald-500" />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="twilio_sid">Account SID</Label>
               <Input
@@ -512,7 +586,7 @@ export function IntegrationsForm({ campaign }: Props) {
                   type={showToken ? 'text' : 'password'}
                   value={twilioToken}
                   onChange={e => setTwilioToken(e.target.value)}
-                  placeholder="Tu Auth Token de Twilio"
+                  placeholder={config?.twilio_token_hint ? 'Dejar vacío para mantener el actual' : 'Tu Auth Token de Twilio'}
                   className="pr-10"
                 />
                 <button
@@ -524,6 +598,9 @@ export function IntegrationsForm({ campaign }: Props) {
                   {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                El token se encripta antes de guardarla.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="twilio_from">Número de origen</Label>

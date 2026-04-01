@@ -72,6 +72,28 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    rpc: vi.fn(async () => ({ data: 'decrypted_token' })),
+  })),
+}))
+
+vi.mock('@/lib/get-integration-config', () => ({
+  getIntegrationConfig: vi.fn(async () => ({
+    id: 'int-1',
+    tenant_id: 't1',
+    campaign_id: 'c1',
+    twilio_sid: 'ACtest',
+    twilio_token: 'encrypted_token',
+    twilio_token_hint: 'tok1...n123',
+    twilio_from: '+15550000000',
+    twilio_whatsapp_from: null,
+    resend_api_key: null,
+    resend_api_key_hint: null,
+    resend_domain: null,
+  })),
+}))
+
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((url: string) => { throw new Error(`REDIRECT:${url}`) }),
 }))
@@ -295,14 +317,14 @@ describe('sendTestSms', () => {
 
   it('returns error when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'volunteer', full_name: 'Ana Pérez', campaign_ids: ['c1'] } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', role: 'volunteer', full_name: 'Ana Pérez', campaign_ids: ['c1'] } })
     const result = await sendTestSms('sms1', '+573001234567')
     expect(result).toEqual({ error: 'No tienes permiso para enviar SMS de prueba' })
   })
 
   it('returns error when campaign not found', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager', full_name: 'Ana Pérez', campaign_ids: ['c1'] } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', role: 'campaign_manager', full_name: 'Ana Pérez', campaign_ids: ['c1'] } })
     mockSmsSingle.mockResolvedValueOnce({ data: null })
     const result = await sendTestSms('sms1', '+573001234567')
     expect(result).toEqual({ error: 'Campaña SMS no encontrada' })
@@ -310,7 +332,7 @@ describe('sendTestSms', () => {
 
   it('sends test SMS and returns ok', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager', full_name: 'Ana Pérez', campaign_ids: ['c1'] } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', role: 'campaign_manager', full_name: 'Ana Pérez', campaign_ids: ['c1'] } })
     mockSmsSingle.mockResolvedValueOnce({
       data: { body_text: 'Hola {nombre} {apellido}, únete hoy.' },
     })

@@ -1,28 +1,38 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getIntegrationConfig } from '@/lib/get-integration-config'
 
-export async function POST(request: Request) {
+export async function POST() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const body = await request.json()
-  const { campaign_id } = body
-
-  const { data: campaign } = await supabase
-    .from('campaigns')
-    .select('twilio_sid, twilio_token, twilio_from')
-    .eq('id', campaign_id)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id, campaign_ids')
+    .eq('id', user.id)
     .single()
 
-  if (!campaign?.twilio_sid || !campaign?.twilio_token) {
+  const tenantId = profile?.tenant_id
+  const campaignId = profile?.campaign_ids?.[0] ?? null
+  if (!tenantId) return NextResponse.json({ error: 'Sin tenant' }, { status: 400 })
+
+  const adminSupabase = createAdminClient()
+  const config = await getIntegrationConfig(adminSupabase, tenantId, campaignId)
+
+  if (!config?.twilio_sid || !config?.twilio_token) {
     return NextResponse.json({ error: 'Faltan credenciales de Twilio' }, { status: 400 })
   }
 
-  // Verify by calling Twilio's account API
+  // Decrypt token — fallback to plain text (from migration)
+  let token = config.twilio_token
+  const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: config.twilio_token })
+  if (decrypted) token = decrypted
+
   try {
-    const credentials = Buffer.from(`${campaign.twilio_sid}:${campaign.twilio_token}`).toString('base64')
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${campaign.twilio_sid}.json`, {
+    const credentials = Buffer.from(`${config.twilio_sid}:${token}`).toString('base64')
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilio_sid}.json`, {
       headers: { 'Authorization': `Basic ${credentials}` },
     })
 

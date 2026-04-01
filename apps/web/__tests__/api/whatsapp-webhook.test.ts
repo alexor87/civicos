@@ -4,16 +4,17 @@ import { NextRequest } from 'next/server'
 // ── Hoist mocks ───────────────────────────────────────────────────────────────
 const {
   mockGetUser,
-  mockCampaignQuery,
+  mockIntegrationQuery,
   mockContactQuery,
   mockConvInsert,
   mockChatbotQuery,
   mockTwilioCreate,
   mockValidateRequest,
   mockCallAI,
+  mockAdminRpc,
 } = vi.hoisted(() => ({
   mockGetUser:         vi.fn().mockResolvedValue({ data: { user: null } }),
-  mockCampaignQuery:   vi.fn(),
+  mockIntegrationQuery: vi.fn(),
   mockContactQuery:    vi.fn(),
   mockConvInsert:      vi.fn().mockResolvedValue({ error: null }),
   mockChatbotQuery:    vi.fn(),
@@ -22,16 +23,21 @@ const {
   mockCallAI: vi.fn().mockResolvedValue({
     content: 'Hola, ¿en qué te puedo ayudar?',
   }),
+  mockAdminRpc: vi.fn().mockResolvedValue({ data: 'decrypted_token' }),
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: mockGetUser },
     from: vi.fn((table: string) => {
-      if (table === 'campaigns') {
+      if (table === 'tenant_integrations') {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn(() => ({ single: mockCampaignQuery })),
+            eq: vi.fn(() => ({
+              limit: vi.fn(() => ({
+                single: mockIntegrationQuery,
+              })),
+            })),
           })),
         }
       }
@@ -72,7 +78,9 @@ vi.mock('@/lib/ai/call-ai', () => ({
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: vi.fn(() => ({})),
+  createAdminClient: vi.fn(() => ({
+    rpc: mockAdminRpc,
+  })),
 }))
 
 import { POST } from '@/app/api/webhooks/whatsapp/route'
@@ -94,11 +102,12 @@ function makeRequest(body: string) {
   })
 }
 
-const validCampaign = {
-  id: 'camp1',
+const validIntegration = {
+  id: 'int1',
   tenant_id: 't1',
+  campaign_id: 'camp1',
   twilio_sid: 'ACtest',
-  twilio_token: 'token123',
+  twilio_token: 'encrypted_token',
   twilio_whatsapp_from: '+14155238886',
 }
 
@@ -114,7 +123,7 @@ beforeEach(() => {
 
 describe('POST /api/webhooks/whatsapp', () => {
   it('returns empty TwiML when no campaign matches the To number', async () => {
-    mockCampaignQuery.mockResolvedValue({ data: null })
+    mockIntegrationQuery.mockResolvedValue({ data: null })
     const body = makeTwilioBody({
       From: 'whatsapp:+573001234567',
       To:   'whatsapp:+19999999999',
@@ -127,7 +136,7 @@ describe('POST /api/webhooks/whatsapp', () => {
   })
 
   it('returns 403 when Twilio signature is invalid', async () => {
-    mockCampaignQuery.mockResolvedValue({ data: validCampaign })
+    mockIntegrationQuery.mockResolvedValue({ data: validIntegration })
     mockValidateRequest.mockReturnValue(false)
     const body = makeTwilioBody({
       From: 'whatsapp:+573001234567',
@@ -140,7 +149,7 @@ describe('POST /api/webhooks/whatsapp', () => {
   })
 
   it('stores inbound message and returns empty TwiML when chatbot disabled', async () => {
-    mockCampaignQuery.mockResolvedValue({ data: validCampaign })
+    mockIntegrationQuery.mockResolvedValue({ data: validIntegration })
     mockContactQuery.mockResolvedValue({ data: { id: 'ct1' } })
     mockChatbotQuery.mockResolvedValue({ data: { enabled: false } })
     const body = makeTwilioBody({
@@ -157,7 +166,7 @@ describe('POST /api/webhooks/whatsapp', () => {
   })
 
   it('calls Claude and sends reply when chatbot is enabled', async () => {
-    mockCampaignQuery.mockResolvedValue({ data: validCampaign })
+    mockIntegrationQuery.mockResolvedValue({ data: validIntegration })
     mockContactQuery.mockResolvedValue({ data: { id: 'ct1' } })
     mockChatbotQuery.mockResolvedValue({
       data: {

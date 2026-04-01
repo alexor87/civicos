@@ -74,6 +74,28 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    rpc: vi.fn(async () => ({ data: 'decrypted_token' })),
+  })),
+}))
+
+vi.mock('@/lib/get-integration-config', () => ({
+  getIntegrationConfig: vi.fn(async () => ({
+    id: 'int-1',
+    tenant_id: 't1',
+    campaign_id: 'c1',
+    twilio_sid: 'ACtest',
+    twilio_token: 'encrypted_token',
+    twilio_token_hint: 'tok1...n123',
+    twilio_from: '+15550000000',
+    twilio_whatsapp_from: '+14155238886',
+    resend_api_key: null,
+    resend_api_key_hint: null,
+    resend_domain: null,
+  })),
+}))
+
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((url: string) => { throw new Error(`REDIRECT:${url}`) }),
 }))

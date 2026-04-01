@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getIntegrationConfig } from '@/lib/get-integration-config'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus, Mail, MessageSquare, Send, FileText, AlertCircle, TrendingUp, Inbox, LayoutTemplate } from 'lucide-react'
@@ -27,22 +28,21 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_ids')
+    .select('tenant_id, campaign_ids')
     .eq('id', user.id)
     .single()
 
   const campaignId = profile?.campaign_ids?.[0] ?? ''
+  const tenantId   = profile?.tenant_id
 
-  // Fetch integration config to detect unconfigured services
-  const { data: campaignConfig } = await supabase
-    .from('campaigns')
-    .select('resend_domain, twilio_sid, twilio_token, twilio_from, twilio_whatsapp_from')
-    .eq('id', campaignId)
-    .single()
+  // Fetch integration config from tenant_integrations
+  const integrationConfig = tenantId
+    ? await getIntegrationConfig(supabase, tenantId, campaignId || null)
+    : null
 
-  const emailConfigured    = !!campaignConfig?.resend_domain
-  const smsConfigured      = !!(campaignConfig?.twilio_sid && campaignConfig?.twilio_token && campaignConfig?.twilio_from)
-  const whatsappConfigured = !!(campaignConfig?.twilio_sid && campaignConfig?.twilio_token && campaignConfig?.twilio_whatsapp_from)
+  const emailConfigured    = !!(integrationConfig?.resend_api_key && integrationConfig?.resend_domain)
+  const smsConfigured      = !!(integrationConfig?.twilio_sid && integrationConfig?.twilio_token && integrationConfig?.twilio_from)
+  const whatsappConfigured = !!(integrationConfig?.twilio_sid && integrationConfig?.twilio_token && integrationConfig?.twilio_whatsapp_from)
 
   const [{ data: allEmailCampaigns }, { data: smsCampaigns }, { data: whatsappCampaigns }] = await Promise.all([
     supabase.from('email_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),

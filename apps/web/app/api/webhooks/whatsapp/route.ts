@@ -23,34 +23,50 @@ export async function POST(req: NextRequest) {
   const messageBody = params['Body']  ?? ''
   const messageSid  = params['MessageSid'] ?? ''
 
-  // Find which campaign owns this "To" number
+  // Find which tenant_integrations row owns this "To" number
   const supabase = await createClient()
+  const adminSupabase = createAdminClient()
 
-  const { data: campaignRow } = await supabase
-    .from('campaigns')
-    .select('id, tenant_id, twilio_sid, twilio_token, twilio_whatsapp_from')
+  const { data: integrationRow } = await supabase
+    .from('tenant_integrations')
+    .select('id, tenant_id, campaign_id, twilio_sid, twilio_token, twilio_whatsapp_from')
     .eq('twilio_whatsapp_from', to)
+    .limit(1)
     .single()
 
-  // If no campaign found, try with whatsapp: prefix stored
-  const { data: campaignRowPrefixed } = !campaignRow
+  const { data: integrationRowPrefixed } = !integrationRow
     ? await supabase
-        .from('campaigns')
-        .select('id, tenant_id, twilio_sid, twilio_token, twilio_whatsapp_from')
+        .from('tenant_integrations')
+        .select('id, tenant_id, campaign_id, twilio_sid, twilio_token, twilio_whatsapp_from')
         .eq('twilio_whatsapp_from', `whatsapp:${to}`)
+        .limit(1)
         .single()
     : { data: null }
 
-  const campaign = campaignRow ?? campaignRowPrefixed
-  if (!campaign) {
-    // Return empty TwiML — no campaign matches this number
+  const integration = integrationRow ?? integrationRowPrefixed
+  if (!integration?.campaign_id) {
     return new NextResponse('<Response/>', {
       headers: { 'Content-Type': 'text/xml' },
     })
   }
 
-  // Validate Twilio signature
-  const authToken  = campaign.twilio_token ?? process.env.TWILIO_AUTH_TOKEN ?? ''
+  // Build a campaign-like object for downstream use
+  const campaign = {
+    id: integration.campaign_id,
+    tenant_id: integration.tenant_id,
+    twilio_sid: integration.twilio_sid,
+    twilio_token: integration.twilio_token,
+    twilio_whatsapp_from: integration.twilio_whatsapp_from,
+  }
+
+  // Decrypt token for signature validation
+  let authToken = process.env.TWILIO_AUTH_TOKEN ?? ''
+  if (campaign.twilio_token) {
+    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: campaign.twilio_token })
+    if (decrypted) authToken = decrypted
+    else authToken = campaign.twilio_token // plain text fallback from migration
+  }
+
   const signature  = req.headers.get('x-twilio-signature') ?? ''
   const requestUrl = req.url
 
@@ -94,7 +110,6 @@ export async function POST(req: NextRequest) {
   }
 
   // Generate AI reply
-  const adminSupabase = createAdminClient()
   let replyText   = chatbotConfig.fallback_message
 
   try {
@@ -114,8 +129,8 @@ export async function POST(req: NextRequest) {
 
   // Send reply via Twilio
   const twilioSid    = campaign.twilio_sid   ?? process.env.TWILIO_ACCOUNT_SID ?? ''
-  const twilioToken2 = campaign.twilio_token ?? process.env.TWILIO_AUTH_TOKEN  ?? ''
-  const fromNumber   = (campaign as Record<string, unknown>).twilio_whatsapp_from as string
+  const twilioToken2 = authToken // already decrypted above
+  const fromNumber   = campaign.twilio_whatsapp_from as string
 
   if (twilioSid && twilioToken2 && fromNumber) {
     const client = twilio(twilioSid, twilioToken2)

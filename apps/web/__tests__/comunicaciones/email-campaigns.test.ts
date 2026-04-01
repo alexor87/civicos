@@ -71,6 +71,28 @@ vi.mock('resend', () => ({
   },
 }))
 
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    rpc: vi.fn(async () => ({ data: 'decrypted_key' })),
+  })),
+}))
+
+vi.mock('@/lib/get-integration-config', () => ({
+  getIntegrationConfig: vi.fn(async () => ({
+    id: 'int-1',
+    tenant_id: 't1',
+    campaign_id: 'c1',
+    resend_api_key: 'encrypted_key',
+    resend_api_key_hint: 're_1...xy99',
+    resend_domain: 'campaign.com',
+    twilio_sid: null,
+    twilio_token: null,
+    twilio_token_hint: null,
+    twilio_from: null,
+    twilio_whatsapp_from: null,
+  })),
+}))
+
 // applyFilters used in sendCampaign — return empty to keep tests simple
 vi.mock('@/app/dashboard/contacts/segments/actions', () => ({
   applyFilters: vi.fn(async () => ({ data: [] })),
@@ -267,14 +289,14 @@ describe('sendTestEmail', () => {
 
   it('returns error when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'volunteer', full_name: 'Ana Pérez' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'volunteer', full_name: 'Ana Pérez' } })
     const result = await sendTestEmail('ec1', 'test@example.com')
     expect(result).toEqual({ error: 'No tienes permiso para enviar emails de prueba' })
   })
 
   it('returns error when campaign not found', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager', full_name: 'Ana Pérez' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'campaign_manager', full_name: 'Ana Pérez' } })
     mockCampaignSingle.mockResolvedValueOnce({ data: null })
     const result = await sendTestEmail('ec1', 'test@example.com')
     expect(result).toEqual({ error: 'Campaña no encontrada' })
@@ -282,7 +304,7 @@ describe('sendTestEmail', () => {
 
   it('sends test email and returns ok', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager', full_name: 'Ana Pérez' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'campaign_manager', full_name: 'Ana Pérez' } })
     mockCampaignSingle.mockResolvedValueOnce({
       data: { subject: 'Hola {nombre}', body_html: '<p>Hola {nombre} {apellido}</p>' },
     })

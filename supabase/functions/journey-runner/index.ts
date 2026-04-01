@@ -85,19 +85,55 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ processed: 0 }), { status: 200 })
   }
 
-  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+  const RESEND_API_KEY_FALLBACK = Deno.env.get('RESEND_API_KEY')
 
-  // Cache Twilio configs per campaign to avoid repeated DB calls
-  const twilioCache = new Map<string, TwilioConfig>()
-  async function getTwilioConfig(campaignId: string): Promise<TwilioConfig> {
-    if (twilioCache.has(campaignId)) return twilioCache.get(campaignId)!
-    const { data } = await supabase
+  // Cache integration configs per campaign to avoid repeated DB calls
+  interface IntegrationCache {
+    resend_api_key?: string | null
+    resend_domain?: string | null
+    twilio_sid?: string | null
+    twilio_token?: string | null
+    twilio_from?: string | null
+  }
+  const integrationCache = new Map<string, IntegrationCache>()
+
+  async function getIntegrationForCampaign(campaignId: string): Promise<IntegrationCache> {
+    if (integrationCache.has(campaignId)) return integrationCache.get(campaignId)!
+
+    // Get tenant_id from campaign
+    const { data: campaign } = await supabase
       .from('campaigns')
-      .select('twilio_sid, twilio_token, twilio_from')
+      .select('tenant_id')
       .eq('id', campaignId)
       .single()
-    const config: TwilioConfig = data ?? {}
-    twilioCache.set(campaignId, config)
+
+    if (!campaign?.tenant_id) {
+      integrationCache.set(campaignId, {})
+      return {}
+    }
+
+    const { data: row } = await supabase
+      .from('tenant_integrations')
+      .select('resend_api_key, resend_domain, twilio_sid, twilio_token, twilio_from')
+      .eq('tenant_id', campaign.tenant_id)
+      .or(`campaign_id.eq.${campaignId},campaign_id.is.null`)
+      .order('campaign_id', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .single()
+
+    const config: IntegrationCache = row ?? {}
+
+    // Decrypt sensitive fields
+    if (config.resend_api_key) {
+      const { data: decrypted } = await supabase.rpc('decrypt_integration_key', { encrypted: config.resend_api_key })
+      if (decrypted) config.resend_api_key = decrypted
+    }
+    if (config.twilio_token) {
+      const { data: decrypted } = await supabase.rpc('decrypt_integration_key', { encrypted: config.twilio_token })
+      if (decrypted) config.twilio_token = decrypted
+    }
+
+    integrationCache.set(campaignId, config)
     return config
   }
 
@@ -119,18 +155,21 @@ Deno.serve(async (req: Request) => {
       // Execute current node
       if (currentNode.type === 'email') {
         const toEmail = enrollment.contact.email
-        if (toEmail && RESEND_API_KEY) {
+        const intConfig = await getIntegrationForCampaign(journey.campaign_id)
+        const resendKey = intConfig.resend_api_key || RESEND_API_KEY_FALLBACK
+        if (toEmail && resendKey) {
           const body = (currentNode.data.body ?? '')
             .replace('{nombre}', enrollment.contact.first_name ?? 'Contacto')
+          const fromDomain = intConfig.resend_domain || 'civicos.app'
 
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${RESEND_API_KEY}`,
+              'Authorization': `Bearer ${resendKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from:    'noreply@civicos.app',
+              from:    `noreply@${fromDomain}`,
               to:      toEmail,
               subject: currentNode.data.subject ?? '(Sin asunto)',
               html:    body || `<p>${body}</p>`,
@@ -140,13 +179,16 @@ Deno.serve(async (req: Request) => {
       } else if (currentNode.type === 'sms') {
         const toPhone = enrollment.contact.phone
         if (toPhone) {
-          const twilio = await getTwilioConfig(journey.campaign_id)
-          if (twilio.twilio_sid && twilio.twilio_token && twilio.twilio_from) {
+          const intConfig = await getIntegrationForCampaign(journey.campaign_id)
+          const sid   = intConfig.twilio_sid   || Deno.env.get('TWILIO_ACCOUNT_SID') || ''
+          const token = intConfig.twilio_token || Deno.env.get('TWILIO_AUTH_TOKEN')  || ''
+          const from  = intConfig.twilio_from  || Deno.env.get('TWILIO_FROM_NUMBER') || ''
+          if (sid && token && from) {
             const smsBody = (currentNode.data.body ?? '')
               .replace('{nombre}', enrollment.contact.first_name ?? 'Contacto')
-            const credentials = btoa(`${twilio.twilio_sid}:${twilio.twilio_token}`)
+            const credentials = btoa(`${sid}:${token}`)
             await fetch(
-              `https://api.twilio.com/2010-04-01/Accounts/${twilio.twilio_sid}/Messages.json`,
+              `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
               {
                 method:  'POST',
                 headers: {
@@ -154,7 +196,7 @@ Deno.serve(async (req: Request) => {
                   'Content-Type':  'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                  From: twilio.twilio_from,
+                  From: from,
                   To:   toPhone,
                   Body: smsBody,
                 }).toString(),
