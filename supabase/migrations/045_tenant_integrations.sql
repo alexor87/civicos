@@ -93,19 +93,46 @@ CREATE POLICY "Admins can manage integrations"
   );
 
 -- ── Migrate existing data from campaigns ─────────────────────────────────────
+-- Handle gracefully: twilio_whatsapp_from may not exist in older deployments
 
-INSERT INTO tenant_integrations (
-  tenant_id, campaign_id,
-  resend_domain,
-  twilio_sid, twilio_token, twilio_from,
-  twilio_whatsapp_from
-)
-SELECT
-  c.tenant_id, c.id,
-  c.resend_domain,
-  c.twilio_sid, c.twilio_token, c.twilio_from,
-  c.twilio_whatsapp_from
-FROM campaigns c
-WHERE c.resend_domain IS NOT NULL
-   OR c.twilio_sid IS NOT NULL
-   OR c.twilio_whatsapp_from IS NOT NULL;
+DO $$
+DECLARE
+  has_wa_col boolean;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'campaigns' AND column_name = 'twilio_whatsapp_from'
+  ) INTO has_wa_col;
+
+  IF has_wa_col THEN
+    INSERT INTO tenant_integrations (
+      tenant_id, campaign_id,
+      resend_domain,
+      twilio_sid, twilio_token, twilio_from,
+      twilio_whatsapp_from
+    )
+    SELECT
+      c.tenant_id, c.id,
+      c.resend_domain,
+      c.twilio_sid, c.twilio_token, c.twilio_from,
+      c.twilio_whatsapp_from
+    FROM campaigns c
+    WHERE c.resend_domain IS NOT NULL
+       OR c.twilio_sid IS NOT NULL
+       OR c.twilio_whatsapp_from IS NOT NULL;
+  ELSE
+    INSERT INTO tenant_integrations (
+      tenant_id, campaign_id,
+      resend_domain,
+      twilio_sid, twilio_token, twilio_from
+    )
+    SELECT
+      c.tenant_id, c.id,
+      c.resend_domain,
+      c.twilio_sid, c.twilio_token, c.twilio_from
+    FROM campaigns c
+    WHERE c.resend_domain IS NOT NULL
+       OR c.twilio_sid IS NOT NULL;
+  END IF;
+END;
+$$;
