@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ExternalLink, Sparkles, Clock, MapPin, Phone, Mail, Loader2 } from 'lucide-react'
+import { X, ExternalLink, Sparkles, Clock, MapPin, Phone, Mail, Loader2, Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Database } from '@/lib/types/database'
@@ -304,6 +304,13 @@ export function ContactQuickProfile({
             )}
             Generar Plan de Alcance IA
           </Button>
+
+          <Link href={`/dashboard/contacts/${contact.id}/edit`} className="block">
+            <Button variant="outline" className="w-full gap-2">
+              <Pencil className="h-4 w-4" />
+              Editar Contacto
+            </Button>
+          </Link>
 
           <Link href={`/dashboard/contacts/${contact.id}`} className="block">
             <Button variant="outline" className="w-full gap-2">
