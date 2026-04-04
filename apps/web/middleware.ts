@@ -16,6 +16,13 @@ export async function middleware(request: NextRequest) {
 
   // ── 1. Root path → geolocation redirect ────────────────────────────
   if (pathname === '/') {
+    const host = request.headers.get('host') || ''
+
+    // app.scrutix.co → directo al login, no landing
+    if (host.startsWith('app.')) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
     // Respect user's saved preference
     const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value
     if (cookieLocale && isValidLocale(cookieLocale)) {
@@ -39,6 +46,10 @@ export async function middleware(request: NextRequest) {
 
   // ── 2. Locale marketing pages → no auth needed ─────────────────────
   if (isLocaleMarketingRoute(pathname)) {
+    const host = request.headers.get('host') || ''
+    if (host.startsWith('app.')) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
     return NextResponse.next()
   }
 
