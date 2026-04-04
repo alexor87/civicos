@@ -170,7 +170,7 @@ export interface Database {
           id: string
           name: string
           slug: string
-          plan: 'starter' | 'pro' | 'campaign' | 'enterprise'
+          plan: 'esencial' | 'pro' | 'campaign' | 'enterprise'
           settings: Json
           created_at: string
           updated_at: string

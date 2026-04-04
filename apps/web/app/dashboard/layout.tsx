@@ -7,6 +7,9 @@ import { BrandProvider } from '@/components/dashboard/BrandProvider'
 import { PermissionsProvider } from '@/components/providers/PermissionsProvider'
 import { brandFromColor, type TenantBrand } from '@/lib/brand-utils'
 import { Toaster } from '@/components/ui/sonner'
+import { FeaturesProvider } from '@/components/providers/FeaturesProvider'
+import { ImpersonationBanner } from '@/components/impersonation/ImpersonationBanner'
+import type { PlanName } from '@/lib/features/feature-keys'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -88,6 +91,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .slice(0, 2) ?? '?'
 
   const tenantName = (profile.tenants as { name: string } | null)?.name ?? 'CivicOS'
+  const tenantPlan = ((profile.tenants as { plan?: string } | null)?.plan ?? 'esencial') as PlanName
+
+  // Resolve feature flags for the tenant
+  const { data: resolvedFeatures } = await supabase.rpc('resolve_all_tenant_features', {
+    p_tenant_id: profile.tenant_id,
+    p_plan: tenantPlan,
+  })
+  const features: Record<string, unknown> = {}
+  if (resolvedFeatures && Array.isArray(resolvedFeatures)) {
+    for (const row of resolvedFeatures) {
+      features[row.feature_key] = row.resolved_value
+    }
+  }
 
   // Active suggestion count for the realtime badge
   const { count: suggestionCount } = await supabase
@@ -97,7 +113,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .in('status', ['active', 'pending_approval']) as { count: number }
 
   return (
+    <>
+    <ImpersonationBanner />
     <BrandProvider brand={effectiveBrand}>
+      <FeaturesProvider features={features} plan={tenantPlan}>
       <PermissionsProvider
         userRole={profile.role}
         customRoleId={profile.custom_role_id ?? null}
@@ -132,6 +151,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <Toaster />
       </div>
       </PermissionsProvider>
+      </FeaturesProvider>
     </BrandProvider>
+    </>
   )
 }

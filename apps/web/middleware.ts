@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { COUNTRY_TO_LOCALE, DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, isValidLocale } from '@/lib/i18n'
 
-const PUBLIC_PATHS = ['/login', '/register', '/auth/callback', '/registro']
+const PUBLIC_PATHS = ['/login', '/register', '/auth/callback', '/auth/impersonate', '/registro']
 
 /** Matches /en, /es, /co (with or without trailing path) */
 const LOCALE_PATTERN = new RegExp(`^/(${LOCALES.join('|')})(/|$)`)
@@ -77,7 +77,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
-  if (user && isPublicPath && pathname !== '/auth/callback') {
+  if (user && isPublicPath && pathname !== '/auth/callback' && pathname !== '/auth/impersonate') {
     const response = NextResponse.redirect(new URL('/dashboard', request.url))
     supabaseResponse.cookies.getAll().forEach(cookie => {
       response.cookies.set(cookie.name, cookie.value, cookie)
