@@ -8,7 +8,7 @@ CREATE INDEX idx_campaigns_demo ON campaigns(tenant_id, is_demo);
 
 -- 2. Estado del onboarding
 CREATE TABLE onboarding_state (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id       UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   stage           TEXT NOT NULL DEFAULT 'pending'
                   CHECK (stage IN ('pending','seeding','demo','activating','active')),

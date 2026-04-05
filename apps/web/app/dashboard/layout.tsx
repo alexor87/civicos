@@ -47,6 +47,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const isDemoOrPending = onboardingState?.stage === 'demo' || onboardingState?.stage === 'pending' || onboardingState?.stage === 'seeding'
 
+  // If still seeding, send user back to /welcome to wait
+  if (onboardingState?.stage === 'pending' || onboardingState?.stage === 'seeding') {
+    redirect('/welcome')
+  }
+
   // Redirect to Brand Studio onboarding only AFTER activation (not during demo)
   if (tenantBranding && tenantBranding.onboarding_completed === false && !isDemoOrPending) {
     redirect('/onboarding')

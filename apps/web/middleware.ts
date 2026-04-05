@@ -88,7 +88,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
-  if (user && isPublicPath && pathname !== '/auth/callback' && pathname !== '/auth/impersonate') {
+  if (user && isPublicPath && pathname !== '/auth/callback' && pathname !== '/auth/impersonate' && pathname !== '/welcome') {
     const response = NextResponse.redirect(new URL('/dashboard', request.url))
     supabaseResponse.cookies.getAll().forEach(cookie => {
       response.cookies.set(cookie.name, cookie.value, cookie)
