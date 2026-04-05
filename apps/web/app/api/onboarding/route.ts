@@ -95,12 +95,17 @@ export async function POST(request: NextRequest) {
 
   // 8. Send verification email via Resend (non-fatal — user can resend from /verify-email)
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.scrutix.co'
-  const { data: linkData } = await supabase.auth.admin.generateLink({
-    type: 'signup',
+  // Use magiclink: the user already exists (createUser above), so 'signup' type
+  // would fail with "User already registered". Magiclink works for existing
+  // unconfirmed users — clicking confirms the email AND creates a session.
+  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+    type: 'magiclink',
     email,
-    password,
     options: { redirectTo: `${siteUrl}/auth/callback?next=/welcome` },
   })
+  if (linkError) {
+    console.error('[onboarding] generateLink failed:', linkError.message)
+  }
   const actionLink = linkData?.properties?.action_link
   if (actionLink) {
     const result = await sendVerificationEmail({ email, actionLink })

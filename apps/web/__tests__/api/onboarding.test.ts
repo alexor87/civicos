@@ -147,7 +147,7 @@ describe('POST /api/onboarding', () => {
       expect.objectContaining({ email_confirm: false })
     )
     expect(mockGenerateLink).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'signup', email: VALID_BODY.email })
+      expect.objectContaining({ type: 'magiclink', email: VALID_BODY.email })
     )
     expect(mockSendVerificationEmail).toHaveBeenCalledWith({
       email: VALID_BODY.email,
