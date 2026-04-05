@@ -82,7 +82,7 @@ export default function ImportContactsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 rounded-lg p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+          <label className="flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 rounded-lg p-4 md:p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
             <Upload className="h-8 w-8 text-slate-400" />
             <div className="text-center">
               <p className="text-sm font-medium text-slate-700">

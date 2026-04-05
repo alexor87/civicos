@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Bell, Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut, Settings } from 'lucide-react'
+import { Bell, Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut, Settings, Menu } from 'lucide-react'
+import { useSidebar } from '@/components/dashboard/SidebarContext'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -65,6 +66,7 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
   const [open,    setOpen]    = useState(false)
   const [campaignOpen, setCampaignOpen] = useState(false)
   const [switching, setSwitching] = useState(false)
+  const { setOpen: setSidebarOpen } = useSidebar()
 
   // Find best matching title
   const pageTitle = Object.entries(PAGE_TITLES)
@@ -139,20 +141,27 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
   const showCampaignSwitcher = userRole === 'super_admin' && campaigns.length > 0
 
   return (
-    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-8 flex-shrink-0 z-10">
-      {/* Left: campaign name */}
-      <div className="flex items-center gap-4">
-        <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded">
+    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-4 md:px-8 flex-shrink-0 z-10">
+      {/* Left: hamburger (mobile) + campaign name */}
+      <div className="flex items-center gap-2 md:gap-4 min-w-0">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden p-2 -ml-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+        </button>
+        <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded hidden sm:block">
           <Building2 className="h-4 w-4 text-slate-500" />
         </div>
-        <h2 className="text-base font-bold text-slate-800 dark:text-white">{campaignName}</h2>
+        <h2 className="text-base font-bold text-slate-800 dark:text-white truncate max-w-[140px] md:max-w-none">{campaignName}</h2>
       </div>
 
       {/* Right: search + campaign switcher + notifications + user */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 md:gap-6">
 
         {/* Search */}
-        <div ref={wrapperRef} className="relative w-64">
+        <div ref={wrapperRef} className="relative w-40 md:w-64 hidden sm:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
@@ -227,7 +236,7 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
 
         {/* Campaign Switcher */}
         {showCampaignSwitcher && (
-          <div ref={campaignRef} className="relative">
+          <div ref={campaignRef} className="relative hidden md:block">
             <button
               onClick={() => setCampaignOpen(prev => !prev)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700"
@@ -283,15 +292,15 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
           </div>
         )}
 
-        <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-6">
+        <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-3 md:pl-6">
           <button className="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
           </button>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-3 ml-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
-              <div className="text-right">
+            <DropdownMenuTrigger className="flex items-center gap-3 md:ml-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+              <div className="text-right hidden md:block">
                 <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">{userFullName ?? 'Usuario'}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">{ROLE_LABELS[userRole] ?? userRole}</p>
               </div>

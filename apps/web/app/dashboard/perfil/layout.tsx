@@ -45,7 +45,7 @@ export default function PerfilLayout({ children }: { children: React.ReactNode }
       </nav>
 
       {/* Right content */}
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-auto p-4 md:p-8">
         {children}
       </div>
     </div>

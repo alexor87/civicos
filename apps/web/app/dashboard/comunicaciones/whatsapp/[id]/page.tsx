@@ -61,7 +61,7 @@ export default async function WhatsAppCampaignDetailPage({ params }: { params: P
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto p-6 lg:p-8 space-y-6">
+      <div className="max-w-3xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
         {/* Back */}
         <div>
           <Link href="/dashboard/comunicaciones?tab=whatsapp">

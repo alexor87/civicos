@@ -90,7 +90,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 p-8 space-y-8 animate-page-in">
+    <div className="flex-1 p-4 md:p-8 space-y-8 animate-page-in">
       {/* Hero Title */}
       <div className="flex justify-between items-end">
         <div>

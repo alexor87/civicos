@@ -87,7 +87,7 @@ export default function CampanasPage() {
       </div>
 
       {campaigns.length === 0 ? (
-        <div className="bg-slate-50 rounded-lg p-8 text-center">
+        <div className="bg-slate-50 rounded-lg p-4 md:p-8 text-center">
           <Building2 className="h-10 w-10 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-slate-600">No tienes campañas asignadas</p>
           <p className="text-xs text-slate-400 mt-1">Contacta a tu administrador para ser agregado a una campaña</p>

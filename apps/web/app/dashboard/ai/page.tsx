@@ -62,7 +62,7 @@ export default async function AIPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-6 lg:p-8 space-y-6">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-[#1b1f23] flex items-center gap-2">
           <Brain className="h-5 w-5 text-[#2960ec]" />

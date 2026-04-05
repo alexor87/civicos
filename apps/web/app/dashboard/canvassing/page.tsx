@@ -185,7 +185,7 @@ export default async function CanvassingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="p-6 lg:p-8 space-y-6">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6">
 
         {/* ── Page header ── */}
         <div className="flex items-start justify-between gap-4">

@@ -13,6 +13,7 @@ import { usePermissions, usePermissionsLoading } from '@/hooks/usePermission'
 import {
   Tooltip, TooltipTrigger, TooltipContent, TooltipProvider,
 } from '@/components/ui/tooltip'
+import { useSidebar } from '@/components/dashboard/SidebarContext'
 
 const NAV_GROUPS: { label?: string; items: { href: string; label: string; icon: typeof LayoutDashboard; badge?: boolean; permission?: string }[] }[] = [
   {
@@ -77,6 +78,8 @@ export function Sidebar({
 }: Props) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const { open, setOpen } = useSidebar()
+  const closeMobileDrawer = () => setOpen(false)
 
   const allNavPermissions = NAV_GROUPS.flatMap(g => g.items).map(i => i.permission).filter(Boolean) as string[]
   const perms = usePermissions(allNavPermissions)
@@ -89,7 +92,13 @@ export function Sidebar({
 
   return (
     <TooltipProvider>
-      <aside className={`${collapsed ? 'w-16' : 'w-64'} h-screen bg-white dark:bg-slate-900 flex flex-col flex-shrink-0 border-r border-slate-200 dark:border-slate-800 transition-all duration-200`}>
+      {/* Mobile overlay */}
+      <div
+        onClick={closeMobileDrawer}
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity md:hidden ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        aria-hidden="true"
+      />
+      <aside className={`${collapsed ? 'md:w-16' : 'md:w-64'} fixed inset-y-0 left-0 z-50 w-72 ${open ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 h-screen bg-white dark:bg-slate-900 flex flex-col flex-shrink-0 border-r border-slate-200 dark:border-slate-800 transition-all duration-200`}>
 
         {/* Brand identity block */}
         <div className={`${collapsed ? 'px-2' : 'px-4'} pt-5 pb-4 border-b border-slate-100 dark:border-slate-800`}>
@@ -131,7 +140,13 @@ export function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 overflow-y-auto ${collapsed ? 'px-2' : 'px-4'} py-2`}>
+        <nav
+          onClick={(e) => {
+            // Close mobile drawer when a nav link is clicked
+            if ((e.target as HTMLElement).closest('a')) closeMobileDrawer()
+          }}
+          className={`flex-1 overflow-y-auto ${collapsed ? 'px-2' : 'px-4'} py-2`}
+        >
           {NAV_GROUPS.map((group, gi) => {
             const visibleItems = permsLoading
               ? group.items

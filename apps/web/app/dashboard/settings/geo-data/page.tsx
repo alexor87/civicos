@@ -465,7 +465,7 @@ export default function GeoDataPage() {
   const selectedElectionLabel = COLOMBIA_ELECTION_TYPES.find(t => t.value === electionType)?.label
 
   return (
-    <div className="flex-1 p-8 space-y-8 animate-page-in">
+    <div className="flex-1 p-4 md:p-8 space-y-8 animate-page-in">
       {/* Header */}
       <div>
         <h3 className="text-3xl font-black tracking-tight text-slate-900">Base Geográfica</h3>
@@ -638,7 +638,7 @@ export default function GeoDataPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <label className="flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 rounded-xl p-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+              <label className="flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 rounded-xl p-4 md:p-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                 <div className="flex gap-3 text-slate-400">
                   <FileSpreadsheet className="h-7 w-7" />
                   <FileJson className="h-7 w-7" />

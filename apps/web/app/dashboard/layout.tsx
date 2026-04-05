@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { SidebarProvider } from '@/components/dashboard/SidebarContext'
 import { BrandProvider } from '@/components/dashboard/BrandProvider'
 import { PermissionsProvider } from '@/components/providers/PermissionsProvider'
 import { brandFromColor, type TenantBrand } from '@/lib/brand-utils'
@@ -139,6 +140,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         customRoleId={profile.custom_role_id ?? null}
         tenantId={profile.tenant_id}
       >
+      <SidebarProvider>
       <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar
           tenantName={tenantName}
@@ -168,6 +170,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
         <Toaster />
       </div>
+      </SidebarProvider>
       </PermissionsProvider>
       </FeaturesProvider>
     </BrandProvider>

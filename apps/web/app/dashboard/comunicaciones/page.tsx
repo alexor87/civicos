@@ -79,7 +79,7 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
       {isSmsTab && !smsConfigured && <ServiceSetupModal channel="sms" isConfigured={false} />}
       {isWhatsAppTab && !whatsappConfigured && <ServiceSetupModal channel="whatsapp" isConfigured={false} />}
 
-      <div className="p-6 lg:p-8 space-y-6">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
