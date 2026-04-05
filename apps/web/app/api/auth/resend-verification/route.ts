@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
   })
 
   if (!result.ok) {
-    return NextResponse.json({ error: 'No se pudo enviar el email' }, { status: 500 })
+    console.error('[resend-verification] send failed:', result.error)
+    return NextResponse.json(
+      { error: `No se pudo enviar el email: ${result.error}` },
+      { status: 500 }
+    )
   }
 
   lastSent.set(email, now)

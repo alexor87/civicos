@@ -61,11 +61,13 @@ describe('POST /api/auth/resend-verification', () => {
     expect(res.status).toBe(404)
   })
 
-it('returns 500 when Resend send fails', async () => {
+it('returns 500 with specific error when Resend send fails', async () => {
     mockSendVerificationEmail.mockResolvedValueOnce({ ok: false, error: 'down' })
 
     const res = await POST(makeRequest({ email: 'fail@example.com' }))
     expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error).toContain('down')
   })
 
   it('returns 429 when reattempting before cooldown expires', async () => {

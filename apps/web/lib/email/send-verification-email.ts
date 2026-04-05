@@ -11,6 +11,7 @@ export async function sendVerificationEmail({
 }): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
+    console.error('[send-verification-email] RESEND_API_KEY not configured in environment')
     return { ok: false, error: 'RESEND_API_KEY not configured' }
   }
 
