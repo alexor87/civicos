@@ -104,7 +104,8 @@ export default function ImportContactsPage() {
         <CardHeader>
           <CardTitle>Formato del archivo</CardTitle>
           <CardDescription>
-            Acepta CSV, XLSX y XLS. El archivo debe incluir las columnas: <code className="bg-slate-100 px-1 rounded text-xs">first_name</code>, <code className="bg-slate-100 px-1 rounded text-xs">last_name</code>, y opcionalmente: <code className="bg-slate-100 px-1 rounded text-xs">email</code>, <code className="bg-slate-100 px-1 rounded text-xs">phone</code>, <code className="bg-slate-100 px-1 rounded text-xs">address</code>, <code className="bg-slate-100 px-1 rounded text-xs">city</code>, <code className="bg-slate-100 px-1 rounded text-xs">district</code>, <code className="bg-slate-100 px-1 rounded text-xs">status</code>
+            Acepta CSV, XLSX y XLS. El archivo debe incluir las columnas: <code className="bg-slate-100 px-1 rounded text-xs">NOMBRE</code>, <code className="bg-slate-100 px-1 rounded text-xs">APELLIDO</code>,
+            y opcionalmente: <code className="bg-slate-100 px-1 rounded text-xs">TELEFONO</code>, <code className="bg-slate-100 px-1 rounded text-xs">CORREO ELECTRONICO</code>, <code className="bg-slate-100 px-1 rounded text-xs">DIRECCION</code>, <code className="bg-slate-100 px-1 rounded text-xs">BARRIO</code>, <code className="bg-slate-100 px-1 rounded text-xs">NRO CC</code>, <code className="bg-slate-100 px-1 rounded text-xs">PUESTO DE VOTACION</code>, <code className="bg-slate-100 px-1 rounded text-xs">MESA</code>, <code className="bg-slate-100 px-1 rounded text-xs">FECHA DE NACIMIENTO</code>, <code className="bg-slate-100 px-1 rounded text-xs">REFERIDO</code>, <code className="bg-slate-100 px-1 rounded text-xs">COMUNA</code>. También acepta nombres en inglés
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
