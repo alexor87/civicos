@@ -70,6 +70,11 @@ export function StepLocation() {
       />
 
       <div className="space-y-1.5">
+        <Label htmlFor="sector">Sector</Label>
+        <Input id="sector" placeholder="Ej. Manzana 5, Sector Norte" {...register('sector')} />
+      </div>
+
+      <div className="space-y-1.5">
         <Label htmlFor="address">Dirección</Label>
         <Input id="address" placeholder="Calle 80 #45-23" {...register('address')} />
       </div>

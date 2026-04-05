@@ -77,6 +77,7 @@ export async function POST(request: Request) {
     'campaign_role', 'contact_source', 'source_detail',
     'referred_by', 'mobilizes_count', 'main_need',
     'economic_sector', 'beneficiary_program',
+    'sector',
   ] as const
   for (const field of metaFields) {
     const val = data[field as keyof typeof data]

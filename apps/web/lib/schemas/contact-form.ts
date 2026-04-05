@@ -46,6 +46,7 @@ export const stepLocationSchema = z.object({
   municipality: z.string().optional(),
   commune: z.string().optional(),
   district_barrio: z.string().optional(),
+  sector: z.string().optional(),
   address: z.string().optional(),
   voting_place: z.string().optional(),
   voting_table: z.string().optional(),
