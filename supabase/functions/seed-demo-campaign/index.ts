@@ -73,6 +73,9 @@ Deno.serve(async (req: Request) => {
       contactIds.push(...(data?.map(c => c.id) ?? []))
     }
 
+    // Backfill PostGIS geo column from location_lat/lng
+    await supabase.rpc('backfill_contact_geo', { p_campaign_id: campaignId })
+
     // 3. Insertar territorios
     const territories = generateTerritories(tenant_id, campaignId, user_id)
     const { data: terData, error: terErr } = await supabase
