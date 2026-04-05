@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Loader2, Mail, CheckCircle2 } from 'lucide-react'
 
 const COOLDOWN_SECONDS = 60
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''
 
@@ -108,5 +108,13 @@ export default function VerifyEmailPage() {
         </p>
       </div>
     </AuthLayout>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<AuthLayout tagline="Explora gratis con datos de ejemplo"><div /></AuthLayout>}>
+      <VerifyEmailContent />
+    </Suspense>
   )
 }
