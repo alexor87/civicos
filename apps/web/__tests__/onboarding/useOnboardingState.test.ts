@@ -81,6 +81,36 @@ describe('useOnboardingState', () => {
     expect(mockFrom).not.toHaveBeenCalled()
   })
 
+  it('exposes isPendingApproval and rejectionReason', async () => {
+    mockSingle.mockResolvedValue({
+      data: { stage: 'demo', demo_started_at: null, rejection_reason: 'faltan datos' },
+    })
+
+    const { result } = renderHook(() => useOnboardingState('tenant-1'))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.isPendingApproval).toBe(false)
+    expect(result.current.rejectionReason).toBe('faltan datos')
+  })
+
+  it('sets isPendingApproval=true when stage is pending_approval', async () => {
+    mockSingle.mockResolvedValue({
+      data: { stage: 'pending_approval', demo_started_at: null, rejection_reason: null },
+    })
+
+    const { result } = renderHook(() => useOnboardingState('tenant-1'))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.isPendingApproval).toBe(true)
+    expect(result.current.isDemo).toBe(false)
+  })
+
   it('handles missing onboarding_state record', async () => {
     mockSingle.mockResolvedValue({ data: null })
 

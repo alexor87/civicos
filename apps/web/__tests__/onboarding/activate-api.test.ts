@@ -4,12 +4,10 @@ import { NextRequest } from 'next/server'
 // ── Mock supabase ────────────────────────────────────────────────────────
 const mockGetUser = vi.fn()
 const mockSingle = vi.fn()
-const mockUpdate = vi.fn(() => ({ eq: vi.fn() }))
 const mockRpc = vi.fn()
 
 const mockFrom = vi.fn(() => ({
   select: vi.fn(() => ({ eq: vi.fn(() => ({ single: mockSingle })) })),
-  update: mockUpdate,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -62,29 +60,30 @@ describe('POST /api/onboarding/activate', () => {
     expect(body.error).toMatch(/candidato/i)
   })
 
-  it('returns 200 and calls RPC on success', async () => {
+  it('returns 200 and calls request_campaign_activation RPC on success', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockSingle.mockResolvedValueOnce({ data: { tenant_id: 'tenant-1' } })
-    mockRpc.mockResolvedValueOnce({ data: 'campaign-new-id', error: null })
+    mockRpc.mockResolvedValueOnce({ data: null, error: null })
 
     const res = await POST(makeRequest(VALID_BODY))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.success).toBe(true)
-    expect(body.campaignId).toBe('campaign-new-id')
+    expect(body.status).toBe('pending_approval')
 
-    // Verify RPC was called
     expect(mockRpc).toHaveBeenCalledWith(
-      'activate_real_campaign',
+      'request_campaign_activation',
       expect.objectContaining({
         p_tenant_id: 'tenant-1',
-        p_candidate: 'María García',
-        p_election_type: 'alcalde',
+        p_wizard_data: expect.objectContaining({
+          electionType: 'alcalde',
+          candidateName: 'María García',
+        }),
       })
     )
   })
 
-  it('returns 500 and reverts to demo on RPC failure', async () => {
+  it('returns 500 when RPC fails', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockSingle.mockResolvedValueOnce({ data: { tenant_id: 'tenant-1' } })
     mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'RPC failed' } })
@@ -92,11 +91,6 @@ describe('POST /api/onboarding/activate', () => {
     const res = await POST(makeRequest(VALID_BODY))
     expect(res.status).toBe(500)
     const body = await res.json()
-    expect(body.error).toMatch(/activar/i)
-
-    // Should revert onboarding_state to demo
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ stage: 'demo' })
-    )
+    expect(body.error).toMatch(/solicitud/i)
   })
 })

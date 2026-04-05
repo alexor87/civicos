@@ -163,12 +163,12 @@ export default function ActivatePage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Activando...
+                  Enviando...
                 </>
               ) : (
                 <>
                   <Rocket className="h-4 w-4" />
-                  Activar mi campaña
+                  Enviar para revisión
                 </>
               )}
             </Button>

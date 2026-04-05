@@ -10,22 +10,25 @@ import {
   ScrollText,
   Shield,
   LogOut,
+  CheckCircle,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/tenants', label: 'Organizaciones', icon: Building2 },
-  { href: '/dashboard/plans', label: 'Planes y Features', icon: Layers3 },
-  { href: '/dashboard/services', label: 'Servicios', icon: Plug },
-  { href: '/dashboard/audit', label: 'Auditoría', icon: ScrollText },
-]
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: false },
+  { href: '/dashboard/tenants', label: 'Organizaciones', icon: Building2, badge: false },
+  { href: '/dashboard/approvals', label: 'Aprobaciones', icon: CheckCircle, badge: true },
+  { href: '/dashboard/plans', label: 'Planes y Features', icon: Layers3, badge: false },
+  { href: '/dashboard/services', label: 'Servicios', icon: Plug, badge: false },
+  { href: '/dashboard/audit', label: 'Auditoría', icon: ScrollText, badge: false },
+] as const
 
 interface Props {
   adminName: string
   adminEmail: string
+  pendingApprovals?: number
 }
 
-export function AdminSidebar({ adminName, adminEmail }: Props) {
+export function AdminSidebar({ adminName, adminEmail, pendingApprovals = 0 }: Props) {
   const pathname = usePathname()
 
   return (
@@ -60,7 +63,12 @@ export function AdminSidebar({ adminName, adminEmail }: Props) {
               }`}
             >
               <Icon className="w-4.5 h-4.5 shrink-0" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge && pendingApprovals > 0 && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-semibold">
+                  {pendingApprovals}
+                </span>
+              )}
             </Link>
           )
         })}

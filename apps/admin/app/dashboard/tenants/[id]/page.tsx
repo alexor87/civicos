@@ -1,10 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Calendar, Users, Layers3 } from 'lucide-react'
+import { ArrowLeft, Building2, Calendar, Users, Layers3, Clock } from 'lucide-react'
 import { TenantActions } from '@/components/admin/TenantActions'
 import { ImpersonateButton } from '@/components/admin/ImpersonateButton'
 import { FeatureOverridesEditor } from '@/components/admin/FeatureOverridesEditor'
+import { ApprovalActions } from '@/components/admin/ApprovalActions'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -15,7 +16,7 @@ export default async function TenantDetailPage({ params }: Props) {
   const supabase = createAdminClient()
 
   // Fetch tenant + stats in parallel
-  const [tenantRes, contactsRes, campaignsRes, membersRes, overridesRes, featuresRes, auditRes] = await Promise.all([
+  const [tenantRes, contactsRes, campaignsRes, membersRes, overridesRes, featuresRes, auditRes, onboardingRes] = await Promise.all([
     supabase.from('tenants').select('*').eq('id', id).single(),
     supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('tenant_id', id),
     supabase.from('campaigns').select('id', { count: 'exact', head: true }).eq('tenant_id', id),
@@ -23,6 +24,7 @@ export default async function TenantDetailPage({ params }: Props) {
     supabase.from('tenant_feature_overrides').select('*').eq('tenant_id', id),
     supabase.rpc('resolve_all_tenant_features', { p_tenant_id: id, p_plan: '' }), // plan overridden below
     supabase.from('admin_audit_log').select('*').eq('tenant_id', id).order('created_at', { ascending: false }).limit(20),
+    supabase.from('onboarding_state').select('stage, wizard_data, approval_requested_at').eq('tenant_id', id).maybeSingle(),
   ])
 
   const tenant = tenantRes.data
@@ -39,6 +41,8 @@ export default async function TenantDetailPage({ params }: Props) {
   const memberCount = membersRes.count ?? 0
   const overrides = overridesRes.data ?? []
   const auditLog = auditRes.data ?? []
+  const onboarding = onboardingRes.data as { stage: string; wizard_data: Record<string, unknown>; approval_requested_at: string | null } | null
+  const isPendingApproval = onboarding?.stage === 'pending_approval'
 
   const planBadgeColors: Record<string, string> = {
     esencial: 'bg-slate-100 text-slate-700',
@@ -81,6 +85,30 @@ export default async function TenantDetailPage({ params }: Props) {
           <TenantActions tenantId={tenant.id} tenantName={tenant.name} currentPlan={tenant.plan} currentStatus={tenant.status} />
         </div>
       </div>
+
+      {/* Pending approval banner */}
+      {isPendingApproval && onboarding && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-amber-700 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-amber-900">Solicitud de activación pendiente</p>
+                <div className="text-xs text-amber-800 space-y-0.5">
+                  <p>Candidato: <strong>{(onboarding.wizard_data?.candidateName as string) ?? '—'}</strong></p>
+                  <p>Cargo: <strong>{(onboarding.wizard_data?.electionType as string) ?? '—'}</strong></p>
+                  <p>Territorio: <strong>{(onboarding.wizard_data?.municipalityName as string) ?? '—'}, {(onboarding.wizard_data?.departmentName as string) ?? '—'}</strong></p>
+                  <p>Plan solicitado: <strong>{(onboarding.wizard_data?.plan as string) ?? 'esencial'}</strong></p>
+                  {onboarding.approval_requested_at && (
+                    <p className="text-amber-700">Solicitado: {new Date(onboarding.approval_requested_at).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <ApprovalActions tenantId={tenant.id} tenantName={tenant.name} />
+          </div>
+        </div>
+      )}
 
       {/* Info + Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
