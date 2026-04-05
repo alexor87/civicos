@@ -1,5 +1,5 @@
 -- ============================================================
--- CivicOS — Migration 001: Initial Schema
+-- Scrutix — Migration 001: Initial Schema
 -- ============================================================
 
 -- Enable required extensions
@@ -310,7 +310,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 -- ============================================================
--- CivicOS — Migration 002: Row Level Security Policies
+-- Scrutix — Migration 002: Row Level Security Policies
 -- ============================================================
 
 -- Helper function to get tenant_id from JWT

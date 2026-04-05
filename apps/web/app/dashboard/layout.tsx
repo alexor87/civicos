@@ -107,7 +107,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .toUpperCase()
     .slice(0, 2) ?? '?'
 
-  const tenantName = (profile.tenants as { name: string } | null)?.name ?? 'CivicOS'
+  const tenantName = (profile.tenants as { name: string } | null)?.name ?? 'Scrutix'
   const tenantPlan = ((profile.tenants as { plan?: string } | null)?.plan ?? 'esencial') as PlanName
 
   // Resolve feature flags for the tenant

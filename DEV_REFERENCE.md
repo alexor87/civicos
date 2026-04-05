@@ -1,4 +1,4 @@
-# CivicOS — Referencia de Desarrollo
+# Scrutix — Referencia de Desarrollo
 
 > **LECTURA OBLIGATORIA antes de desarrollar cualquier feature, página, componente, agente o migración.**
 > Consulta siempre el PRD y este documento antes de escribir una sola línea de código.
@@ -22,7 +22,7 @@ civicos/
 ├── apps/
 │   └── web/                  # Next.js 16 + TypeScript
 │       ├── app/              # App Router (layouts, pages, API routes)
-│       ├── components/       # Componentes propios de CivicOS
+│       ├── components/       # Componentes propios de Scrutix
 │       ├── components/ui/    # Componentes shadcn/ui (no editar manualmente)
 │       └── lib/              # Supabase client, utils, types
 ├── supabase/

@@ -2,7 +2,7 @@ import { ArrowLeft, Swords } from 'lucide-react'
 import Link from 'next/link'
 import { WarRoom } from '@/components/dashboard/calendar/WarRoom'
 
-export const metadata = { title: 'Sala de Guerra · CivicOS' }
+export const metadata = { title: 'Sala de Guerra · Scrutix' }
 
 export default function WarRoomPage() {
   return (

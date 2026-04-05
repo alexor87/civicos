@@ -31,7 +31,7 @@ export function HeaderBlockEditor({ block, onChange }: Props) {
         <Input
           value={block.props.subtext ?? ''}
           onChange={e => update({ subtext: e.target.value || undefined })}
-          placeholder="CivicOS · Campaña"
+          placeholder="Scrutix · Campaña"
         />
       </div>
 

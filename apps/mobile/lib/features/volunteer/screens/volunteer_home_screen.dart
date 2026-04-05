@@ -59,7 +59,7 @@ class VolunteerHomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'CivicOS',
+                    'Scrutix',
                     style: AppTypography.headline.copyWith(
                       color: AppColors.primary,
                     ),

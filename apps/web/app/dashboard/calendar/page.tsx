@@ -1,6 +1,6 @@
 import { CalendarShell } from '@/components/dashboard/calendar/CalendarShell'
 
-export const metadata = { title: 'Calendario · CivicOS' }
+export const metadata = { title: 'Calendario · Scrutix' }
 
 export default function CalendarPage() {
   const now   = new Date()

@@ -151,7 +151,7 @@ La jerarquía es: **Organización → Campaña → Equipo → Usuario**. La fact
 
 | Nivel | Descripción | Ejemplo |
 |---|---|---|
-| **Organización** | El tenant raíz. Facturación y plan SaaS a este nivel. Tiene su propio subdominio. | `partido-demo.civicos.app` |
+| **Organización** | El tenant raíz. Facturación y plan SaaS a este nivel. Tiene su propio subdominio. | `partido-demo.scrutix.app` |
 | **Campaña** | Proceso electoral específico dentro de la org. Tiene su propia configuración. | Elecciones Alcaldía 2026 |
 | **Equipo** | Agrupación funcional o geográfica dentro de una campaña. | Equipo Norte / Voluntarios / Comms |
 | **Usuario** | Persona con acceso. Puede pertenecer a múltiples campañas con roles distintos. | `juan@campana.org` |

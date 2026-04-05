@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 029: CivicOS Flows Fase 2 — 15 nuevas plantillas
+-- Migration 029: Scrutix Flows Fase 2 — 15 nuevas plantillas
 -- Agrega plantillas que usan los nuevos tipos de acción y trigger
 -- de Flows Fase 2: send_sms, send_email, change_sympathy,
 -- create_calendar_event, wait, contact_replied, calendar_date

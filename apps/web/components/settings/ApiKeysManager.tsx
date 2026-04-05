@@ -106,7 +106,7 @@ export function ApiKeysManager({ initialKeys, canManage }: Props) {
         <div className="flex flex-col items-center justify-center py-12 text-center text-sm text-[#6a737d]">
           <Key className="h-8 w-8 mb-3 opacity-30" />
           <p>No hay API keys creadas.</p>
-          {canManage && <p className="mt-1">Crea una para integrar CivicOS con otros sistemas.</p>}
+          {canManage && <p className="mt-1">Crea una para integrar Scrutix con otros sistemas.</p>}
         </div>
       ) : (
         <div className="space-y-2">

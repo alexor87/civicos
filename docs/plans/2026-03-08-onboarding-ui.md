@@ -602,7 +602,7 @@ export default function RegisterPage() {
                   required
                   className="flex-1"
                 />
-                <span className="text-slate-400 text-sm whitespace-nowrap">.civicos.app</span>
+                <span className="text-slate-400 text-sm whitespace-nowrap">.scrutix.app</span>
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 // ============================================================
-// CivicOS Flows — Tipos e interfaces compartidos
+// Scrutix Flows — Tipos e interfaces compartidos
 // ============================================================
 
 export type TriggerType =

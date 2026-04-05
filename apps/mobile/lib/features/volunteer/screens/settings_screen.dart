@@ -44,7 +44,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _InfoTile(
             icon: Icons.email_outlined,
             label: 'Correo',
-            value: 'voluntario@civicos.co',
+            value: 'voluntario@scrutix.app',
           ),
           _InfoTile(
             icon: Icons.badge_outlined,

@@ -293,7 +293,7 @@ async function setupTenant() {
   console.log(`✓ Tenant creado: demo (${tenant.id})`)
 
   const { data: authData, error: authErr } = await admin.auth.admin.createUser({
-    email: 'demo@civicos.app',
+    email: 'demo@scrutix.app',
     password: 'Demo1234!',
     email_confirm: true,
     user_metadata: { full_name: 'Admin Demo', tenant_id: tenant.id, role: 'super_admin' },
@@ -306,7 +306,7 @@ async function setupTenant() {
     tenant_id: tenant.id,
     role: 'super_admin',
     full_name: 'Admin Demo',
-    email: 'demo@civicos.app',
+    email: 'demo@scrutix.app',
     campaign_ids: [],
   })
 
@@ -557,7 +557,7 @@ async function main() {
 
     console.log('\n🎉 Demo lista!')
     console.log('─────────────────────────────────────')
-    console.log('   Email:    demo@civicos.app')
+    console.log('   Email:    demo@scrutix.app')
     console.log('   Password: Demo1234!')
     console.log('─────────────────────────────────────\n')
   } catch (err) {

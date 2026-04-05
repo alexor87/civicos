@@ -1,4 +1,4 @@
-# CivicOS Mobile (KMM)
+# Scrutix Mobile (KMM)
 
 Kotlin Multiplatform Mobile app for field volunteers.
 

@@ -74,7 +74,7 @@ export default async function VolunteerRegistrationPage({
           </div>
 
           <p className="text-center text-xs text-slate-400 mt-6">
-            {campaign.name} · Gestionado con CivicOS
+            {campaign.name} · Gestionado con Scrutix
           </p>
         </div>
       </div>

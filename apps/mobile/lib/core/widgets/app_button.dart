@@ -22,7 +22,7 @@ enum AppButtonVariant {
 
 // ── AppButton (unified entry-point) ───────────────────────────────────────
 
-/// CivicOS branded button with loading and disabled states.
+/// Scrutix branded button with loading and disabled states.
 ///
 /// All variants respect the 8 dp grid and meet the 48 dp minimum tap target
 /// (WCAG 2.5.5). Pass [volunteer] to enlarge to 60 dp for outdoor one-hand use.

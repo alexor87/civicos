@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
 import { TaskListView } from '@/components/operations/TaskListView'
 
-export const metadata = { title: 'Lista de Tareas · CivicOS' }
+export const metadata = { title: 'Lista de Tareas · Scrutix' }
 
 export default async function ListPage() {
   const supabase = await createClient()

@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CivicOS"
+rootProject.name = "Scrutix"
 include(":shared", ":androidApp")

@@ -93,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 20),
               Center(
                 child: Text(
-                  'CivicOS',
+                  'Scrutix',
                   style: AppTypography.display.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w800,

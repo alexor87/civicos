@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 028: CivicOS Flows — Motor de Automatizaciones
+-- Migration 028: Scrutix Flows — Motor de Automatizaciones
 -- Tablas: automation_flows, flow_executions, flow_templates
 -- Seed: 10 plantillas predefinidas
 -- ============================================================

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// CivicOS card with standard 16 dp padding, rounded-12 border, and
+/// Scrutix card with standard 16 dp padding, rounded-12 border, and
 /// a subtle 1 dp border instead of a shadow — keeps the UI flat and
 /// legible on any background.
 ///

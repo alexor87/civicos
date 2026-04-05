@@ -24,8 +24,8 @@ class NotificationService {
     // Configurar canal de notificaciones locales para Android.
     const androidChannel = AndroidNotificationChannel(
       'civicos_high_importance',
-      'CivicOS Notificaciones',
-      description: 'Notificaciones importantes de CivicOS',
+      'Scrutix Notificaciones',
+      description: 'Notificaciones importantes de Scrutix',
       importance: Importance.high,
     );
 
@@ -99,7 +99,7 @@ class NotificationService {
 
     const androidDetails = AndroidNotificationDetails(
       'civicos_high_importance',
-      'CivicOS Notificaciones',
+      'Scrutix Notificaciones',
       importance: Importance.high,
       priority: Priority.high,
     );

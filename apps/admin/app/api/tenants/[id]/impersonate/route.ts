@@ -79,7 +79,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     },
   })
 
-  const webAppUrl = process.env.NEXT_PUBLIC_WEB_APP_URL ?? 'https://civicos-eight.vercel.app'
+  const webAppUrl = process.env.NEXT_PUBLIC_WEB_APP_URL ?? 'https://scrutix-eight.vercel.app'
   const url = `${webAppUrl}/auth/impersonate?token=${token}`
 
   return NextResponse.json({ url })

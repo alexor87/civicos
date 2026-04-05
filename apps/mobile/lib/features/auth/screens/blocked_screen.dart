@@ -46,7 +46,7 @@ class BlockedScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               Text(
                 'Tu rol de Super Admin requiere la plataforma web completa. '
-                'Inicia sesión en civicos.app desde tu computador.',
+                'Inicia sesión en scrutix.app desde tu computador.',
                 style: AppTypography.body.copyWith(
                   color: AppColors.subtleText,
                   height: 1.5,

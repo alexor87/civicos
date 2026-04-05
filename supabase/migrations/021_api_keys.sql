@@ -1,5 +1,5 @@
 -- ============================================================
--- CivicOS — Migration 021: Public API Keys
+-- Scrutix — Migration 021: Public API Keys
 -- ============================================================
 
 CREATE TABLE api_keys (

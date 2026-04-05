@@ -1,4 +1,4 @@
-// ── Permission System for CivicOS RBAC ──────────────────────────────────────
+// ── Permission System for Scrutix RBAC ──────────────────────────────────────
 
 export type Permission =
   | 'contacts.view'

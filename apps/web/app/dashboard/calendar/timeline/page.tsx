@@ -2,7 +2,7 @@ import { ArrowLeft, GitBranch } from 'lucide-react'
 import Link from 'next/link'
 import { ElectoralTimeline } from '@/components/dashboard/calendar/ElectoralTimeline'
 
-export const metadata = { title: 'Línea de Tiempo Electoral · CivicOS' }
+export const metadata = { title: 'Línea de Tiempo Electoral · Scrutix' }
 
 export default function TimelinePage() {
   return (

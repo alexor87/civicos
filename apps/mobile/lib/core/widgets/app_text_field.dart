@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
-/// CivicOS standard text field.
+/// Scrutix standard text field.
 ///
-/// Wraps [TextFormField] with the CivicOS design language — outline border,
+/// Wraps [TextFormField] with the Scrutix design language — outline border,
 /// filled white background, rounded-8 corners — and exposes the most common
 /// customization points without requiring direct access to [InputDecoration].
 ///

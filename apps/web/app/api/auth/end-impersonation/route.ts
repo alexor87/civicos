@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   // Delete the impersonation cookie
   const cookieStore = await cookies()
-  cookieStore.delete('civicos_impersonation')
+  cookieStore.delete('scrutix_impersonation')
 
   return NextResponse.json({ ok: true })
 }

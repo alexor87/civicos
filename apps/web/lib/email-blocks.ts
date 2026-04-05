@@ -111,7 +111,7 @@ export function createDefaultBlock(type: BlockType): EmailBlock {
         type: 'header',
         props: {
           text: 'Tu titular aquí',
-          subtext: 'CivicOS · Campaña',
+          subtext: 'Scrutix · Campaña',
           bgColor: '#2960ec',
           textColor: '#ffffff',
           padding: 'md',
@@ -320,7 +320,7 @@ function blockToHtml(block: EmailBlock): string {
 
 export function generateFromBlocks(blocks: EmailBlock[], meta: CampaignMeta): string {
   const blocksHtml = blocks.map(blockToHtml).join('\n')
-  const footer = `${meta.senderName || 'El equipo de campaña'} · Enviado a través de CivicOS<br>Este es un mensaje oficial de campaña.`
+  const footer = `${meta.senderName || 'El equipo de campaña'} · Enviado a través de Scrutix<br>Este es un mensaje oficial de campaña.`
   const roundTripData = JSON.stringify({ blocks, meta })
 
   return `<!DOCTYPE html>
@@ -347,7 +347,7 @@ ${blocksHtml}
     </td>
   </tr>
 </table>
-<!-- civicos-blocks:${roundTripData} -->
+<!-- scrutix-blocks:${roundTripData} -->
 </body>
 </html>`
 }
@@ -360,7 +360,9 @@ export interface ExtractedBlocks {
 }
 
 export function extractBlocks(html: string): ExtractedBlocks | null {
-  const match = html.match(/<!-- civicos-blocks:([\s\S]*?)-->/)
+  // Accept both the new scrutix-blocks marker and the legacy civicos-blocks
+  // marker (for campaigns saved before the Scrutix rename).
+  const match = html.match(/<!-- (?:scrutix|civicos)-blocks:([\s\S]*?)-->/)
   if (!match) return null
   try {
     const parsed = JSON.parse(match[1]) as ExtractedBlocks

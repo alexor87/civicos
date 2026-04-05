@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// CivicOS color palette — single source of truth.
+/// Scrutix color palette — single source of truth.
 ///
 /// All values are compile-time constants; use them directly in widgets
 /// or reference them from [AppTheme] / [RoleThemes].

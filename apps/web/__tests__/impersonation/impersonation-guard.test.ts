@@ -16,7 +16,7 @@ const mockCookies = vi.mocked(cookies)
 function setupCookieStore(cookieValue?: string) {
   const store: Record<string, string> = {}
   if (cookieValue !== undefined) {
-    store['civicos_impersonation'] = cookieValue
+    store['scrutix_impersonation'] = cookieValue
   }
 
   mockCookies.mockResolvedValue({

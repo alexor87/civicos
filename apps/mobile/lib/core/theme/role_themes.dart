@@ -4,7 +4,7 @@ import 'app_colors.dart';
 import 'app_theme.dart';
 import 'app_typography.dart';
 
-/// Role-specific [ThemeData] extensions for CivicOS.
+/// Role-specific [ThemeData] extensions for Scrutix.
 ///
 /// Each campaign role has unique ergonomic requirements:
 /// - **Volunteer** — used outdoors, one-handed, often under direct sunlight.

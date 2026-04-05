@@ -49,7 +49,7 @@ Ambas páginas usan el mismo layout de dos paneles:
 
 **Paso 1 — Tu organización:**
 - Nombre de organización (auto-genera slug)
-- Preview de subdominio: `slug.civicos.app`
+- Preview de subdominio: `slug.scrutix.app`
 - Nombre completo del admin
 - Email + Contraseña
 

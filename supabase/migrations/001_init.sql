@@ -1,5 +1,5 @@
 -- ============================================================
--- CivicOS — Migration 001: Initial Schema
+-- Scrutix — Migration 001: Initial Schema
 -- ============================================================
 
 -- Enable required extensions

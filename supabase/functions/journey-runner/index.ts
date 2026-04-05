@@ -160,7 +160,7 @@ Deno.serve(async (req: Request) => {
         if (toEmail && resendKey) {
           const body = (currentNode.data.body ?? '')
             .replace('{nombre}', enrollment.contact.first_name ?? 'Contacto')
-          const fromDomain = intConfig.resend_domain || 'civicos.app'
+          const fromDomain = intConfig.resend_domain || 'scrutix.app'
 
           await fetch('https://api.resend.com/emails', {
             method: 'POST',

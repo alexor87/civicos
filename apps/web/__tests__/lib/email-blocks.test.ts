@@ -95,9 +95,9 @@ describe('generateFromBlocks', () => {
 
   it('renders header subtext when provided', () => {
     const block = createDefaultBlock('header') as HeaderBlock
-    block.props.subtext = 'CivicOS · Test'
+    block.props.subtext = 'Scrutix · Test'
     const html = generateFromBlocks([block], META)
-    expect(html).toContain('CivicOS · Test')
+    expect(html).toContain('Scrutix · Test')
   })
 
   it('renders text block splitting newlines into <p> tags', () => {
@@ -145,10 +145,10 @@ describe('generateFromBlocks', () => {
   it('renders button block with correct text and URL', () => {
     const block = createDefaultBlock('button') as ButtonBlock
     block.props.text = 'Únete ahora'
-    block.props.url = 'https://civicos.app'
+    block.props.url = 'https://scrutix.app'
     const html = generateFromBlocks([block], META)
     expect(html).toContain('Únete ahora')
-    expect(html).toContain('href="https://civicos.app"')
+    expect(html).toContain('href="https://scrutix.app"')
   })
 
   it('renders button with correct background color', () => {
@@ -179,10 +179,10 @@ describe('generateFromBlocks', () => {
     expect(html).toContain('Juan Pérez')
   })
 
-  it('embeds civicos-blocks JSON comment for round-trip', () => {
+  it('embeds scrutix-blocks JSON comment for round-trip', () => {
     const block = createDefaultBlock('text') as TextBlock
     const html = generateFromBlocks([block], META)
-    expect(html).toContain('<!-- civicos-blocks:')
+    expect(html).toContain('<!-- scrutix-blocks:')
     expect(html).toContain('-->')
   })
 
@@ -201,13 +201,13 @@ describe('generateFromBlocks', () => {
 // ── extractBlocks ──────────────────────────────────────────────────────────────
 
 describe('extractBlocks', () => {
-  it('returns null for legacy HTML without civicos-blocks comment', () => {
+  it('returns null for legacy HTML without scrutix-blocks comment', () => {
     const legacyHtml = '<html><body><h1>Hello</h1></body></html>'
     expect(extractBlocks(legacyHtml)).toBeNull()
   })
 
   it('returns null for malformed JSON in comment', () => {
-    const broken = '<!DOCTYPE html><!-- civicos-blocks:{invalid json} -->'
+    const broken = '<!DOCTYPE html><!-- scrutix-blocks:{invalid json} -->'
     expect(extractBlocks(broken)).toBeNull()
   })
 
@@ -233,6 +233,16 @@ describe('extractBlocks', () => {
     const result = extractBlocks(html)
     expect(result!.meta.name).toBe('Test Campaign')
     expect(result!.meta.senderName).toBe('Equipo Test')
+  })
+
+  it('accepts legacy civicos-blocks marker for backward compatibility', () => {
+    const blocks = [createDefaultBlock('text')]
+    const payload = JSON.stringify({ blocks, meta: META })
+    const legacyHtml = `<!DOCTYPE html><html><body></body></html><!-- civicos-blocks:${payload} -->`
+    const result = extractBlocks(legacyHtml)
+    expect(result).not.toBeNull()
+    expect(result!.blocks).toHaveLength(1)
+    expect(result!.blocks[0].type).toBe('text')
   })
 
   it('preserves all block types through round-trip', () => {

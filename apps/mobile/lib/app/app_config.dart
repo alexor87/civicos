@@ -27,7 +27,7 @@ abstract final class AppConfig {
   );
 
   /// Nombre de la app para mostrar en UI.
-  static const appName = 'CivicOS';
+  static const appName = 'Scrutix';
 
   /// Versión del app para mostrar en configuración.
   static const appVersion = String.fromEnvironment(

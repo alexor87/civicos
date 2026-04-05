@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { EventForm } from '@/components/dashboard/calendar/EventForm'
 
-export const metadata = { title: 'Nuevo evento · CivicOS' }
+export const metadata = { title: 'Nuevo evento · Scrutix' }
 
 export default async function NewCalendarEventPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const { date } = await searchParams

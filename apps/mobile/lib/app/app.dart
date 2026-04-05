@@ -5,15 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/app_colors.dart';
 import 'router.dart';
 
-class CivicOSApp extends ConsumerWidget {
-  const CivicOSApp({super.key});
+class ScrutixApp extends ConsumerWidget {
+  const ScrutixApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'CivicOS',
+      title: 'Scrutix',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: _buildTheme(),

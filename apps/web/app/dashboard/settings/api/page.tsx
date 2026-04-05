@@ -30,7 +30,7 @@ export default async function ApiSettingsPage() {
       <div>
         <h2 className="text-base font-semibold text-[#1b1f23]">API Pública</h2>
         <p className="text-sm text-[#6a737d] mt-0.5">
-          Gestiona las API keys para integrar CivicOS con sistemas externos.
+          Gestiona las API keys para integrar Scrutix con sistemas externos.
           Usa el header <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">Authorization: Bearer &lt;key&gt;</code> en tus peticiones.
         </p>
       </div>

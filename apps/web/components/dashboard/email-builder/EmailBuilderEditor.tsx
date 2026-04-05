@@ -365,7 +365,7 @@ function InboxBar({ subject }: { subject: string }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold">CivicOS Campaña</span>
+          <span className="text-xs font-semibold">Scrutix Campaña</span>
           <span className="text-xs text-muted-foreground">· ahora</span>
         </div>
         <p className="text-xs text-muted-foreground truncate">{subject || 'Asunto del email…'}</p>

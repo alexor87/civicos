@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// CivicOS typographic scale built on Inter (Google Fonts).
+/// Scrutix typographic scale built on Inter (Google Fonts).
 ///
 /// Use these static [TextStyle] constants directly in widgets or reference
 /// them through [AppTheme.light.textTheme].
@@ -109,7 +109,7 @@ abstract final class AppTypography {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  /// Builds a complete [TextTheme] from the CivicOS scale.
+  /// Builds a complete [TextTheme] from the Scrutix scale.
   /// Used by [AppTheme] so the scale is available via [Theme.of(context).textTheme].
   static TextTheme get textTheme => TextTheme(
         displayLarge: display,

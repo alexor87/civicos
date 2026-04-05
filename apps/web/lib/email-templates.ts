@@ -91,7 +91,7 @@ ${heroBlock}
     </td>
   </tr>
 </table>
-<!-- civicos-meta:${JSON.stringify(meta ?? {})} -->
+<!-- scrutix-meta:${JSON.stringify(meta ?? {})} -->
 </body>
 </html>`
 }
@@ -103,7 +103,7 @@ function generateConvocatoria(content: EmailContent): string {
   const header = `
   <tr>
     <td style="background:${color};padding:32px 40px;border-radius:4px 4px 0 0;">
-      <p style="margin:0 0 20px 0;font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">CivicOS · Campaña</p>
+      <p style="margin:0 0 20px 0;font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">Scrutix · Campaña</p>
       <h1 style="margin:0;font-size:28px;font-weight:700;color:#ffffff;line-height:1.3;">${content.headline}</h1>
     </td>
   </tr>`
@@ -112,7 +112,7 @@ function generateConvocatoria(content: EmailContent): string {
     ${bodyToParagraphs(content.body)}
     ${content.ctaText && content.ctaUrl ? ctaButton(content.ctaText, content.ctaUrl, color) : ''}
   `
-  const footer = `${content.senderName ?? 'El equipo de campaña'} · Enviado a través de CivicOS<br>Este es un mensaje oficial de campaña.`
+  const footer = `${content.senderName ?? 'El equipo de campaña'} · Enviado a través de Scrutix<br>Este es un mensaje oficial de campaña.`
   return emailWrapper(header, body, footer, { imageUrl: content.imageUrl, accentColor: color })
 }
 
@@ -143,7 +143,7 @@ function generateActualizacion(content: EmailContent): string {
     ${bodyToParagraphs(content.body)}
     ${content.ctaText && content.ctaUrl ? ctaButton(content.ctaText, content.ctaUrl, color) : ''}
   `
-  const footer = `${content.senderName ?? 'El equipo de campaña'} · CivicOS<br>Recibes este mensaje porque eres parte de nuestra campaña.`
+  const footer = `${content.senderName ?? 'El equipo de campaña'} · Scrutix<br>Recibes este mensaje porque eres parte de nuestra campaña.`
   return emailWrapper(header, body, footer, { imageUrl: content.imageUrl, accentColor: color })
 }
 
@@ -165,7 +165,7 @@ function generateAgradecimiento(content: EmailContent): string {
     ${bodyToParagraphs(content.body)}
     ${content.ctaText && content.ctaUrl ? ctaButton(content.ctaText, content.ctaUrl, color) : ''}
   `
-  const footer = `Con gratitud, ${content.senderName ?? 'El equipo de campaña'}<br>CivicOS · Gestión política inteligente`
+  const footer = `Con gratitud, ${content.senderName ?? 'El equipo de campaña'}<br>Scrutix · Gestión política inteligente`
   return emailWrapper(header, body, footer, { imageUrl: content.imageUrl, accentColor: color })
 }
 
@@ -199,7 +199,7 @@ function generateUrgente(content: EmailContent): string {
     ${bodyToParagraphs(content.body)}
     ${content.ctaText && content.ctaUrl ? ctaButton(content.ctaText, content.ctaUrl, color) : ''}
   `
-  const footer = `${content.senderName ?? 'El equipo de campaña'} · CivicOS<br>Este mensaje contiene información urgente de campaña.`
+  const footer = `${content.senderName ?? 'El equipo de campaña'} · Scrutix<br>Este mensaje contiene información urgente de campaña.`
   return emailWrapper(header, body, footer, { imageUrl: content.imageUrl, accentColor: color })
 }
 
@@ -210,7 +210,7 @@ function generateMinimalista(content: EmailContent): string {
   const header = `
   <tr>
     <td style="background:#ffffff;padding:28px 40px 0;border-top:3px solid ${color};border-radius:4px 4px 0 0;">
-      <p style="margin:0 0 24px 0;font-size:12px;font-weight:600;color:#6a737d;letter-spacing:1px;text-transform:uppercase;">CivicOS · Campaña</p>
+      <p style="margin:0 0 24px 0;font-size:12px;font-weight:600;color:#6a737d;letter-spacing:1px;text-transform:uppercase;">Scrutix · Campaña</p>
       <h1 style="margin:0 0 24px 0;font-size:26px;font-weight:700;color:#1b1f23;line-height:1.3;border-bottom:1px solid #edeef2;padding-bottom:24px;">${content.headline}</h1>
     </td>
   </tr>`
@@ -219,7 +219,7 @@ function generateMinimalista(content: EmailContent): string {
     ${bodyToParagraphs(content.body)}
     ${content.ctaText && content.ctaUrl ? ctaButton(content.ctaText, content.ctaUrl, color) : ''}
   `
-  const footer = `${content.senderName ?? 'El equipo de campaña'} · CivicOS`
+  const footer = `${content.senderName ?? 'El equipo de campaña'} · Scrutix`
   return emailWrapper(header, body, footer, { imageUrl: content.imageUrl, accentColor: color })
 }
 

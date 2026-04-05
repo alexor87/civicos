@@ -1,4 +1,4 @@
-/// CivicOS design system — theme barrel export.
+/// Scrutix design system — theme barrel export.
 ///
 /// Import this single file to access all theme tokens and theme data:
 /// ```dart

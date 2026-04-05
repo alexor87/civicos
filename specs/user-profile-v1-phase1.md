@@ -10,7 +10,7 @@
 
 ## Problema / Necesidad
 
-CivicOS no tiene una página de perfil de usuario. Las configuraciones personales (nombre, foto, contraseña, preferencias) no tienen dónde vivir. El usuario solo ve su nombre e iniciales en el footer del sidebar. Para una plataforma multi-tenant con 6 roles, esto es una carencia crítica.
+Scrutix no tiene una página de perfil de usuario. Las configuraciones personales (nombre, foto, contraseña, preferencias) no tienen dónde vivir. El usuario solo ve su nombre e iniciales en el footer del sidebar. Para una plataforma multi-tenant con 6 roles, esto es una carencia crítica.
 
 ## Solución propuesta
 

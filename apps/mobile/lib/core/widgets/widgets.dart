@@ -1,4 +1,4 @@
-/// CivicOS design system — widgets barrel export.
+/// Scrutix design system — widgets barrel export.
 ///
 /// Import this single file to access all base widgets:
 /// ```dart

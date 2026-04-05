@@ -25,7 +25,7 @@
       "Armenia",
       "Rionegro"
     ],
-    "nota_barrios_faltantes": "Para municipios no incluidos en este archivo, los barrios, veredas y sectores deben ser creados manualmente por el Campaign Manager desde la interfaz de territorios de CivicOS, o importados mediante archivo GeoJSON.",
+    "nota_barrios_faltantes": "Para municipios no incluidos en este archivo, los barrios, veredas y sectores deben ser creados manualmente por el Campaign Manager desde la interfaz de territorios de Scrutix, o importados mediante archivo GeoJSON.",
     "estructura": {
       "bogota": "localidad > upz > barrios",
       "medellin": "comuna > barrios + corregimientos > veredas",

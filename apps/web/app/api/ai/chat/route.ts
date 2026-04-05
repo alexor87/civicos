@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     .map(r => `- ${r.agent_id}: ${r.status} (${r.trigger})`)
     .join('\n') || '- Sin actividad reciente'
 
-  const systemPrompt = `Eres el asistente de inteligencia de campaña para CivicOS. Ayudas al equipo de campaña a tomar decisiones estratégicas basadas en datos.
+  const systemPrompt = `Eres el asistente de inteligencia de campaña para Scrutix. Ayudas al equipo de campaña a tomar decisiones estratégicas basadas en datos.
 
 CONTEXTO DE CAMPAÑA:
 - Campaña: ${campaign?.name ?? 'Sin nombre'}

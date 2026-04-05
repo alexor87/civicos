@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
 
-/// CivicOS Material 3 theme.
+/// Scrutix Material 3 theme.
 ///
 /// Usage:
 /// ```dart

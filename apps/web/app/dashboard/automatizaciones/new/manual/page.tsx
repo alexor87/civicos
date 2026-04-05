@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, Sliders } from 'lucide-react'
 import { VisualFlowEditor } from '@/components/dashboard/flows/VisualFlowEditor'
 
-export const metadata = { title: 'Crear Flow manualmente · CivicOS' }
+export const metadata = { title: 'Crear Flow manualmente · Scrutix' }
 
 export default function NewFlowManualPage() {
   return (

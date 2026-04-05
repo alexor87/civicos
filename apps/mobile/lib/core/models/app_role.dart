@@ -1,4 +1,4 @@
-/// Roles de usuario en CivicOS.
+/// Roles de usuario en Scrutix.
 /// Fase MVP soporta [volunteer] y [fieldCoordinator].
 enum AppRole {
   volunteer,

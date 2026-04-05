@@ -105,7 +105,7 @@ export const useContactFormStore = create<ContactFormState>()(
       hasDraft: () => get().isDirty,
     }),
     {
-      name: 'civicos-contact-draft',
+      name: 'scrutix-contact-draft',
       partialize: (state) => ({
         currentStep: state.currentStep,
         formData: state.formData,

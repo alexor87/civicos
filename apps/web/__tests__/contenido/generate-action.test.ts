@@ -44,14 +44,14 @@ const MOCK_EMAIL_RESPONSE = {
   blocks: [
     { type: 'header', content: 'Gran mitin de campaña', subtext: 'Sábado 20 de marzo · Plaza Mayor' },
     { type: 'text',   content: 'Te esperamos este sábado para celebrar juntos los logros de nuestra campaña.' },
-    { type: 'button', text: 'Confirmar asistencia', url: 'https://civicos.app/rsvp' },
+    { type: 'button', text: 'Confirmar asistencia', url: 'https://scrutix.app/rsvp' },
   ],
 }
 
 const MOCK_EMAIL_BLOCKS = [
   { id: 'ai-block-0', type: 'header', props: { text: 'Gran mitin de campaña', subtext: 'Sábado 20 de marzo · Plaza Mayor', bgColor: '#2960ec', textColor: '#ffffff', padding: 'md' } },
   { id: 'ai-block-1', type: 'text',   props: { content: 'Te esperamos este sábado.', fontSize: 'md', align: 'left', color: '#586069' } },
-  { id: 'ai-block-2', type: 'button', props: { text: 'Confirmar asistencia', url: 'https://civicos.app/rsvp', bgColor: '#2960ec', textColor: '#ffffff', size: 'md', align: 'center', borderRadius: 'sm' } },
+  { id: 'ai-block-2', type: 'button', props: { text: 'Confirmar asistencia', url: 'https://scrutix.app/rsvp', bgColor: '#2960ec', textColor: '#ffffff', size: 'md', align: 'center', borderRadius: 'sm' } },
 ]
 
 const MOCK_SCRIPT_RESPONSE = {
@@ -61,7 +61,7 @@ const MOCK_SCRIPT_RESPONSE = {
 }
 
 const MOCK_SMS_RESPONSE = {
-  sms_text: 'Hola {nombre}, únete al mitin del 20 de marzo en Plaza Mayor. Más info: civicos.app/evento',
+  sms_text: 'Hola {nombre}, únete al mitin del 20 de marzo en Plaza Mayor. Más info: scrutix.app/evento',
 }
 
 const MOCK_TALKING_POINTS_RESPONSE = {

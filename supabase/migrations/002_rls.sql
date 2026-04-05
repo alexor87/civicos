@@ -1,5 +1,5 @@
 -- ============================================================
--- CivicOS — Migration 002: Row Level Security Policies
+-- Scrutix — Migration 002: Row Level Security Policies
 -- ============================================================
 
 -- Helper function to get tenant_id from JWT

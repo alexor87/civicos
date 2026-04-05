@@ -46,8 +46,8 @@ export async function POST() {
       body: JSON.stringify({
         from: `test@${config.resend_domain}`,
         to: user.email,
-        subject: 'CivicOS — Prueba de conexión',
-        text: 'Esta es una prueba de conexión exitosa con Resend desde CivicOS.',
+        subject: 'Scrutix — Prueba de conexión',
+        text: 'Esta es una prueba de conexión exitosa con Resend desde Scrutix.',
       }),
     })
 

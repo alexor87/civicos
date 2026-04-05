@@ -161,7 +161,7 @@ export async function sendCampaign(campaignId: string) {
   const resend = new Resend(resendApiKey)
   const fromAddress = integrationConfig?.resend_domain
     ? `noreply@${integrationConfig.resend_domain}`
-    : (process.env.EMAIL_FROM ?? 'noreply@civicos.app')
+    : (process.env.EMAIL_FROM ?? 'noreply@scrutix.app')
 
   let sent = 0
   let failed = 0
@@ -238,7 +238,7 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
   const resend = new Resend(resendApiKey)
   const fromAddress = integrationConfig?.resend_domain
     ? `noreply@${integrationConfig.resend_domain}`
-    : (process.env.EMAIL_FROM ?? 'noreply@civicos.app')
+    : (process.env.EMAIL_FROM ?? 'noreply@scrutix.app')
 
   try {
     await resend.emails.send({

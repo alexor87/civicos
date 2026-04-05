@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { EventForm } from '@/components/dashboard/calendar/EventForm'
 
-export const metadata = { title: 'Editar evento · CivicOS' }
+export const metadata = { title: 'Editar evento · Scrutix' }
 
 export default async function EditCalendarEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

@@ -179,9 +179,9 @@ describe('TextBlockEditor — link dialog', () => {
     render(<TextBlockEditor block={makeBlock()} onChange={vi.fn()} />)
     fireEvent.click(screen.getByTestId('toolbar-link'))
     const input = screen.getByTestId('link-url-input')
-    fireEvent.change(input, { target: { value: 'https://civicos.co' } })
+    fireEvent.change(input, { target: { value: 'https://scrutix.co' } })
     fireEvent.click(screen.getByTestId('link-save-btn'))
-    expect(mockChain.setLink).toHaveBeenCalledWith({ href: 'https://civicos.co' })
+    expect(mockChain.setLink).toHaveBeenCalledWith({ href: 'https://scrutix.co' })
     expect(mockChain.run).toHaveBeenCalled()
     expect(screen.queryByTestId('link-dialog')).not.toBeInTheDocument()
   })
@@ -196,14 +196,14 @@ describe('TextBlockEditor — link dialog', () => {
   })
 
   it('muestra botón Quitar cuando hay link activo', () => {
-    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://civicos.co' } : {}
+    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://scrutix.co' } : {}
     render(<TextBlockEditor block={makeBlock()} onChange={vi.fn()} />)
     fireEvent.click(screen.getByTestId('toolbar-link'))
     expect(screen.getByTestId('link-remove-btn')).toBeInTheDocument()
   })
 
   it('click en Quitar llama unsetLink', () => {
-    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://civicos.co' } : {}
+    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://scrutix.co' } : {}
     render(<TextBlockEditor block={makeBlock()} onChange={vi.fn()} />)
     fireEvent.click(screen.getByTestId('toolbar-link'))
     fireEvent.click(screen.getByTestId('link-remove-btn'))

@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
 import { KanbanBoard } from '@/components/operations/KanbanBoard'
 
-export const metadata = { title: 'Tablero Kanban · Tareas · CivicOS' }
+export const metadata = { title: 'Tablero Kanban · Tareas · Scrutix' }
 
 export default async function BoardPage() {
   const supabase = await createClient()

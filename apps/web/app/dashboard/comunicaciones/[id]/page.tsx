@@ -150,7 +150,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#1b1f23]">CivicOS Campaña</span>
+                  <span className="text-xs font-semibold text-[#1b1f23]">Scrutix Campaña</span>
                 </div>
                 <p className="text-xs text-[#6a737d] truncate">{campaign.subject}</p>
               </div>

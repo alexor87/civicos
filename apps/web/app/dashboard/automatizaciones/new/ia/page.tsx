@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, Sparkles } from 'lucide-react'
 import { AIModeCreator } from '@/components/dashboard/flows/AIModeCreator'
 
-export const metadata = { title: 'Crear Flow con IA · CivicOS' }
+export const metadata = { title: 'Crear Flow con IA · Scrutix' }
 
 export default function NewFlowIAPage() {
   return (

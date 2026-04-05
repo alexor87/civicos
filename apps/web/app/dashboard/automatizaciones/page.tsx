@@ -4,7 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { FlowsList } from '@/components/dashboard/flows/FlowsList'
 import type { AutomationFlow } from '@/components/dashboard/flows/flowTypes'
 
-export const metadata = { title: 'Automatizaciones · CivicOS' }
+export const metadata = { title: 'Automatizaciones · Scrutix' }
 
 export default async function AutomatizacionesPage() {
   const supabase      = await createClient()

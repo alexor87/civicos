@@ -77,7 +77,7 @@ function makeBlock(overrides?: Partial<HeaderBlock['props']>): HeaderBlock {
     type: 'header',
     props: {
       text: 'Bienvenida',
-      subtext: 'CivicOS · Campaña',
+      subtext: 'Scrutix · Campaña',
       bgColor: '#2960ec',
       textColor: '#ffffff',
       padding: 'md',
@@ -331,22 +331,22 @@ describe('InlineHeaderEditor — link dialog', () => {
     render(<InlineHeaderEditor block={makeBlock()} onUpdate={vi.fn()} />)
     fireEvent.mouseDown(screen.getByTestId('inline-header-link'))
     const input = screen.getByTestId('inline-header-link-url-input')
-    fireEvent.change(input, { target: { value: 'https://civicos.co' } })
+    fireEvent.change(input, { target: { value: 'https://scrutix.co' } })
     fireEvent.mouseDown(screen.getByTestId('inline-header-link-save-btn'))
-    expect(mockChain.setLink).toHaveBeenCalledWith({ href: 'https://civicos.co' })
+    expect(mockChain.setLink).toHaveBeenCalledWith({ href: 'https://scrutix.co' })
     expect(mockChain.run).toHaveBeenCalled()
     expect(screen.queryByTestId('inline-header-link-dialog')).not.toBeInTheDocument()
   })
 
   it('muestra botón Quitar cuando hay link activo', () => {
-    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://civicos.co' } : {}
+    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://scrutix.co' } : {}
     render(<InlineHeaderEditor block={makeBlock()} onUpdate={vi.fn()} />)
     fireEvent.mouseDown(screen.getByTestId('inline-header-link'))
     expect(screen.getByTestId('inline-header-link-remove-btn')).toBeInTheDocument()
   })
 
   it('click en Quitar llama unsetLink', () => {
-    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://civicos.co' } : {}
+    mockGetAttributes = (name: string) => name === 'link' ? { href: 'https://scrutix.co' } : {}
     render(<InlineHeaderEditor block={makeBlock()} onUpdate={vi.fn()} />)
     fireEvent.mouseDown(screen.getByTestId('inline-header-link'))
     fireEvent.mouseDown(screen.getByTestId('inline-header-link-remove-btn'))
