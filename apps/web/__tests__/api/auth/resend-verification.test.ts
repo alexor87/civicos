@@ -26,7 +26,7 @@ function makeRequest(body: Record<string, unknown>) {
 beforeEach(() => {
   vi.clearAllMocks()
   mockGenerateLink.mockResolvedValue({
-    data: { properties: { action_link: 'https://test.supabase.co/verify?token=abc' } },
+    data: { properties: { action_link: 'https://test.supabase.co/verify?token=abc', hashed_token: 'hashed-abc' } },
     error: null,
   })
   mockSendVerificationEmail.mockResolvedValue({ ok: true })
@@ -47,7 +47,7 @@ describe('POST /api/auth/resend-verification', () => {
     )
     expect(mockSendVerificationEmail).toHaveBeenCalledWith({
       email: 'happy1@example.com',
-      actionLink: 'https://test.supabase.co/verify?token=abc',
+      actionLink: expect.stringContaining('/auth/callback?token_hash=hashed-abc&type=magiclink&next=/welcome'),
     })
   })
 

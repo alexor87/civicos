@@ -34,14 +34,12 @@ export async function POST(request: NextRequest) {
     options: { redirectTo: `${siteUrl}/auth/callback?next=/welcome` },
   })
 
-  if (linkError || !linkData?.properties?.action_link) {
+  if (linkError || !linkData?.properties?.hashed_token) {
     return NextResponse.json({ error: 'No se pudo generar el link' }, { status: 404 })
   }
 
-  const result = await sendVerificationEmail({
-    email,
-    actionLink: linkData.properties.action_link,
-  })
+  const actionLink = `${siteUrl}/auth/callback?token_hash=${linkData.properties.hashed_token}&type=magiclink&next=/welcome`
+  const result = await sendVerificationEmail({ email, actionLink })
 
   if (!result.ok) {
     console.error('[resend-verification] send failed:', result.error)

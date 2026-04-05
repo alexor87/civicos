@@ -106,8 +106,9 @@ export async function POST(request: NextRequest) {
   if (linkError) {
     console.error('[onboarding] generateLink failed:', linkError.message)
   }
-  const actionLink = linkData?.properties?.action_link
-  if (actionLink) {
+  const hashedToken = linkData?.properties?.hashed_token
+  if (hashedToken) {
+    const actionLink = `${siteUrl}/auth/callback?token_hash=${hashedToken}&type=magiclink&next=/welcome`
     const result = await sendVerificationEmail({ email, actionLink })
     if (!result.ok) {
       console.error('[onboarding] sendVerificationEmail failed:', result.error)
