@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Upload, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 
 interface ImportResult {
   imported: number
@@ -21,34 +22,54 @@ export default function ImportContactsPage() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
+  async function submitRows(rows: unknown[]) {
+    try {
+      const res = await fetch('/api/import/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setResult(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al importar')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleImport() {
     if (!file) return
     setLoading(true)
     setError(null)
     setResult(null)
 
+    const name = file.name.toLowerCase()
+    const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls')
+
     const reader = new FileReader()
     reader.onload = async (e) => {
-      const csv = e.target?.result as string
+      if (isExcel) {
+        try {
+          const buffer = e.target?.result as ArrayBuffer
+          const workbook = XLSX.read(buffer, { type: 'array' })
+          const sheet = workbook.Sheets[workbook.SheetNames[0]]
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false })
+          await submitRows(rows)
+        } catch (err) {
+          setError(`Error al parsear Excel: ${err instanceof Error ? err.message : 'desconocido'}`)
+          setLoading(false)
+        }
+        return
+      }
 
+      const csv = e.target?.result as string
       Papa.parse(csv, {
         header: true,
         skipEmptyLines: true,
         complete: async (parsed) => {
-          try {
-            const res = await fetch('/api/import/contacts', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ rows: parsed.data }),
-            })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error)
-            setResult(data)
-          } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error al importar')
-          } finally {
-            setLoading(false)
-          }
+          await submitRows(parsed.data as unknown[])
         },
         error: (err: Error) => {
           setError(`Error al parsear CSV: ${err.message}`)
@@ -56,7 +77,12 @@ export default function ImportContactsPage() {
         },
       })
     }
-    reader.readAsText(file)
+
+    if (isExcel) {
+      reader.readAsArrayBuffer(file)
+    } else {
+      reader.readAsText(file)
+    }
   }
 
   return (
@@ -70,15 +96,15 @@ export default function ImportContactsPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Importar contactos</h1>
-          <p className="text-slate-500 text-sm">Sube un archivo CSV para importar contactos masivamente</p>
+          <p className="text-slate-500 text-sm">Sube un archivo CSV o Excel para importar contactos masivamente</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Formato del CSV</CardTitle>
+          <CardTitle>Formato del archivo</CardTitle>
           <CardDescription>
-            El archivo debe incluir las columnas: <code className="bg-slate-100 px-1 rounded text-xs">first_name</code>, <code className="bg-slate-100 px-1 rounded text-xs">last_name</code>, y opcionalmente: <code className="bg-slate-100 px-1 rounded text-xs">email</code>, <code className="bg-slate-100 px-1 rounded text-xs">phone</code>, <code className="bg-slate-100 px-1 rounded text-xs">address</code>, <code className="bg-slate-100 px-1 rounded text-xs">city</code>, <code className="bg-slate-100 px-1 rounded text-xs">district</code>, <code className="bg-slate-100 px-1 rounded text-xs">status</code>
+            Acepta CSV, XLSX y XLS. El archivo debe incluir las columnas: <code className="bg-slate-100 px-1 rounded text-xs">first_name</code>, <code className="bg-slate-100 px-1 rounded text-xs">last_name</code>, y opcionalmente: <code className="bg-slate-100 px-1 rounded text-xs">email</code>, <code className="bg-slate-100 px-1 rounded text-xs">phone</code>, <code className="bg-slate-100 px-1 rounded text-xs">address</code>, <code className="bg-slate-100 px-1 rounded text-xs">city</code>, <code className="bg-slate-100 px-1 rounded text-xs">district</code>, <code className="bg-slate-100 px-1 rounded text-xs">status</code>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -86,7 +112,7 @@ export default function ImportContactsPage() {
             <Upload className="h-8 w-8 text-slate-400" />
             <div className="text-center">
               <p className="text-sm font-medium text-slate-700">
-                {file ? file.name : 'Haz clic para seleccionar un archivo CSV'}
+                {file ? file.name : 'Haz clic para seleccionar un archivo CSV o Excel'}
               </p>
               {file && (
                 <p className="text-xs text-slate-400 mt-1">
@@ -96,7 +122,7 @@ export default function ImportContactsPage() {
             </div>
             <input
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               className="hidden"
               onChange={e => setFile(e.target.files?.[0] ?? null)}
             />
