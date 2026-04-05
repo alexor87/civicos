@@ -53,6 +53,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── 2b. scrutix.co apex → rutas de app viven en app.scrutix.co ────
+  const apexHost = request.headers.get('host') || ''
+  const isApex = apexHost === 'scrutix.co' || apexHost === 'www.scrutix.co'
+  if (isApex) {
+    const url = new URL(request.url)
+    url.host = 'app.scrutix.co'
+    url.protocol = 'https:'
+    url.port = ''
+    return NextResponse.redirect(url, 301)
+  }
+
   // ── 3. Everything else → Supabase auth (unchanged) ─────────────────
   let supabaseResponse = NextResponse.next({ request })
 
