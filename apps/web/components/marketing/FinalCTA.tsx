@@ -40,7 +40,7 @@ export default function FinalCTA({ dict }: { dict: FinalCtaDict }) {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <a
-              href="/registro"
+              href="/register"
               className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#1D4ED8] px-6 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-[#1E40AF] hover:shadow-xl hover:shadow-blue-500/30"
             >
               {dict.ctaPrimary}
