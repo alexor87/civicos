@@ -95,12 +95,6 @@ export default async function DashboardPage() {
       <div className="flex justify-between items-end">
         <div>
           <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Centro de Inteligencia</h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <p className="text-slate-500 text-sm font-medium">
-              Powered by <span className="text-primary font-bold">Supabase Realtime</span>
-            </p>
-          </div>
         </div>
         <button className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
           <Download className="h-4 w-4" />
