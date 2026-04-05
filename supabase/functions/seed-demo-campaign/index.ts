@@ -237,8 +237,8 @@ function generateContacts(tenantId: string, campaignId: string) {
       tags: [],
       notes: null,
       metadata: {},
-      latitude: Math.round(lat * 1000000) / 1000000,
-      longitude: Math.round(lng * 1000000) / 1000000,
+      location_lat: Math.round(lat * 1000000) / 1000000,
+      location_lng: Math.round(lng * 1000000) / 1000000,
     })
   }
 
