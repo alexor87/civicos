@@ -292,6 +292,20 @@ describe('POST /api/import/contacts', () => {
     expect((getInserted()[0] as { birth_date: string }).birth_date).toBe('1973-04-24')
   })
 
+  it('parses MM/DD/YYYY dates when day > 12 (e.g. 06/28/1979)', async () => {
+    setupAuth('campaign_manager')
+    const { getInserted } = setupAdminCapture()
+    await POST(makeRequest({ rows: [{ NOMBRE: 'A', APELLIDO: 'B', 'FECHA DE NACIMIENTO': '06/28/1979' }] }))
+    expect((getInserted()[0] as { birth_date: string }).birth_date).toBe('1979-06-28')
+  })
+
+  it('parses DD/MM/YYYY dates when day > 12 (e.g. 28/06/1979)', async () => {
+    setupAuth('campaign_manager')
+    const { getInserted } = setupAdminCapture()
+    await POST(makeRequest({ rows: [{ NOMBRE: 'A', APELLIDO: 'B', 'FECHA DE NACIMIENTO': '28/06/1979' }] }))
+    expect((getInserted()[0] as { birth_date: string }).birth_date).toBe('1979-06-28')
+  })
+
   it('passes through ISO dates', async () => {
     setupAuth('campaign_manager')
     const { getInserted } = setupAdminCapture()

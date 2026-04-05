@@ -59,8 +59,21 @@ function normalizeHeaders(rows: Record<string, unknown>[]): NormalizedRow[] {
 function parseDateOrNull(val?: string): string | null {
   if (!val?.trim()) return null
   const trimmed = val.trim()
-  const dmy = trimmed.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/)
-  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`
+  const parts = trimmed.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/)
+  if (parts) {
+    const [, a, b, year] = parts
+    let day: string, month: string
+    if (parseInt(b) > 12) {
+      // Second number can't be a month → format is MM/DD/YYYY
+      month = a
+      day = b
+    } else {
+      // DD/MM/YYYY (default Colombian convention)
+      day = a
+      month = b
+    }
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
   return null
 }
