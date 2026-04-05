@@ -1,31 +1,30 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { readColombiaRows, importGeoRows } from '@/lib/geo/colombia-import'
 
 export async function POST(request: NextRequest) {
-  const { orgName, slug, fullName, email, password, campaignName, electionDate, country, electionType } = await request.json()
+  const { orgName, email, password } = await request.json()
 
-  if (!orgName || !slug || !email || !password || !campaignName) {
+  if (!orgName || !email || !password) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
   }
 
   const supabase = await createAdminClient()
 
-  // 1. Check slug availability
-  const { data: existingTenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', slug)
-    .single()
+  // 1. Generate slug from org name
+  const baseSlug = orgName
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .slice(0, 40)
 
-  if (existingTenant) {
-    return NextResponse.json({ error: 'El subdominio ya está en uso' }, { status: 409 })
-  }
+  // Ensure uniqueness by appending random suffix
+  const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
 
-  // 2. Create tenant (store country in settings)
+  // 2. Create tenant
   const { data: tenant, error: tenantError } = await supabase
     .from('tenants')
-    .insert({ name: orgName, slug, plan: 'pro', settings: { country: country ?? 'colombia' } })
+    .insert({ name: orgName, slug, plan: 'pro', settings: { country: 'colombia' } })
     .select()
     .single()
 
@@ -33,13 +32,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Error al crear la organización' }, { status: 500 })
   }
 
-  // 3. Seed tenant_branding with defaults (onboarding_completed = false so wizard shows)
+  // 3. Seed tenant_branding (onboarding_completed = false → wizard shows after activation)
   await supabase.from('tenant_branding').insert({
-    tenant_id:            tenant.id,
+    tenant_id: tenant.id,
     onboarding_completed: false,
   })
 
   // 4. Create auth user
+  const fullName = orgName // Use org name as placeholder until branding wizard
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     password,
@@ -52,12 +52,13 @@ export async function POST(request: NextRequest) {
   })
 
   if (authError || !authData.user) {
-    await supabase.from('tenants').delete().eq('id', tenant.id)
+    // Cleanup on failure
     await supabase.from('tenant_branding').delete().eq('tenant_id', tenant.id)
+    await supabase.from('tenants').delete().eq('id', tenant.id)
     return NextResponse.json({ error: authError?.message || 'Error al crear usuario' }, { status: 500 })
   }
 
-  // 5. Upsert profile
+  // 5. Upsert profile (no campaign_ids yet — seed will set them)
   await supabase.from('profiles').upsert({
     id: authData.user.id,
     tenant_id: tenant.id,
@@ -66,49 +67,33 @@ export async function POST(request: NextRequest) {
     campaign_ids: [],
   })
 
-  // 6. Create first campaign
-  const campaignData: {
-    tenant_id: string
-    name: string
-    election_date?: string
-    config: Record<string, unknown>
-    is_active: boolean
-  } = {
+  // 6. Create onboarding_state
+  await supabase.from('onboarding_state').insert({
     tenant_id: tenant.id,
-    name: campaignName,
-    config: {},
-    is_active: true,
-  }
-  if (electionDate)  campaignData.election_date = electionDate
-  if (electionType)  campaignData.config = { ...campaignData.config, election_type: electionType }
+    stage: 'pending',
+  })
 
-  const { data: campaign } = await supabase
-    .from('campaigns')
-    .insert(campaignData)
-    .select()
-    .single()
-
-  // 7. Update profile with campaign_id
-  if (campaign) {
-    await supabase
-      .from('profiles')
-      .update({ campaign_ids: [campaign.id] })
-      .eq('id', authData.user.id)
-  }
-
-  // 8. Auto-import geographic data for Colombia
-  if ((country ?? 'colombia') === 'colombia' && campaign) {
-    try {
-      const rows = readColombiaRows()
-      await importGeoRows(supabase, rows, tenant.id, campaign.id)
-    } catch {
-      // Non-fatal: geo data import failure doesn't block onboarding
-    }
+  // 7. Fire-and-forget: invoke seed-demo-campaign Edge Function
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (supabaseUrl && serviceRoleKey) {
+    fetch(`${supabaseUrl}/functions/v1/seed-demo-campaign`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        tenant_id: tenant.id,
+        user_id: authData.user.id,
+      }),
+    }).catch(() => {
+      // Fire-and-forget — seed failure is non-fatal
+    })
   }
 
   return NextResponse.json({
     success: true,
     tenantId: tenant.id,
-    campaignId: campaign?.id,
   })
 }

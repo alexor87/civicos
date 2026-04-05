@@ -4,22 +4,20 @@ vi.mock('jose', () => ({
   jwtVerify: vi.fn(),
 }))
 
-vi.mock('next/headers', () => ({
-  cookies: vi.fn(),
-}))
-
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
+}))
+
+vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }))
 
 import { POST } from '@/app/api/auth/verify-impersonation/route'
 import { jwtVerify } from 'jose'
-import { cookies } from 'next/headers'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 const mockJwtVerify = vi.mocked(jwtVerify)
-const mockCookies = vi.mocked(cookies)
 const mockCreateClient = vi.mocked(createClient)
 const mockCreateAdminClient = vi.mocked(createAdminClient)
 
@@ -80,7 +78,7 @@ describe('POST /api/auth/verify-impersonation', () => {
       }),
     })
 
-    mockCreateAdminClient.mockResolvedValue({
+    mockCreateAdminClient.mockReturnValue({
       from: vi.fn().mockReturnValue({ select: mockSelect }),
       auth: { admin: {} },
     } as any)
@@ -106,7 +104,7 @@ describe('POST /api/auth/verify-impersonation', () => {
       }),
     })
 
-    mockCreateAdminClient.mockResolvedValue({
+    mockCreateAdminClient.mockReturnValue({
       from: vi.fn().mockReturnValue({ select: mockSelect }),
       auth: {
         admin: {
@@ -149,7 +147,7 @@ describe('POST /api/auth/verify-impersonation', () => {
       }),
     })
 
-    mockCreateAdminClient.mockResolvedValue({
+    mockCreateAdminClient.mockReturnValue({
       from: vi.fn().mockReturnValue({ select: mockSelect }),
       auth: {
         admin: {
@@ -171,29 +169,16 @@ describe('POST /api/auth/verify-impersonation', () => {
       },
     } as any)
 
-    const mockSet = vi.fn()
-    mockCookies.mockResolvedValue({
-      set: mockSet,
-    } as any)
-
     const res = await POST(makeRequest({ token: 'valid-token' }))
     const json = await res.json()
 
     expect(res.status).toBe(200)
-    expect(json.success).toBe(true)
     expect(json.admin_email).toBe('admin@test.com')
     expect(json.tenant_id).toBe('tenant-1')
     expect(json.tenant_name).toBe('Test Tenant')
     expect(json.session_id).toBe('session-1')
-    expect(mockSet).toHaveBeenCalledWith(
-      'civicos_impersonation',
-      expect.any(String),
-      expect.objectContaining({
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 1800,
-        path: '/',
-      })
-    )
+    expect(json.admin_id).toBe('admin-1')
+    expect(json.started_at).toBeDefined()
+    expect(json.expires_at).toBeDefined()
   })
 })

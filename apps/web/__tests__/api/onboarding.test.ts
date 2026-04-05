@@ -3,18 +3,14 @@ import { NextRequest } from 'next/server'
 
 // ── Supabase admin mock ────────────────────────────────────────────────────────
 const mockSingle = vi.fn()
-const mockSelect = vi.fn(() => ({ eq: vi.fn(() => ({ single: mockSingle })) }))
 const mockInsert = vi.fn(() => ({ select: vi.fn(() => ({ single: mockSingle })) }))
 const mockDelete = vi.fn(() => ({ eq: vi.fn() }))
-const mockUpdate = vi.fn(() => ({ eq: vi.fn() }))
 const mockUpsert = vi.fn()
 const mockCreateUser = vi.fn()
 
 const mockFrom = vi.fn(() => ({
-  select: mockSelect,
   insert: mockInsert,
   delete: mockDelete,
-  update: mockUpdate,
   upsert: mockUpsert,
 }))
 
@@ -25,7 +21,12 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
-// ── import route under test ────────────────────────────────────────────────────
+// Mock global fetch for fire-and-forget seed call
+const originalFetch = globalThis.fetch
+beforeEach(() => {
+  globalThis.fetch = vi.fn().mockResolvedValue(new Response('{}'))
+})
+
 import { POST } from '@/app/api/onboarding/route'
 
 function makeRequest(body: Record<string, unknown>) {
@@ -38,15 +39,14 @@ function makeRequest(body: Record<string, unknown>) {
 
 const VALID_BODY = {
   orgName: 'Campaña Test',
-  slug: 'campana-test',
-  fullName: 'Admin User',
   email: 'admin@test.com',
   password: 'Secret123!',
-  campaignName: 'Primera Campaña',
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
 })
 
 describe('POST /api/onboarding', () => {
@@ -57,19 +57,12 @@ describe('POST /api/onboarding', () => {
     expect(body.error).toBeTruthy()
   })
 
-  it('returns 409 when slug is already taken', async () => {
-    // Slug check returns an existing tenant
-    mockSingle.mockResolvedValueOnce({ data: { id: 'existing-id' }, error: null })
-
-    const res = await POST(makeRequest(VALID_BODY))
-    expect(res.status).toBe(409)
-    const body = await res.json()
-    expect(body.error).toMatch(/subdominio/i)
+  it('returns 400 when email is missing', async () => {
+    const res = await POST(makeRequest({ orgName: 'Test', password: '12345678' }))
+    expect(res.status).toBe(400)
   })
 
   it('returns 500 when tenant creation fails', async () => {
-    // Slug check → not taken
-    mockSingle.mockResolvedValueOnce({ data: null, error: null })
     // Tenant insert → error
     mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'DB error' } })
 
@@ -80,8 +73,6 @@ describe('POST /api/onboarding', () => {
   })
 
   it('returns 500 and rolls back tenant when auth user creation fails', async () => {
-    // Slug check → not taken
-    mockSingle.mockResolvedValueOnce({ data: null, error: null })
     // Tenant insert → success
     mockSingle.mockResolvedValueOnce({ data: { id: 'tenant-123' }, error: null })
     // Auth user creation → fails
@@ -89,26 +80,58 @@ describe('POST /api/onboarding', () => {
 
     const res = await POST(makeRequest(VALID_BODY))
     expect(res.status).toBe(500)
-    // Rollback: delete tenant
+    // Rollback: should delete tenant_branding and tenant
+    expect(mockFrom).toHaveBeenCalledWith('tenant_branding')
     expect(mockFrom).toHaveBeenCalledWith('tenants')
     expect(mockDelete).toHaveBeenCalled()
   })
 
-  it('returns 200 with tenantId and campaignId on success', async () => {
-    // Slug check → not taken
-    mockSingle.mockResolvedValueOnce({ data: null, error: null })
+  it('returns 200 with tenantId on success and fires seed', async () => {
     // Tenant insert → success
     mockSingle.mockResolvedValueOnce({ data: { id: 'tenant-abc' }, error: null })
     // Auth user creation → success
     mockCreateUser.mockResolvedValueOnce({ data: { user: { id: 'user-xyz' } }, error: null })
-    // Campaign insert → success
-    mockSingle.mockResolvedValueOnce({ data: { id: 'campaign-999' }, error: null })
 
     const res = await POST(makeRequest(VALID_BODY))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.success).toBe(true)
     expect(body.tenantId).toBe('tenant-abc')
-    expect(body.campaignId).toBe('campaign-999')
+
+    // Should create onboarding_state
+    expect(mockFrom).toHaveBeenCalledWith('onboarding_state')
+
+    // Should fire seed Edge Function
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('seed-demo-campaign'),
+      expect.objectContaining({ method: 'POST' })
+    )
+  })
+
+  it('generates slug from orgName automatically', async () => {
+    // Tenant insert → success
+    mockSingle.mockResolvedValueOnce({ data: { id: 'tenant-abc' }, error: null })
+    mockCreateUser.mockResolvedValueOnce({ data: { user: { id: 'user-xyz' } }, error: null })
+
+    await POST(makeRequest({ orgName: 'Mi Campaña Élite', email: 'a@b.co', password: '12345678' }))
+
+    // Verify tenant was created with auto-generated slug
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Mi Campaña Élite',
+        slug: expect.stringMatching(/^mi-campana-elite-[a-z0-9]{4}$/),
+      })
+    )
+  })
+
+  it('does not create a campaign directly', async () => {
+    mockSingle.mockResolvedValueOnce({ data: { id: 'tenant-abc' }, error: null })
+    mockCreateUser.mockResolvedValueOnce({ data: { user: { id: 'user-xyz' } }, error: null })
+
+    await POST(makeRequest(VALID_BODY))
+
+    // campaigns table should NOT be called — seed Edge Function handles it
+    const campaignCalls = mockFrom.mock.calls.filter(([table]: [string]) => table === 'campaigns')
+    expect(campaignCalls).toHaveLength(0)
   })
 })

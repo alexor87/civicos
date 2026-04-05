@@ -21,83 +21,62 @@ import RegisterPage from '@/app/(auth)/register/page'
 
 beforeEach(() => vi.clearAllMocks())
 
-async function fillStep1() {
-  await userEvent.type(screen.getByLabelText(/nombre de la organización/i), 'Mi Org')
-  await userEvent.type(screen.getByLabelText(/tu nombre completo/i), 'Juan García')
+async function fillForm() {
+  await userEvent.type(screen.getByLabelText(/nombre de tu organización/i), 'Mi Org')
   await userEvent.type(screen.getByLabelText(/email/i), 'juan@test.com')
   await userEvent.type(screen.getByLabelText(/contraseña/i), 'password123')
 }
 
 describe('RegisterPage', () => {
-  it('shows step 1 by default', () => {
+  it('shows the simplified registration form', () => {
     render(<RegisterPage />)
-    expect(screen.getByText('Tu organización')).toBeInTheDocument()
+    expect(screen.getByText(/empieza a organizar/i)).toBeInTheDocument()
   })
 
-  it('shows progress indicator "Paso 1 de 2" on step 1', () => {
+  it('shows org name, email, and password fields', () => {
     render(<RegisterPage />)
-    expect(screen.getByText('Paso 1 de 2')).toBeInTheDocument()
-  })
-
-  it('shows org name and email fields on step 1', () => {
-    render(<RegisterPage />)
-    expect(screen.getByLabelText(/nombre de la organización/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/nombre de tu organización/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument()
   })
 
-  it('advances to step 2 when clicking Siguiente', async () => {
+  it('has a single submit button (no multi-step)', () => {
     render(<RegisterPage />)
-    await fillStep1()
-    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
-    expect(screen.getByText('Tu primera campaña')).toBeInTheDocument()
-  })
-
-  it('shows progress indicator "Paso 2 de 2" on step 2', async () => {
-    render(<RegisterPage />)
-    await fillStep1()
-    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
-    expect(screen.getByText('Paso 2 de 2')).toBeInTheDocument()
-  })
-
-  it('shows a Volver button on step 2', async () => {
-    render(<RegisterPage />)
-    await fillStep1()
-    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
-    expect(screen.getByRole('button', { name: /volver/i })).toBeInTheDocument()
-  })
-
-  it('goes back to step 1 when clicking Volver', async () => {
-    render(<RegisterPage />)
-    await fillStep1()
-    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
-    await userEvent.click(screen.getByRole('button', { name: /volver/i }))
-    expect(screen.getByText('Tu organización')).toBeInTheDocument()
-  })
-
-  it('shows campaign name field on step 2', async () => {
-    render(<RegisterPage />)
-    await fillStep1()
-    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
-    expect(screen.getByLabelText(/nombre de la campaña/i)).toBeInTheDocument()
-  })
-
-  it('auto-generates slug from org name', async () => {
-    render(<RegisterPage />)
-    await userEvent.type(screen.getByLabelText(/nombre de la organización/i), 'Mi Partido')
-    const slugInput = screen.getByPlaceholderText('mi-org')
-    expect((slugInput as HTMLInputElement).value).toBe('mi-partido')
+    expect(screen.getByRole('button', { name: /crear cuenta gratis/i })).toBeInTheDocument()
+    expect(screen.queryByText(/siguiente/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/paso.*de/i)).not.toBeInTheDocument()
   })
 
   it('shows error message when registration fails', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ error: 'El subdominio ya existe' }),
+      json: async () => ({ error: 'Email ya registrado' }),
     })
     render(<RegisterPage />)
-    await fillStep1()
-    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
-    await userEvent.type(screen.getByLabelText(/nombre de la campaña/i), 'Campaña Test')
-    await userEvent.click(screen.getByRole('button', { name: /crear mi campaña/i }))
-    expect(await screen.findByText('El subdominio ya existe')).toBeInTheDocument()
+    await fillForm()
+    await userEvent.click(screen.getByRole('button', { name: /crear cuenta gratis/i }))
+    expect(await screen.findByText('Email ya registrado')).toBeInTheDocument()
+  })
+
+  it('redirects to /welcome on successful registration', async () => {
+    ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, tenantId: 'tenant-1' }),
+    })
+    mockSignIn.mockResolvedValueOnce({ error: null })
+
+    render(<RegisterPage />)
+    await fillForm()
+    await userEvent.click(screen.getByRole('button', { name: /crear cuenta gratis/i }))
+
+    await vi.waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/welcome')
+    })
+  })
+
+  it('shows login link', () => {
+    render(<RegisterPage />)
+    expect(screen.getByText(/ya tienes cuenta/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /inicia sesión/i })).toHaveAttribute('href', '/login')
   })
 })

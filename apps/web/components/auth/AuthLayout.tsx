@@ -1,4 +1,4 @@
-import { Shield, Users, MapPin, BarChart3 } from 'lucide-react'
+import { Shield, Users, MapPin, BarChart3, Sparkles } from 'lucide-react'
 
 interface Props {
   tagline: string
@@ -6,9 +6,10 @@ interface Props {
 }
 
 const features = [
-  { icon: Users, text: 'CRM de contactos con IA integrada' },
+  { icon: Users, text: 'CRM de contactos con inteligencia artificial' },
   { icon: MapPin, text: 'Canvassing coordinado en tiempo real' },
   { icon: BarChart3, text: 'Analítica electoral por zona y segmento' },
+  { icon: Sparkles, text: 'Agentes IA que sugieren la próxima acción' },
 ]
 
 export function AuthLayout({ tagline, children }: Props) {
@@ -22,7 +23,7 @@ export function AuthLayout({ tagline, children }: Props) {
             <div className="w-9 h-9 rounded-lg bg-[#2960ec] flex items-center justify-center">
               <Shield className="h-5 w-5 text-white" />
             </div>
-            <span className="text-white text-xl font-bold">CivicOS</span>
+            <span className="text-white text-xl font-bold">Scrutix</span>
           </div>
 
           {/* Tagline */}
@@ -43,9 +44,9 @@ export function AuthLayout({ tagline, children }: Props) {
           </ul>
         </div>
 
-        {/* Social proof footer */}
+        {/* Footer */}
         <p className="text-white/40 text-xs">
-          Usado por más de 50 organizaciones en LATAM
+          La plataforma electoral inteligente para LATAM
         </p>
       </div>
 

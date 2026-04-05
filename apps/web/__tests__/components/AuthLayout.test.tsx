@@ -3,26 +3,27 @@ import { render, screen } from '@testing-library/react'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 
 describe('AuthLayout', () => {
-  it('renders the CivicOS logo text', () => {
+  it('renders the Scrutix logo text', () => {
     render(<AuthLayout tagline="Test tagline"><div /></AuthLayout>)
-    expect(screen.getByText('CivicOS')).toBeInTheDocument()
+    expect(screen.getByText('Scrutix')).toBeInTheDocument()
   })
 
   it('renders the tagline prop', () => {
-    render(<AuthLayout tagline="14 días gratis"><div /></AuthLayout>)
-    expect(screen.getByText('14 días gratis')).toBeInTheDocument()
+    render(<AuthLayout tagline="Explora gratis"><div /></AuthLayout>)
+    expect(screen.getByText('Explora gratis')).toBeInTheDocument()
   })
 
-  it('renders all three feature bullets', () => {
+  it('renders all four feature bullets', () => {
     render(<AuthLayout tagline="x"><div /></AuthLayout>)
     expect(screen.getByText(/CRM de contactos/i)).toBeInTheDocument()
     expect(screen.getByText(/Canvassing coordinado/i)).toBeInTheDocument()
     expect(screen.getByText(/Analítica electoral/i)).toBeInTheDocument()
+    expect(screen.getByText(/Agentes IA/i)).toBeInTheDocument()
   })
 
-  it('renders the social proof footer', () => {
+  it('renders the footer text', () => {
     render(<AuthLayout tagline="x"><div /></AuthLayout>)
-    expect(screen.getByText(/50 organizaciones/i)).toBeInTheDocument()
+    expect(screen.getByText(/plataforma electoral inteligente/i)).toBeInTheDocument()
   })
 
   it('renders children in the right panel', () => {

@@ -9,6 +9,8 @@ import { brandFromColor, type TenantBrand } from '@/lib/brand-utils'
 import { Toaster } from '@/components/ui/sonner'
 import { FeaturesProvider } from '@/components/providers/FeaturesProvider'
 import { ImpersonationBanner } from '@/components/impersonation/ImpersonationBanner'
+import { DemoBanner } from '@/components/onboarding/DemoBanner'
+import { DemoCoachMarks } from '@/components/onboarding/DemoCoachMarks'
 import type { PlanName } from '@/lib/features/feature-keys'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -36,8 +38,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('tenant_id', profile.tenant_id)
     .single()
 
-  // Redirect to Brand Studio onboarding if not yet completed
-  if (tenantBranding && tenantBranding.onboarding_completed === false) {
+  // Check onboarding state — demo tenants skip the branding wizard
+  const { data: onboardingState } = await supabase
+    .from('onboarding_state')
+    .select('stage')
+    .eq('tenant_id', profile.tenant_id)
+    .single()
+
+  const isDemoOrPending = onboardingState?.stage === 'demo' || onboardingState?.stage === 'pending' || onboardingState?.stage === 'seeding'
+
+  // Redirect to Brand Studio onboarding only AFTER activation (not during demo)
+  if (tenantBranding && tenantBranding.onboarding_completed === false && !isDemoOrPending) {
     redirect('/onboarding')
   }
 
@@ -115,6 +126,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <>
     <ImpersonationBanner />
+    <DemoBanner tenantId={profile.tenant_id} />
     <BrandProvider brand={effectiveBrand}>
       <FeaturesProvider features={features} plan={tenantPlan}>
       <PermissionsProvider
@@ -144,7 +156,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             campaigns={allCampaigns}
             activeCampaignId={activeCampaignId}
           />
-          <main className="flex-1 overflow-auto bg-background">
+          <main className="flex-1 overflow-auto bg-background relative">
+            <DemoCoachMarks tenantId={profile.tenant_id} />
             {children}
           </main>
         </div>
