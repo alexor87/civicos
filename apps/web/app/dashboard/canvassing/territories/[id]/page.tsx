@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { ChevronLeft, Users, MapPin, UserPlus } from 'lucide-react'
+import { ChevronLeft, Users, MapPin, UserPlus, Pencil } from 'lucide-react'
 import { TerritoryMapDynamic } from '@/components/maps/TerritoryMapDynamic'
 
 async function assignVolunteer(
@@ -133,9 +133,19 @@ export default async function TerritoryDetailPage({ params }: { params: Promise<
             )}
           </div>
         </div>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${sc.className}`}>
-          {sc.label}
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${sc.className}`}>
+            {sc.label}
+          </span>
+          {canManage && (
+            <Link href={`/dashboard/canvassing/territories/${id}/edit`}>
+              <Button variant="outline" size="sm" className="h-8">
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Editar
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Mini map — only if geojson exists */}

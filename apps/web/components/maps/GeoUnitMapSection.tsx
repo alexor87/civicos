@@ -15,13 +15,15 @@ interface Props {
   geoUnits: GeoUnit[]
   height?: string
   color?: string
+  initialGeoJson?: object | null
 }
 
-export function GeoUnitMapSection({ geoUnits, height = '540px', color = '#1A6FE8' }: Props) {
+export function GeoUnitMapSection({ geoUnits, height = '540px', color = '#1A6FE8', initialGeoJson = null }: Props) {
   const [selectedId, setSelectedId] = useState<string>('')
   const [mapKey, setMapKey] = useState(0)
 
   const selectedUnit = geoUnits.find(u => u.id === selectedId)
+  const effectiveGeoJson = selectedUnit?.geojson ?? initialGeoJson
 
   function handleSelect(id: string) {
     setSelectedId(id)
@@ -53,7 +55,7 @@ export function GeoUnitMapSection({ geoUnits, height = '540px', color = '#1A6FE8
         key={mapKey}
         height={height}
         color={color}
-        initialGeoJson={selectedUnit?.geojson ?? null}
+        initialGeoJson={effectiveGeoJson}
       />
     </div>
   )
