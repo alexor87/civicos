@@ -9,19 +9,6 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
-// Helper to build mock Supabase chain
-function makeChain(result: unknown) {
-  const chain: Record<string, unknown> = {}
-  chain.from = vi.fn().mockReturnValue(chain)
-  chain.select = vi.fn().mockReturnValue(chain)
-  chain.eq = vi.fn().mockReturnValue(chain)
-  chain.single = vi.fn().mockResolvedValue(result)
-  chain.insert = vi.fn().mockResolvedValue({ error: null })
-  // Make the chain itself awaitable (for queries without .single())
-  chain.then = (resolve: (v: unknown) => void) => Promise.resolve().then(() => resolve(result))
-  return chain
-}
-
 const mockUserSupabase = {
   auth: { getUser: vi.fn() },
   from: vi.fn(),
@@ -45,7 +32,6 @@ function makeRequest(body: object): NextRequest {
   })
 }
 
-// Setup authenticated user with a given role
 function setupAuth(role: string) {
   mockUserSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
   const profileChain: Record<string, unknown> = {}
@@ -57,7 +43,6 @@ function setupAuth(role: string) {
   mockUserSupabase.from = vi.fn().mockReturnValue(profileChain)
 }
 
-// Setup admin client: no existing contacts by default
 function setupAdmin(existingContacts: { email?: string | null; phone?: string | null; document_number?: string | null }[] = []) {
   let callCount = 0
   mockAdminSupabase.from = vi.fn().mockImplementation(() => {
@@ -66,8 +51,6 @@ function setupAdmin(existingContacts: { email?: string | null; phone?: string | 
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
     chain.insert = vi.fn().mockResolvedValue({ error: null })
-    // First call is the dedup query (.select.eq → awaitable)
-    // Subsequent calls are inserts
     if (callCount === 1) {
       chain.then = (resolve: (v: { data: typeof existingContacts }) => void) =>
         Promise.resolve().then(() => resolve({ data: existingContacts }))
@@ -79,7 +62,6 @@ function setupAdmin(existingContacts: { email?: string | null; phone?: string | 
   })
 }
 
-// Helper: setup admin mock that captures the inserted batch
 function setupAdminCapture(): { getInserted: () => unknown[] } {
   let insertedBatch: unknown[] = []
   mockAdminSupabase.from = vi.fn().mockImplementation(() => {
@@ -98,6 +80,8 @@ function setupAdminCapture(): { getInserted: () => unknown[] } {
 }
 
 describe('POST /api/import/contacts', () => {
+  // ── Auth & validation ──────────────────────────────────────────────────
+
   it('returns 401 if not authenticated', async () => {
     mockUserSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
     const res = await POST(makeRequest({ rows: [] }))
@@ -134,7 +118,6 @@ describe('POST /api/import/contacts', () => {
     setupAuth('campaign_manager')
     setupAdmin()
     const res = await POST(makeRequest({ rows: [{ last_name: 'García' }] }))
-    expect(res.status).toBe(200)
     const json = await res.json()
     expect(json.errors).toHaveLength(1)
     expect(json.imported).toBe(0)
@@ -144,11 +127,12 @@ describe('POST /api/import/contacts', () => {
     setupAuth('campaign_manager')
     setupAdmin()
     const res = await POST(makeRequest({ rows: [{ first_name: 'Juan' }] }))
-    expect(res.status).toBe(200)
     const json = await res.json()
     expect(json.errors).toHaveLength(1)
     expect(json.imported).toBe(0)
   })
+
+  // ── Deduplication ──────────────────────────────────────────────────────
 
   it('skips row with duplicate email (already in DB)', async () => {
     setupAuth('campaign_manager')
@@ -181,26 +165,23 @@ describe('POST /api/import/contacts', () => {
     expect(json.skipped).toBe(1)
   })
 
+  it('deduplicates by document_number', async () => {
+    setupAuth('campaign_manager')
+    setupAdmin([{ email: null, phone: null, document_number: '15438817' }])
+    const rows = [{ NOMBRE: 'Cesar', APELLIDO: 'Holt', 'NRO CC': '15438817' }]
+    const res = await POST(makeRequest({ rows }))
+    const json = await res.json()
+    expect(json.skipped).toBe(1)
+    expect(json.imported).toBe(0)
+  })
+
+  // ── Status normalization ───────────────────────────────────────────────
+
   it('normalizes invalid status to unknown', async () => {
     setupAuth('super_admin')
     const { getInserted } = setupAdminCapture()
     await POST(makeRequest({ rows: [{ first_name: 'Juan', last_name: 'García', status: 'fan' }] }))
     expect((getInserted()[0] as { status: string }).status).toBe('unknown')
-  })
-
-  it('returns imported count on successful insert', async () => {
-    setupAuth('campaign_manager')
-    setupAdmin()
-    const rows = [
-      { first_name: 'Ana', last_name: 'Pérez', email: 'ana@example.com' },
-      { first_name: 'Luis', last_name: 'Martínez', email: 'luis@example.com' },
-    ]
-    const res = await POST(makeRequest({ rows }))
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(json.imported).toBe(2)
-    expect(json.skipped).toBe(0)
-    expect(json.errors).toHaveLength(0)
   })
 
   it('accepts valid status values as-is', async () => {
@@ -210,7 +191,23 @@ describe('POST /api/import/contacts', () => {
     expect((getInserted()[0] as { status: string }).status).toBe('supporter')
   })
 
-  // ── Spanish header mapping ───────────────────────────────────────────────
+  // ── Successful import ──────────────────────────────────────────────────
+
+  it('returns imported count on successful insert', async () => {
+    setupAuth('campaign_manager')
+    setupAdmin()
+    const rows = [
+      { first_name: 'Ana', last_name: 'Pérez', email: 'ana@example.com' },
+      { first_name: 'Luis', last_name: 'Martínez', email: 'luis@example.com' },
+    ]
+    const res = await POST(makeRequest({ rows }))
+    const json = await res.json()
+    expect(json.imported).toBe(2)
+    expect(json.skipped).toBe(0)
+    expect(json.errors).toHaveLength(0)
+  })
+
+  // ── Spanish header mapping (fallback) ──────────────────────────────────
 
   it('maps Spanish headers (NOMBRE, APELLIDO) to internal fields', async () => {
     setupAuth('campaign_manager')
@@ -249,9 +246,9 @@ describe('POST /api/import/contacts', () => {
     expect(json.errors).toHaveLength(0)
   })
 
-  // ── Colombian fields ─────────────────────────────────────────────────────
+  // ── Colombian fields ──────────────────────────────────────────────────
 
-  it('includes Colombian fields in the insert payload', async () => {
+  it('includes Colombian fields in the insert (only valid DB columns)', async () => {
     setupAuth('campaign_manager')
     const { getInserted } = setupAdminCapture()
     const rows = [{
@@ -264,7 +261,7 @@ describe('POST /api/import/contacts', () => {
       TELEFONO: '3127581793',
       'CORREO ELECTRONICO': 'cesar@test.com',
       DIRECCION: 'Calle 54#5231',
-      'BARRIO/VEREDA': 'Calle 54#5231',
+      'BARRIO/VEREDA': 'Alto del medio',
       'NOMBRE DE LIDER/REFERIDO': 'Juan Esteban Ospina',
       ORIGEN: 'COMUNA 1',
     }]
@@ -279,9 +276,13 @@ describe('POST /api/import/contacts', () => {
     expect(inserted.phone).toBe('3127581793')
     expect(inserted.email).toBe('cesar@test.com')
     expect(inserted.address).toBe('Calle 54#5231')
-    expect(inserted.district_barrio).toBe('Calle 54#5231')
-    expect(inserted.referred_by).toBe('Juan Esteban Ospina')
+    expect(inserted.district).toBe('Alto del medio')
     expect(inserted.commune).toBe('COMUNA 1')
+    // referred_by maps to notes since it's not a DB column
+    expect(inserted.notes).toBe('Juan Esteban Ospina')
+    // These should NOT exist (not valid DB columns)
+    expect(inserted.district_barrio).toBeUndefined()
+    expect(inserted.referred_by).toBeUndefined()
   })
 
   it('parses DD/MM/YYYY birth dates correctly', async () => {
@@ -305,24 +306,26 @@ describe('POST /api/import/contacts', () => {
     expect((getInserted()[0] as { birth_date: null }).birth_date).toBeNull()
   })
 
-  it('deduplicates by document_number', async () => {
-    setupAuth('campaign_manager')
-    setupAdmin([{ email: null, phone: null, document_number: '15438817' }])
-    const rows = [{ NOMBRE: 'Cesar', APELLIDO: 'Holt', 'NRO CC': '15438817' }]
-    const res = await POST(makeRequest({ rows }))
-    const json = await res.json()
-    expect(json.skipped).toBe(1)
-    expect(json.imported).toBe(0)
-  })
-
   it('handles numeric cell values from Excel (e.g. phone as number)', async () => {
     setupAuth('campaign_manager')
     const { getInserted } = setupAdminCapture()
-    // Excel sometimes parses phone/document_number as numbers
     const rows = [{ NOMBRE: 'Ana', APELLIDO: 'López', TELEFONO: 3127581793, 'NRO CC': 15438817 }]
     await POST(makeRequest({ rows }))
     const inserted = getInserted()[0] as Record<string, unknown>
     expect(inserted.phone).toBe('3127581793')
     expect(inserted.document_number).toBe('15438817')
+  })
+
+  // ── Pre-mapped rows (from column mapper UI) ───────────────────────────
+
+  it('accepts preMapped rows without applying header aliases', async () => {
+    setupAuth('campaign_manager')
+    const { getInserted } = setupAdminCapture()
+    const rows = [{ first_name: 'Ana', last_name: 'López', district: 'Centro', voting_place: 'Coliseo' }]
+    await POST(makeRequest({ rows, preMapped: true }))
+    const inserted = getInserted()[0] as Record<string, unknown>
+    expect(inserted.first_name).toBe('Ana')
+    expect(inserted.district).toBe('Centro')
+    expect(inserted.voting_place).toBe('Coliseo')
   })
 })

@@ -1,68 +1,36 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-// ── Header alias map ─────────────────────────────────────────────────────────
-// Maps common Spanish (and English) column headers to internal field names.
-// Lookup is case-insensitive after trim + toLowerCase.
+// ── Valid DB columns for contacts (excludes auto-generated fields) ───────────
+
+const VALID_CONTACT_FIELDS = new Set([
+  'first_name', 'last_name', 'email', 'phone',
+  'document_type', 'document_number', 'birth_date', 'gender',
+  'address', 'city', 'district', 'department', 'municipality', 'commune',
+  'voting_place', 'voting_table',
+  'status', 'campaign_role', 'electoral_priority', 'capture_source', 'notes',
+])
+
+// ── Header alias map (fallback for pre-mapped imports) ──────────────────────
 
 const HEADER_ALIASES: Record<string, string> = {
-  // Required
-  nombre: 'first_name',
-  apellido: 'last_name',
-  apellidos: 'last_name',
-  first_name: 'first_name',
-  last_name: 'last_name',
-  // Contact
-  telefono: 'phone',
-  'teléfono': 'phone',
-  'telefono no': 'phone',
-  phone: 'phone',
-  celular: 'phone',
-  correo: 'email',
-  'correo electronico': 'email',
-  'correo electrónico': 'email',
-  email: 'email',
-  // Document
-  'nro cc': 'document_number',
-  cedula: 'document_number',
-  'cédula': 'document_number',
-  documento: 'document_number',
-  'numero de documento': 'document_number',
-  'número de documento': 'document_number',
-  document_number: 'document_number',
-  // Voting
-  'puesto de votacion': 'voting_place',
-  'puesto de votación': 'voting_place',
-  voting_place: 'voting_place',
-  mesa: 'voting_table',
-  'mesa de': 'voting_table',
-  voting_table: 'voting_table',
-  // Demographics
-  'fecha de nacimiento': 'birth_date',
-  birth_date: 'birth_date',
-  // Location
-  direccion: 'address',
-  'dirección': 'address',
-  address: 'address',
-  barrio: 'district_barrio',
-  'barrio/vereda': 'district_barrio',
-  vereda: 'district_barrio',
-  district: 'district_barrio',
-  district_barrio: 'district_barrio',
-  ciudad: 'city',
-  city: 'city',
-  comuna: 'commune',
-  origen: 'commune',
-  commune: 'commune',
-  // Referral
-  referido: 'referred_by',
-  'nombre de lider/referido': 'referred_by',
-  lider: 'referred_by',
-  'líder': 'referred_by',
-  referred_by: 'referred_by',
-  // Status
-  estado: 'status',
-  status: 'status',
+  nombre: 'first_name', apellido: 'last_name', apellidos: 'last_name',
+  first_name: 'first_name', last_name: 'last_name',
+  telefono: 'phone', 'teléfono': 'phone', phone: 'phone', celular: 'phone',
+  correo: 'email', 'correo electronico': 'email', 'correo electrónico': 'email', email: 'email',
+  'nro cc': 'document_number', cedula: 'document_number', 'cédula': 'document_number',
+  documento: 'document_number', document_number: 'document_number',
+  'puesto de votacion': 'voting_place', 'puesto de votación': 'voting_place', voting_place: 'voting_place',
+  mesa: 'voting_table', 'mesa de': 'voting_table', voting_table: 'voting_table',
+  'fecha de nacimiento': 'birth_date', birth_date: 'birth_date',
+  direccion: 'address', 'dirección': 'address', address: 'address',
+  barrio: 'district', 'barrio/vereda': 'district', vereda: 'district',
+  district: 'district',
+  ciudad: 'city', city: 'city',
+  comuna: 'commune', origen: 'commune', commune: 'commune',
+  referido: 'notes', 'nombre de lider/referido': 'notes',
+  estado: 'status', status: 'status',
+  notes: 'notes',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,7 +43,13 @@ function normalizeHeaders(rows: Record<string, unknown>[]): NormalizedRow[] {
     for (const [key, value] of Object.entries(row)) {
       const mapped = HEADER_ALIASES[key.trim().toLowerCase()]
       if (mapped) {
-        normalized[mapped] = typeof value === 'number' ? String(value) : (value as string)
+        const strVal = typeof value === 'number' ? String(value) : (value as string)
+        // If field already has a value (e.g. two columns map to 'notes'), concatenate
+        if (normalized[mapped] && strVal?.trim()) {
+          normalized[mapped] = `${normalized[mapped]} | ${strVal.trim()}`
+        } else if (!normalized[mapped]) {
+          normalized[mapped] = strVal
+        }
       }
     }
     return normalized
@@ -85,10 +59,8 @@ function normalizeHeaders(rows: Record<string, unknown>[]): NormalizedRow[] {
 function parseDateOrNull(val?: string): string | null {
   if (!val?.trim()) return null
   const trimmed = val.trim()
-  // DD/MM/YYYY → YYYY-MM-DD
   const dmy = trimmed.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/)
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`
-  // YYYY-MM-DD (ISO) pass through
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
   return null
 }
@@ -113,10 +85,22 @@ export async function POST(request: NextRequest) {
   const campaignId = profile.campaign_ids?.[0]
   if (!campaignId) return NextResponse.json({ error: 'No campaign assigned' }, { status: 400 })
 
-  const { rows }: { rows: Record<string, unknown>[] } = await request.json()
-  if (!rows?.length) return NextResponse.json({ error: 'No data provided' }, { status: 400 })
+  const body = await request.json()
+  const rawRows: Record<string, unknown>[] = body.rows
+  const preMapped: boolean = body.preMapped === true
+  if (!rawRows?.length) return NextResponse.json({ error: 'No data provided' }, { status: 400 })
 
-  const normalizedRows = normalizeHeaders(rows)
+  // If rows come from the column mapper UI, they're already mapped to DB field names.
+  // Otherwise, apply header alias normalization as fallback.
+  const normalizedRows: NormalizedRow[] = preMapped
+    ? rawRows.map(row => {
+        const nr: NormalizedRow = {}
+        for (const [k, v] of Object.entries(row)) {
+          nr[k] = typeof v === 'number' ? String(v) : (v as string)
+        }
+        return nr
+      })
+    : normalizeHeaders(rawRows)
 
   const adminSupabase = await createAdminClient()
 
@@ -168,27 +152,31 @@ export async function POST(request: NextRequest) {
 
     const status = VALID_STATUSES.includes(row.status ?? '') ? row.status! : 'unknown'
 
-    contactsToInsert.push({
+    // Build contact object with only valid DB columns
+    const contact: Record<string, unknown> = {
       tenant_id: profile.tenant_id,
       campaign_id: campaignId,
       first_name: firstName,
       last_name: lastName,
       email,
       phone,
-      address: row.address?.trim() || null,
-      city: row.city?.trim() || null,
-      district: row.district_barrio?.trim() || null,
       status: status as 'supporter' | 'undecided' | 'opponent' | 'unknown',
-      // Colombian fields
       document_number: documentNumber,
-      voting_place: row.voting_place?.trim() || null,
-      voting_table: row.voting_table?.trim() || null,
-      birth_date: parseDateOrNull(row.birth_date),
-      commune: row.commune?.trim() || null,
-      district_barrio: row.district_barrio?.trim() || null,
-      referred_by: row.referred_by?.trim() || null,
-    })
+    }
 
+    // Add optional fields that exist in DB
+    for (const field of VALID_CONTACT_FIELDS) {
+      if (contact[field] !== undefined) continue // already set above
+      const val = row[field]?.trim()
+      if (!val) continue
+      if (field === 'birth_date') {
+        contact[field] = parseDateOrNull(val)
+      } else {
+        contact[field] = val
+      }
+    }
+
+    contactsToInsert.push(contact)
     if (email) existingEmails.add(email)
     if (phone) existingPhones.add(phone)
     if (documentNumber) existingDocs.add(documentNumber)
