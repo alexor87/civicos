@@ -58,19 +58,18 @@ describe('RegisterPage', () => {
     expect(await screen.findByText('Email ya registrado')).toBeInTheDocument()
   })
 
-  it('redirects to /welcome on successful registration', async () => {
+  it('redirects to /verify-email with email param on successful registration', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, tenantId: 'tenant-1' }),
     })
-    mockSignIn.mockResolvedValueOnce({ error: null })
 
     render(<RegisterPage />)
     await fillForm()
     await userEvent.click(screen.getByRole('button', { name: /crear cuenta gratis/i }))
 
     await vi.waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/welcome')
+      expect(mockPush).toHaveBeenCalledWith('/verify-email?email=juan%40test.com')
     })
   })
 

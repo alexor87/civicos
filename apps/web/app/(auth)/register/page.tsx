@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +18,6 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
@@ -41,15 +39,7 @@ export default function RegisterPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al crear la organización')
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
-      })
-
-      if (signInError) throw signInError
-
-      router.push('/welcome')
-      router.refresh()
+      router.push(`/verify-email?email=${encodeURIComponent(form.email)}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
       setLoading(false)
@@ -119,7 +109,7 @@ export default function RegisterPage() {
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Preparando tu plataforma...
+                Creando tu cuenta...
               </>
             ) : (
               'Crear cuenta gratis'

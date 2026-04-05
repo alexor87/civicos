@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { COUNTRY_TO_LOCALE, DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, isValidLocale } from '@/lib/i18n'
 
-const PUBLIC_PATHS = ['/login', '/register', '/auth/callback', '/auth/impersonate', '/registro', '/welcome']
+const PUBLIC_PATHS = ['/login', '/register', '/auth/callback', '/auth/impersonate', '/registro', '/welcome', '/verify-email']
 
 /** Matches /en, /es, /co (with or without trailing path) */
 const LOCALE_PATTERN = new RegExp(`^/(${LOCALES.join('|')})(/|$)`)

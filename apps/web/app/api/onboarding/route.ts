@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
+import { sendVerificationEmail } from '@/lib/email/send-verification-email'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     password,
-    email_confirm: true,
+    email_confirm: false,
     user_metadata: {
       full_name: fullName,
       tenant_id: tenant.id,
@@ -90,6 +91,22 @@ export async function POST(request: NextRequest) {
     }).catch(() => {
       // Fire-and-forget — seed failure is non-fatal
     })
+  }
+
+  // 8. Send verification email via Resend (non-fatal — user can resend from /verify-email)
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.scrutix.co'
+  const { data: linkData } = await supabase.auth.admin.generateLink({
+    type: 'signup',
+    email,
+    password,
+    options: { redirectTo: `${siteUrl}/auth/callback?next=/welcome` },
+  })
+  const actionLink = linkData?.properties?.action_link
+  if (actionLink) {
+    const result = await sendVerificationEmail({ email, actionLink })
+    if (!result.ok) {
+      console.error('[onboarding] sendVerificationEmail failed:', result.error)
+    }
   }
 
   return NextResponse.json({

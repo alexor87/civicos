@@ -7,6 +7,7 @@ const mockInsert = vi.fn(() => ({ select: vi.fn(() => ({ single: mockSingle })) 
 const mockDelete = vi.fn(() => ({ eq: vi.fn() }))
 const mockUpsert = vi.fn()
 const mockCreateUser = vi.fn()
+const mockGenerateLink = vi.fn()
 
 const mockFrom = vi.fn(() => ({
   insert: mockInsert,
@@ -17,8 +18,13 @@ const mockFrom = vi.fn(() => ({
 vi.mock('@/lib/supabase/server', () => ({
   createAdminClient: vi.fn(async () => ({
     from: mockFrom,
-    auth: { admin: { createUser: mockCreateUser } },
+    auth: { admin: { createUser: mockCreateUser, generateLink: mockGenerateLink } },
   })),
+}))
+
+const mockSendVerificationEmail = vi.fn()
+vi.mock('@/lib/email/send-verification-email', () => ({
+  sendVerificationEmail: (...args: unknown[]) => mockSendVerificationEmail(...args),
 }))
 
 // Mock global fetch for fire-and-forget seed call
@@ -47,6 +53,12 @@ beforeEach(() => {
   vi.clearAllMocks()
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
+  // Default: generateLink success + send success
+  mockGenerateLink.mockResolvedValue({
+    data: { properties: { action_link: 'https://test.supabase.co/auth/v1/verify?token=abc' } },
+    error: null,
+  })
+  mockSendVerificationEmail.mockResolvedValue({ ok: true })
 })
 
 describe('POST /api/onboarding', () => {
@@ -122,6 +134,36 @@ describe('POST /api/onboarding', () => {
         slug: expect.stringMatching(/^mi-campana-elite-[a-z0-9]{4}$/),
       })
     )
+  })
+
+  it('creates auth user with email_confirm: false and sends verification email', async () => {
+    mockSingle.mockResolvedValueOnce({ data: { id: 'tenant-abc' }, error: null })
+    mockCreateUser.mockResolvedValueOnce({ data: { user: { id: 'user-xyz' } }, error: null })
+
+    const res = await POST(makeRequest(VALID_BODY))
+    expect(res.status).toBe(200)
+
+    expect(mockCreateUser).toHaveBeenCalledWith(
+      expect.objectContaining({ email_confirm: false })
+    )
+    expect(mockGenerateLink).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'signup', email: VALID_BODY.email })
+    )
+    expect(mockSendVerificationEmail).toHaveBeenCalledWith({
+      email: VALID_BODY.email,
+      actionLink: 'https://test.supabase.co/auth/v1/verify?token=abc',
+    })
+  })
+
+  it('still returns 200 when verification email fails to send', async () => {
+    mockSingle.mockResolvedValueOnce({ data: { id: 'tenant-abc' }, error: null })
+    mockCreateUser.mockResolvedValueOnce({ data: { user: { id: 'user-xyz' } }, error: null })
+    mockSendVerificationEmail.mockResolvedValueOnce({ ok: false, error: 'resend down' })
+
+    const res = await POST(makeRequest(VALID_BODY))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.success).toBe(true)
   })
 
   it('does not create a campaign directly', async () => {
