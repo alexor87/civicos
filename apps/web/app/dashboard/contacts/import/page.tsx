@@ -346,7 +346,11 @@ export default function ImportContactsPage() {
                             onValueChange={(val) => handleMapChange(header, val)}
                           >
                             <SelectTrigger className={`w-full max-w-[240px] h-9 text-sm ${isRequired ? 'border-blue-300 bg-blue-50/50' : ''}`}>
-                              <SelectValue />
+                              <SelectValue>
+                                {currentValue
+                                  ? IMPORTABLE_FIELDS.find(f => f.value === currentValue)?.label ?? currentValue
+                                  : <span className="text-slate-400">— Ignorar —</span>}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__ignore__">
