@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { ExpandableMap } from '@/components/maps/ExpandableMap'
-import { VisitDetailSheet, type VisitRow } from './VisitDetailSheet'
+import { ContactMapSheet, type ContactMapData } from './ContactMapSheet'
 import type { ContactPoint } from '@/components/maps/MapFilterPanel'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ interface Props {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function CanvassingMapWithPanel(props: Props) {
-  const [selectedVisit, setSelectedVisit] = useState<VisitRow | null>(null)
+  const [selectedContact, setSelectedContact] = useState<ContactMapData | null>(null)
   const [loading, setLoading] = useState(false)
   const [contactPoints, setContactPoints] = useState<ContactPoint[]>([])
   const [isLoadingPoints, setIsLoadingPoints] = useState(false)
@@ -133,22 +133,22 @@ export function CanvassingMapWithPanel(props: Props) {
   }, [])
 
   const handlePointClick = useCallback(async (point: ContactPoint) => {
-    // If it's a cluster, don't try to load visit details
+    // If it's a cluster, don't try to load details
     if ((point as ContactPoint & { is_cluster?: boolean }).is_cluster) {
       return
     }
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/canvassing/visits/by-contact/${point.id}?campaignId=${props.campaignId}`)
+      const res = await fetch(`/api/canvassing/contacts/${point.id}?campaignId=${props.campaignId}`)
       if (!res.ok) {
-        toast.info('Este contacto no tiene visitas registradas')
+        toast.error('No se pudo cargar la información del contacto')
         return
       }
-      const visit = await res.json() as VisitRow
-      setSelectedVisit(visit)
+      const data = await res.json() as ContactMapData
+      setSelectedContact(data)
     } catch {
-      toast.error('No se pudo cargar la información de la visita')
+      toast.error('No se pudo cargar la información del contacto')
     } finally {
       setLoading(false)
     }
@@ -171,10 +171,9 @@ export function CanvassingMapWithPanel(props: Props) {
           {isLoadingPoints ? 'Cargando puntos…' : 'Cargando perfil…'}
         </div>
       )}
-      <VisitDetailSheet
-        visit={selectedVisit}
-        onClose={() => setSelectedVisit(null)}
-        canApprove={false}
+      <ContactMapSheet
+        data={selectedContact}
+        onClose={() => setSelectedContact(null)}
       />
     </>
   )
