@@ -25,6 +25,7 @@ export function StepEssentials({ campaignId }: Props) {
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
 
   const status = watch('status')
+  const docNumberRegister = register('document_number')
 
   const checkDuplicate = async (docNumber: string) => {
     if (!docNumber || !campaignId) return
@@ -82,8 +83,11 @@ export function StepEssentials({ campaignId }: Props) {
           <Input
             id="document_number"
             placeholder="1023456789"
-            {...register('document_number')}
-            onBlur={(e) => checkDuplicate(e.target.value)}
+            {...docNumberRegister}
+            onBlur={(e) => {
+              docNumberRegister.onBlur(e)
+              checkDuplicate(e.target.value)
+            }}
           />
           {errors.document_number && <p className="text-xs text-red-500">{errors.document_number.message}</p>}
           {duplicateWarning && (
