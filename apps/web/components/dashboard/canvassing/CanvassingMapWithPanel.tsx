@@ -138,15 +138,13 @@ export function CanvassingMapWithPanel(props: Props) {
       return
     }
 
-    if (!point.visit_id) {
-      toast.info('Este contacto no tiene visitas registradas')
-      return
-    }
-
     setLoading(true)
     try {
-      const res = await fetch(`/api/canvassing/visits/${point.visit_id}`)
-      if (!res.ok) throw new Error('Not found')
+      const res = await fetch(`/api/canvassing/visits/by-contact/${point.id}?campaignId=${props.campaignId}`)
+      if (!res.ok) {
+        toast.info('Este contacto no tiene visitas registradas')
+        return
+      }
       const visit = await res.json() as VisitRow
       setSelectedVisit(visit)
     } catch {
@@ -154,7 +152,7 @@ export function CanvassingMapWithPanel(props: Props) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [props.campaignId])
 
   return (
     <>
