@@ -149,9 +149,24 @@ export default function ImportContactsPage() {
       setError('El archivo no contiene datos')
       return
     }
-    const fileHeaders = Object.keys(parsedRows[0]).filter(h => h.trim())
+
+    // Detect and skip Scrutix template metadata rows:
+    // Row 2 = "✱ Obligatorio"/"Opcional" indicators, Row 3 = example row
+    let dataRows = parsedRows
+    const firstValues = Object.values(parsedRows[0] ?? {}).map(v => String(v ?? '').trim())
+    const isMetaRow = firstValues.some(v => v === '✱ Obligatorio' || v === 'Opcional')
+    if (isMetaRow) {
+      dataRows = parsedRows.slice(2)
+    }
+
+    if (!dataRows.length) {
+      setError('El archivo no contiene datos')
+      return
+    }
+
+    const fileHeaders = Object.keys(dataRows[0]).filter(h => h.trim())
     setHeaders(fileHeaders)
-    setRawRows(parsedRows)
+    setRawRows(dataRows)
     setColumnMap(autoMap(fileHeaders))
     setStep('mapping')
   }
