@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { validateApiKey, hasScope } from '@/lib/validate-api-key'
+import { truncate, FIELD_LIMITS, isValidContactStatus } from '@/lib/security/sanitize'
 
 // ── GET — List contacts ───────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -47,9 +48,27 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}))
 
+  // Validate required fields
+  const firstName = truncate(body.first_name, FIELD_LIMITS.name)
+  const lastName  = truncate(body.last_name,  FIELD_LIMITS.name)
+  if (!firstName || !lastName) {
+    return NextResponse.json({ error: 'first_name and last_name are required' }, { status: 422 })
+  }
+
+  // Allowlist fields — no mass assignment
   const { data: contact, error } = await supabase
     .from('contacts')
-    .insert({ ...body, campaign_id: ctx.campaignId })
+    .insert({
+      campaign_id:     ctx.campaignId,
+      first_name:      firstName,
+      last_name:       lastName,
+      email:           truncate(body.email,   FIELD_LIMITS.email),
+      phone:           truncate(body.phone,   FIELD_LIMITS.phone),
+      document_number: truncate(body.document_number, FIELD_LIMITS.short),
+      address:         truncate(body.address, FIELD_LIMITS.medium),
+      notes:           truncate(body.notes,   FIELD_LIMITS.notes),
+      status:          isValidContactStatus(body.status) ? body.status : 'unknown',
+    })
     .select('id, first_name, last_name, email, phone, status, created_at')
     .single()
 

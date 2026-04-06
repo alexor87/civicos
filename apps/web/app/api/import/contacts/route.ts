@@ -130,13 +130,22 @@ export async function POST(request: NextRequest) {
   const preMapped: boolean = body.preMapped === true
   if (!rawRows?.length) return NextResponse.json({ error: 'No data provided' }, { status: 400 })
 
+  // DoS prevention: limit rows per import
+  const MAX_ROWS = 5_000
+  if (rawRows.length > MAX_ROWS) {
+    return NextResponse.json({ error: `Máximo ${MAX_ROWS} filas por importación` }, { status: 400 })
+  }
+
   // If rows come from the column mapper UI, they're already mapped to DB field names.
-  // Otherwise, apply header alias normalization as fallback.
+  // Apply the same field allowlist in both paths to prevent preMapped field injection bypass.
   const normalizedRows: NormalizedRow[] = preMapped
     ? rawRows.map(row => {
         const nr: NormalizedRow = {}
         for (const [k, v] of Object.entries(row)) {
-          nr[k] = typeof v === 'number' ? String(v) : (v as string)
+          // Only allow known fields — prevents arbitrary column injection
+          if (VALID_CONTACT_FIELDS.has(k) || META_FIELDS.has(k) || k === 'tags') {
+            nr[k] = typeof v === 'number' ? String(v) : (v as string)
+          }
         }
         return nr
       })
@@ -182,6 +191,10 @@ export async function POST(request: NextRequest) {
       metadata: {},
     }
 
+    // Field length limits (prevent DoS via oversized strings)
+    const MAX_FIELD_LEN = 500
+    const MAX_NOTES_LEN = 3_000
+
     // Add optional fields that exist in DB
     for (const field of VALID_CONTACT_FIELDS) {
       if (contact[field] !== undefined) continue // already set above
@@ -190,7 +203,7 @@ export async function POST(request: NextRequest) {
       if (field === 'birth_date') {
         contact[field] = parseDateOrNull(val)
       } else {
-        contact[field] = val
+        contact[field] = val.slice(0, field === 'notes' ? MAX_NOTES_LEN : MAX_FIELD_LEN)
       }
     }
 
@@ -198,7 +211,7 @@ export async function POST(request: NextRequest) {
     const metadata: Record<string, unknown> = {}
     for (const field of META_FIELDS) {
       const val = row[field]?.trim()
-      if (val) metadata[field] = val
+      if (val) metadata[field] = val.slice(0, MAX_FIELD_LEN)
     }
     if (Object.keys(metadata).length) contact.metadata = metadata
 

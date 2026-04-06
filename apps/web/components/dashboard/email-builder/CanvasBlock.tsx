@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useCallback } from 'react'
+import DOMPurify from 'isomorphic-dompurify'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Pencil, Trash2 } from 'lucide-react'
@@ -37,7 +38,7 @@ function HeaderPreview({ block }: { block: HeaderBlock }) {
         <div
           className="text-xl font-bold leading-snug [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
           style={{ color: block.props.textColor }}
-          dangerouslySetInnerHTML={{ __html: block.props.text }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.props.text) }}
         />
       ) : (
         <h2 className="text-xl font-bold leading-snug" style={{ color: block.props.textColor }}>
@@ -57,8 +58,7 @@ function TextPreview({ block }: { block: TextBlock }) {
       <div
         className="px-6 py-4 bg-white prose prose-sm max-w-none"
         style={{ textAlign: block.props.align, color: block.props.color, fontSize }}
-        // Content is user-generated inside this app only — not from external sources
-        dangerouslySetInnerHTML={{ __html: block.props.content }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.props.content) }}
       />
     )
   }

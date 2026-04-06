@@ -25,9 +25,15 @@ export async function GET(req: NextRequest) {
   if (!campaignId) return NextResponse.json({ error: 'No campaign' }, { status: 400 })
 
   const { searchParams } = new URL(req.url)
-  const format = searchParams.get('format') ?? 'csv'
-  const status = searchParams.get('status')
+  const formatParam = searchParams.get('format') ?? 'csv'
+  const format = ['csv', 'xlsx'].includes(formatParam) ? formatParam : 'csv'
+  const statusParam = searchParams.get('status')
   const q = searchParams.get('q')
+
+  // Validate enum and limit search string length
+  const VALID_STATUSES = ['supporter', 'undecided', 'opponent', 'unknown']
+  const status = statusParam && VALID_STATUSES.includes(statusParam) ? statusParam : null
+  const safeQ = q ? q.slice(0, 200) : null
 
   let query = supabase
     .from('contacts')
@@ -37,7 +43,7 @@ export async function GET(req: NextRequest) {
     .limit(10000)
 
   if (status) query = query.eq('status', status)
-  if (q) query = query.textSearch('search_vec', q, { type: 'websearch' })
+  if (safeQ) query = query.textSearch('search_vec', safeQ, { type: 'websearch' })
 
   const { data: contacts, error } = await query
 

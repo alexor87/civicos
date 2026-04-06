@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { deleteCampaign } from '../actions'
 import { SendCampaignButton } from '@/components/dashboard/SendCampaignButton'
 import { TestEmailButton } from '@/components/dashboard/TestEmailButton'
+import DOMPurify from 'isomorphic-dompurify'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
   draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
@@ -155,10 +156,10 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
                 <p className="text-xs text-[#6a737d] truncate">{campaign.subject}</p>
               </div>
             </div>
-            {/* Email body */}
+            {/* Email body — sanitized to prevent XSS */}
             <div
               className="bg-white"
-              dangerouslySetInnerHTML={{ __html: campaign.body_html }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(campaign.body_html ?? '') }}
             />
           </div>
         </div>

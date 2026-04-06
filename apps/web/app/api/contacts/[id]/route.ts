@@ -96,7 +96,7 @@ export async function PATCH(
     notes: data.notes || null,
     tags,
     metadata,
-  }).eq('id', id)
+  }).eq('id', id).eq('campaign_id', campaignId)  // IDOR fix: ensure contact belongs to user's campaign
 
   if (error) {
     return NextResponse.json({ error: 'db_error', message: error.message }, { status: 500 })

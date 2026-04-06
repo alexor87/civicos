@@ -13,6 +13,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'campaign_id required' }, { status: 400 })
   }
 
+  // Verify campaign ownership — IDOR fix
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('campaign_ids')
+    .eq('id', user.id)
+    .single()
+
+  const campaignIds: string[] = profile?.campaign_ids ?? []
+  if (!campaignIds.includes(campaign_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { data, error } = await supabase
     .from('knowledge_document_meta')
     .select('*')

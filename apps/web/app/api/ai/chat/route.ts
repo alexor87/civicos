@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
+import { sanitizeForPrompt } from '@/lib/security/sanitize'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -56,12 +57,13 @@ export async function POST(req: NextRequest) {
     ? Math.ceil((new Date(campaign.election_date).getTime() - Date.now()) / 86_400_000)
     : null
 
+  // Sanitize DB-sourced content before inserting into prompts (prompt injection prevention)
   const suggestionsSummary = (suggestions ?? [])
-    .map(s => `- [${s.priority}] ${s.title}: ${s.description}`)
+    .map(s => `- [${sanitizeForPrompt(s.priority, 20)}] ${sanitizeForPrompt(s.title, 100)}: ${sanitizeForPrompt(s.description, 200)}`)
     .join('\n') || '- Sin sugerencias activas'
 
   const agentRunsSummary = (agentRuns ?? [])
-    .map(r => `- ${r.agent_id}: ${r.status} (${r.trigger})`)
+    .map(r => `- ${sanitizeForPrompt(r.agent_id, 50)}: ${sanitizeForPrompt(r.status, 30)} (${sanitizeForPrompt(r.trigger, 50)})`)
     .join('\n') || '- Sin actividad reciente'
 
   const systemPrompt = `Eres el asistente de inteligencia de campaña para Scrutix. Ayudas al equipo de campaña a tomar decisiones estratégicas basadas en datos.
@@ -81,10 +83,15 @@ ${agentRunsSummary}
 
 Responde siempre en español. Sé conciso, directo y enfócate en acciones concretas para mejorar la campaña. Si no tienes datos suficientes para responder algo, dilo claramente.`
 
+  // Validate message count and length to prevent abuse
+  if (messages.length > 50) {
+    return NextResponse.json({ error: 'Too many messages' }, { status: 400 })
+  }
+
   try {
     const adminSupabase = createAdminClient()
     const aiResult = await callAI(adminSupabase, profile.tenant_id, campaign_id,
-      messages.map(m => ({ role: m.role, content: m.content })),
+      messages.map(m => ({ role: m.role, content: String(m.content ?? '').slice(0, 4000) })),
       { system: systemPrompt, maxTokens: 1024 }
     )
 

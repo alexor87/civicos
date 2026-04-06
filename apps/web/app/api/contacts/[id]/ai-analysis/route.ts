@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
+import { sanitizeForPrompt, sanitizeTagsForPrompt } from '@/lib/security/sanitize'
+import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 
 // Simple in-memory cache keyed by contactId
 const cache = new Map<string, { data: unknown; expiresAt: number }>()
@@ -24,6 +26,12 @@ export async function GET(
     .single()
 
   if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Rate limit: 10 AI calls per tenant per hour
+  const rateCheck = checkAgentRateLimit(profile.tenant_id, 'contact-ai-analysis')
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again later.' }, { status: 429 })
+  }
 
   // Check cache (only for regular analysis, not plan generation)
   if (!wantPlan) {
@@ -59,8 +67,16 @@ export async function GET(
     .order('created_at', { ascending: false })
     .limit(5)
 
+  // Sanitize user-controlled fields before inserting into prompts (prompt injection prevention)
+  const safeFirstName = sanitizeForPrompt(contact.first_name, 100)
+  const safeLastName  = sanitizeForPrompt(contact.last_name,  100)
+  const safeStatus    = sanitizeForPrompt(contact.status, 50)
+  const safeZone      = sanitizeForPrompt(contact.district ?? contact.city, 100)
+  const safeTags      = sanitizeTagsForPrompt(contact.tags)
+  const safeNotes     = sanitizeForPrompt(contact.notes, 300)
+
   const visitsText = (visits ?? [])
-    .map(v => `- ${v.created_at.split('T')[0]}: resultado=${v.result}, simpatía=${v.sympathy_level ?? 'N/A'}, notas="${v.notes ?? ''}"`)
+    .map(v => `- ${v.created_at.split('T')[0]}: resultado=${sanitizeForPrompt(v.result, 50)}, simpatía=${v.sympathy_level ?? 'N/A'}, notas="${sanitizeForPrompt(v.notes, 150)}"`)
     .join('\n') || 'Sin visitas previas.'
 
   if (wantPlan) {
@@ -69,11 +85,11 @@ export async function GET(
         role: 'user',
         content: `Eres un estratega político. Genera un plan de alcance breve (3-4 oraciones) y accionable para este contacto de campaña.
 
-Contacto: ${contact.first_name} ${contact.last_name}
-Estado: ${contact.status}
-Zona: ${contact.district ?? contact.city ?? 'No especificada'}
-Tags: ${contact.tags.join(', ') || 'ninguno'}
-Notas: ${contact.notes ?? 'ninguna'}
+Contacto: ${safeFirstName} ${safeLastName}
+Estado: ${safeStatus}
+Zona: ${safeZone || 'No especificada'}
+Tags: ${safeTags}
+Notas: ${safeNotes || 'ninguna'}
 Historial de visitas:
 ${visitsText}
 
@@ -95,11 +111,11 @@ Responde solo con el plan en texto plano, sin formato markdown, en español.`,
 Genera 3-5 tags cortos que describan al contacto (ej: "Pro-infraestructura", "Votante frecuente", "Zona rural").
 El insight debe ser 1-2 oraciones accionables para el equipo de campaña.
 
-Contacto: ${contact.first_name} ${contact.last_name}
-Estado: ${contact.status}
-Zona: ${contact.district ?? contact.city ?? 'No especificada'}
-Tags actuales: ${contact.tags.join(', ') || 'ninguno'}
-Notas: ${contact.notes ?? 'ninguna'}
+Contacto: ${safeFirstName} ${safeLastName}
+Estado: ${safeStatus}
+Zona: ${safeZone || 'No especificada'}
+Tags actuales: ${safeTags}
+Notas: ${safeNotes || 'ninguna'}
 Historial de visitas:
 ${visitsText}
 

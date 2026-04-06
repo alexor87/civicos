@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
+import { sanitizeForPrompt } from '@/lib/security/sanitize'
+import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 
 // GET /api/calendar/events/[id]/intelligence — CRM data for the event zone
 export async function GET(
@@ -132,6 +134,12 @@ export async function POST(
 
   if (!profile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  // Rate limit: 10 AI calls per tenant per hour
+  const rateCheck = checkAgentRateLimit(profile.tenant_id, 'calendar-intelligence')
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again later.' }, { status: 429 })
+  }
+
   // Mark as generating
   await supabase
     .from('calendar_events')
@@ -174,26 +182,26 @@ export async function POST(
   const sympathizers   = contacts?.filter(c => (c.sympathy_level as number) >= 4).length ?? 0
   const undecided      = contacts?.filter(c => c.intention_vote === 'undecided' || !c.intention_vote).length ?? 0
 
-  // Build linked contacts info for the prompt
+  // Build linked contacts info for the prompt — sanitize all user-controlled fields
   const linkedContactsInfo = briefingLinkedContacts.length > 0
     ? `\nCONTACTOS VINCULADOS AL EVENTO:\n${briefingLinkedContacts.map((c: any, i: number) =>
-        `${i + 1}. ${c.first_name} ${c.last_name}` +
-        (c.status ? ` — Estado: ${c.status}` : '') +
+        `${i + 1}. ${sanitizeForPrompt(c.first_name, 50)} ${sanitizeForPrompt(c.last_name, 50)}` +
+        (c.status ? ` — Estado: ${sanitizeForPrompt(c.status, 30)}` : '') +
         (c.sympathy_level ? ` — Nivel simpatía: ${c.sympathy_level}/5` : '') +
-        (c.intention_vote ? ` — Intención voto: ${c.intention_vote}` : '') +
-        (c.municipality ? ` — Municipio: ${c.municipality}` : '') +
-        (c.notes ? ` — Notas: ${c.notes}` : '')
+        (c.intention_vote ? ` — Intención voto: ${sanitizeForPrompt(c.intention_vote, 30)}` : '') +
+        (c.municipality ? ` — Municipio: ${sanitizeForPrompt(c.municipality, 80)}` : '') +
+        (c.notes ? ` — Notas: ${sanitizeForPrompt(c.notes, 150)}` : '')
       ).join('\n')}\n`
     : ''
 
   const prompt = `Eres el estratega político jefe de la campaña. Genera un briefing ejecutivo para el siguiente evento:
 
-EVENTO: ${event.title}
-TIPO: ${event.event_type}
+EVENTO: ${sanitizeForPrompt(event.title, 200)}
+TIPO: ${sanitizeForPrompt(event.event_type, 50)}
 FECHA: ${new Date(event.start_at).toLocaleString('es-CO')}
-LUGAR: ${event.location_text ?? 'No especificado'}
-MUNICIPIO: ${event.municipality_name ?? 'No especificado'}
-BARRIO/SECTOR: ${event.neighborhood_name ?? 'No especificado'}
+LUGAR: ${sanitizeForPrompt(event.location_text, 200) || 'No especificado'}
+MUNICIPIO: ${sanitizeForPrompt(event.municipality_name, 100) || 'No especificado'}
+BARRIO/SECTOR: ${sanitizeForPrompt(event.neighborhood_name, 100) || 'No especificado'}
 ASISTENCIA ESPERADA: ${event.expected_attendance ?? 'No especificada'}
 
 DATOS CRM DE LA ZONA:

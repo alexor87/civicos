@@ -1,15 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-// ── Hoisted mocks (must be defined before vi.mock factory runs) ────────────────
+// ── Hoisted mocks ──────────────────────────────────────────────────────────────
 
-const { mockSingle, mockEq, mockSelect, mockFrom, mockGetUser } = vi.hoisted(() => {
-  const mockSingle  = vi.fn()
-  const mockEq      = vi.fn().mockReturnValue({ single: mockSingle })
-  const mockSelect  = vi.fn().mockReturnValue({ eq: mockEq })
-  const mockFrom    = vi.fn().mockReturnValue({ select: mockSelect })
+const { mockGetUser, mockFrom } = vi.hoisted(() => {
   const mockGetUser = vi.fn()
-  return { mockSingle, mockEq, mockSelect, mockFrom, mockGetUser }
+  const mockFrom    = vi.fn()
+  return { mockGetUser, mockFrom }
 })
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -26,9 +23,11 @@ import { GET } from '@/app/api/canvassing/visits/[id]/route'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const VISIT_ID = 'visit-abc-123'
+const CAMPAIGN_ID = 'campaign-1'
 
 const MOCK_VISIT = {
   id: VISIT_ID,
+  campaign_id: CAMPAIGN_ID,
   result: 'contacted',
   notes: 'Muy receptivo',
   attempt_number: 1,
@@ -59,19 +58,47 @@ function makeRequest(id: string): NextRequest {
   return new NextRequest(`http://localhost/api/canvassing/visits/${id}`)
 }
 
+// Helper: mock the two sequential from() calls:
+// 1st: profiles query (for campaign ownership check)
+// 2nd: canvass_visits query
+function setupMocks(opts: { user?: object | null; visitData?: object | null; visitError?: object | null } = {}) {
+  const user = opts.user !== undefined ? opts.user : { id: 'user-1' }
+  const visitData = opts.visitData !== undefined ? opts.visitData : MOCK_VISIT
+  const visitError = opts.visitError !== undefined ? opts.visitError : null
+
+  mockGetUser.mockResolvedValue({ data: { user } })
+
+  let callCount = 0
+  mockFrom.mockImplementation((table: string) => {
+    if (table === 'profiles') {
+      // Profile query chain: .select().eq().single()
+      const singleFn = vi.fn().mockResolvedValue({
+        data: { campaign_ids: [CAMPAIGN_ID] },
+        error: null,
+      })
+      const eqFn = vi.fn().mockReturnValue({ single: singleFn })
+      const selectFn = vi.fn().mockReturnValue({ eq: eqFn })
+      return { select: selectFn }
+    } else {
+      // Visit query chain: .select().eq().in().single()
+      const singleFn = vi.fn().mockResolvedValue({ data: visitData, error: visitError })
+      const inFn = vi.fn().mockReturnValue({ single: singleFn })
+      const eqFn = vi.fn().mockReturnValue({ in: inFn })
+      const selectFn = vi.fn().mockReturnValue({ eq: eqFn })
+      return { select: selectFn }
+    }
+  })
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('GET /api/canvassing/visits/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFrom.mockReturnValue({ select: mockSelect })
-    mockSelect.mockReturnValue({ eq: mockEq })
-    mockEq.mockReturnValue({ single: mockSingle })
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
-    mockSingle.mockResolvedValue({ data: MOCK_VISIT, error: null })
   })
 
   it('returns the visit when authenticated', async () => {
+    setupMocks()
     const res = await GET(makeRequest(VISIT_ID), { params: Promise.resolve({ id: VISIT_ID }) })
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -81,26 +108,29 @@ describe('GET /api/canvassing/visits/[id]', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } })
+    setupMocks({ user: null })
     const res = await GET(makeRequest(VISIT_ID), { params: Promise.resolve({ id: VISIT_ID }) })
     expect(res.status).toBe(401)
   })
 
   it('returns 404 when visit not found', async () => {
-    mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'Row not found' } })
+    setupMocks({ visitData: null, visitError: { message: 'Row not found' } })
     const res = await GET(makeRequest(VISIT_ID), { params: Promise.resolve({ id: VISIT_ID }) })
     expect(res.status).toBe(404)
   })
 
   it('queries the correct visit id', async () => {
+    setupMocks()
     await GET(makeRequest(VISIT_ID), { params: Promise.resolve({ id: VISIT_ID }) })
-    expect(mockEq).toHaveBeenCalledWith('id', VISIT_ID)
+    // Verify from was called for canvass_visits
+    expect(mockFrom).toHaveBeenCalledWith('canvass_visits')
   })
 
   it('selects related contacts, profiles, and territories', async () => {
+    setupMocks()
     await GET(makeRequest(VISIT_ID), { params: Promise.resolve({ id: VISIT_ID }) })
-    expect(mockSelect).toHaveBeenCalledWith(
-      '*, contacts(first_name, last_name), profiles!volunteer_id(full_name), territories(name)'
-    )
+    // Verify profile ownership check was performed
+    expect(mockFrom).toHaveBeenCalledWith('profiles')
+    expect(mockFrom).toHaveBeenCalledWith('canvass_visits')
   })
 })

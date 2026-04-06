@@ -28,6 +28,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required params: campaignId, minLat, minLng, maxLat, maxLng' }, { status: 400 })
   }
 
+  // Validate coordinate ranges and reject Infinity/NaN
+  if (!isFinite(minLat) || !isFinite(minLng) || !isFinite(maxLat) || !isFinite(maxLng) ||
+      minLat < -90 || maxLat > 90 || minLng < -180 || maxLng > 180) {
+    return NextResponse.json({ error: 'Invalid coordinate values' }, { status: 400 })
+  }
+
   // Verify campaign ownership
   const { data: profile } = await supabase
     .from('profiles')

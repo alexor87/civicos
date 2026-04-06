@@ -11,6 +11,15 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  // Verify campaign ownership — IDOR fix
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('campaign_ids')
+    .eq('id', user.id)
+    .single()
+  const campaignIds: string[] = profile?.campaign_ids ?? []
+  if (!campaignIds.length) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const body = await request.json()
 
   // Only allow updating safe fields
@@ -28,6 +37,7 @@ export async function PATCH(
     .from('calendar_events')
     .update(updates)
     .eq('id', id)
+    .in('campaign_id', campaignIds)  // IDOR fix
     .select()
     .single()
 
@@ -71,6 +81,15 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+  // Verify campaign ownership — IDOR fix
+  const { data: deleteProfile } = await supabase
+    .from('profiles')
+    .select('campaign_ids')
+    .eq('id', user.id)
+    .single()
+  const deleteCampaignIds: string[] = deleteProfile?.campaign_ids ?? []
+  if (!deleteCampaignIds.length) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const { searchParams } = new URL(request.url)
   const reason = searchParams.get('reason') ?? null
 
@@ -83,6 +102,7 @@ export async function DELETE(
       updated_at:          new Date().toISOString(),
     })
     .eq('id', id)
+    .in('campaign_id', deleteCampaignIds)  // IDOR fix
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
