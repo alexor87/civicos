@@ -38,9 +38,10 @@ function makeContact(overrides = {}) {
 
 const DEFAULT_PROPS = {
   contacts: [makeContact()],
-  total: 1,
-  page: 1,
+  estimatedTotal: 1,
   pageSize: 50,
+  hasMore: false,
+  hasPrev: false,
 }
 
 beforeEach(() => {
@@ -89,13 +90,13 @@ describe('ContactsTable', () => {
     expect(screen.getByText('MEDIO')).toBeInTheDocument()
   })
 
-  it('does not show pagination when only one page', () => {
-    render(<ContactsTable {...DEFAULT_PROPS} total={50} pageSize={50} />)
-    expect(screen.queryByText(/página/i)).not.toBeInTheDocument()
+  it('does not show pagination when no more pages', () => {
+    render(<ContactsTable {...DEFAULT_PROPS} hasMore={false} hasPrev={false} />)
+    expect(screen.queryByText(/siguiente/i)).not.toBeInTheDocument()
   })
 
-  it('shows pagination when more than one page exists', () => {
-    render(<ContactsTable {...DEFAULT_PROPS} total={120} pageSize={50} page={1} />)
-    expect(screen.getByText(/página 1 de 3/i)).toBeInTheDocument()
+  it('shows next button when hasMore is true', () => {
+    render(<ContactsTable {...DEFAULT_PROPS} hasMore={true} hasPrev={false} nextCursor="2024-01-15T10:00:00Z" />)
+    expect(screen.getByText(/siguiente/i)).toBeInTheDocument()
   })
 })

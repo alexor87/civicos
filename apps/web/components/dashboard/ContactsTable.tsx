@@ -71,15 +71,21 @@ function getProfileCompletion(contact: Contact): number {
 
 interface Props {
   contacts: Contact[]
-  total: number
-  page: number
+  estimatedTotal: number
   pageSize: number
+  nextCursor?: string
+  prevCursor?: string
+  hasMore: boolean
+  hasPrev: boolean
   searchQuery?: string
   statusFilter?: string
   campaignId?: string
 }
 
-export function ContactsTable({ contacts, total, page, pageSize, searchQuery, statusFilter, campaignId }: Props) {
+export function ContactsTable({
+  contacts, estimatedTotal, pageSize, nextCursor, prevCursor,
+  hasMore, hasPrev, searchQuery, statusFilter, campaignId,
+}: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParamsHook = useSearchParams()
@@ -94,11 +100,18 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
     } else {
       params.delete(key)
     }
-    params.set('page', '1')
+    // Reset cursor when filters change
+    params.delete('cursor')
+    params.delete('direction')
     startTransition(() => router.push(`${pathname}?${params.toString()}`))
   }, [router, pathname, searchParamsHook])
 
-  const totalPages = Math.ceil(total / pageSize)
+  const navigateCursor = useCallback((cursor: string, direction: 'next' | 'prev') => {
+    const params = new URLSearchParams(searchParamsHook.toString())
+    params.set('cursor', cursor)
+    params.set('direction', direction)
+    startTransition(() => router.push(`${pathname}?${params.toString()}`))
+  }, [router, pathname, searchParamsHook])
 
   return (
     <>
@@ -237,29 +250,28 @@ export function ContactsTable({ contacts, total, page, pageSize, searchQuery, st
           </Table>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
+        {/* Cursor-based Pagination */}
+        {(hasPrev || hasMore) && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">
-              Mostrando {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} de {total.toLocaleString()}
+              Mostrando {contacts.length} contactos de {estimatedTotal.toLocaleString()}
             </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline" size="sm"
-                disabled={page <= 1 || isPending}
-                onClick={() => updateQuery('page', String(page - 1))}
+                disabled={!hasPrev || isPending}
+                onClick={() => prevCursor && navigateCursor(prevCursor, 'prev')}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Anterior
               </Button>
-              <span className="text-sm text-slate-500 font-medium tabular-nums">
-                Página {page} de {totalPages}
-              </span>
               <Button
                 variant="outline" size="sm"
-                disabled={page >= totalPages || isPending}
-                onClick={() => updateQuery('page', String(page + 1))}
+                disabled={!hasMore || isPending}
+                onClick={() => nextCursor && navigateCursor(nextCursor, 'next')}
               >
-                <ChevronRight className="h-4 w-4" />
+                Siguiente
+                <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </div>

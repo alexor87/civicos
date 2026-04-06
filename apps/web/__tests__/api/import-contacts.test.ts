@@ -43,23 +43,21 @@ function setupAuth(role: string) {
   mockUserSupabase.from = vi.fn().mockReturnValue(profileChain)
 }
 
-function setupAdmin(existingContacts: { email?: string | null; phone?: string | null; document_number?: string | null }[] = []) {
-  let callCount = 0
+// Setup admin mock for upsert-based import (no pre-loading of existing contacts)
+function setupAdmin(insertedCount?: number) {
   mockAdminSupabase.from = vi.fn().mockImplementation(() => {
-    callCount++
     const chain: Record<string, unknown> = {}
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
-    chain.insert = vi.fn().mockReturnValue({
-      select: vi.fn().mockResolvedValue({ data: [], error: null }),
+    chain.upsert = vi.fn().mockImplementation((batch: unknown[]) => {
+      // Simulate: insertedCount rows actually inserted, rest were duplicates
+      const actualInserted = insertedCount !== undefined
+        ? batch.slice(0, insertedCount)
+        : batch
+      return {
+        select: vi.fn().mockResolvedValue({ data: actualInserted.map(() => ({ id: 'new-id' })), error: null }),
+      }
     })
-    if (callCount === 1) {
-      chain.then = (resolve: (v: { data: typeof existingContacts }) => void) =>
-        Promise.resolve().then(() => resolve({ data: existingContacts }))
-    } else {
-      chain.then = (resolve: (v: { error: null }) => void) =>
-        Promise.resolve().then(() => resolve({ error: null }))
-    }
     return chain
   })
 }
@@ -70,14 +68,12 @@ function setupAdminCapture(): { getInserted: () => unknown[] } {
     const chain: Record<string, unknown> = {}
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
-    chain.insert = vi.fn().mockImplementation((batch: unknown[]) => {
+    chain.upsert = vi.fn().mockImplementation((batch: unknown[]) => {
       insertedBatch = batch
       return {
-        select: vi.fn().mockResolvedValue({ data: [], error: null }),
+        select: vi.fn().mockResolvedValue({ data: batch.map(() => ({ id: 'new-id' })), error: null }),
       }
     })
-    chain.then = (resolve: (v: { data: [] }) => void) =>
-      Promise.resolve().then(() => resolve({ data: [] }))
     return chain
   })
   return { getInserted: () => insertedBatch }
@@ -136,31 +132,14 @@ describe('POST /api/import/contacts', () => {
     expect(json.imported).toBe(0)
   })
 
-  // ── Deduplication ──────────────────────────────────────────────────────
+  // ── Deduplication (now handled by DB via ON CONFLICT DO NOTHING) ──────
 
-  it('skips row with duplicate email (already in DB)', async () => {
+  it('reports skipped count when DB deduplicates via ON CONFLICT', async () => {
     setupAuth('campaign_manager')
-    setupAdmin([{ email: 'juan@example.com', phone: null }])
-    const res = await POST(makeRequest({ rows: [{ first_name: 'Juan', last_name: 'García', email: 'juan@example.com' }] }))
-    const json = await res.json()
-    expect(json.skipped).toBe(1)
-    expect(json.imported).toBe(0)
-  })
-
-  it('skips row with duplicate phone (already in DB)', async () => {
-    setupAuth('campaign_manager')
-    setupAdmin([{ email: null, phone: '5551234567' }])
-    const res = await POST(makeRequest({ rows: [{ first_name: 'Juan', last_name: 'García', phone: '555-123-4567' }] }))
-    const json = await res.json()
-    expect(json.skipped).toBe(1)
-    expect(json.imported).toBe(0)
-  })
-
-  it('deduplicates within the same batch (two rows same email)', async () => {
-    setupAuth('campaign_manager')
-    setupAdmin()
+    // Simulate: 2 rows sent, only 1 actually inserted (1 was a duplicate)
+    setupAdmin(1)
     const rows = [
-      { first_name: 'Juan', last_name: 'García', email: 'dup@example.com' },
+      { first_name: 'Juan', last_name: 'García', email: 'juan@example.com' },
       { first_name: 'María', last_name: 'López', email: 'dup@example.com' },
     ]
     const res = await POST(makeRequest({ rows }))
@@ -169,14 +148,16 @@ describe('POST /api/import/contacts', () => {
     expect(json.skipped).toBe(1)
   })
 
-  it('deduplicates by document_number', async () => {
+  it('uses upsert with ignoreDuplicates instead of loading all contacts into memory', async () => {
     setupAuth('campaign_manager')
-    setupAdmin([{ email: null, phone: null, document_number: '15438817' }])
-    const rows = [{ NOMBRE: 'Cesar', APELLIDO: 'Holt', 'NRO CC': '15438817' }]
-    const res = await POST(makeRequest({ rows }))
-    const json = await res.json()
-    expect(json.skipped).toBe(1)
-    expect(json.imported).toBe(0)
+    setupAdmin()
+    const rows = [
+      { first_name: 'Ana', last_name: 'Pérez', email: 'ana@example.com' },
+    ]
+    await POST(makeRequest({ rows }))
+    // Verify upsert was called (not insert)
+    const fromCall = mockAdminSupabase.from.mock.results[0]?.value
+    expect(fromCall.upsert).toHaveBeenCalled()
   })
 
   // ── Status normalization ───────────────────────────────────────────────

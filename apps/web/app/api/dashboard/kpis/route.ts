@@ -21,26 +21,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const [
-    { count: totalContacts, error: e1 },
-    { count: supporters, error: e2 },
-    { count: pendingVisits, error: e3 },
-    { count: totalVisits, error: e4 },
-  ] = await Promise.all([
-    supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('campaign_id', campaignId),
-    supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'supporter'),
-    supabase.from('canvass_visits').select('*', { count: 'exact', head: true }).eq('campaign_id', campaignId).is('approved_at', null),
-    supabase.from('canvass_visits').select('*', { count: 'exact', head: true }).eq('campaign_id', campaignId),
-  ])
+  // Read pre-computed stats from campaign_stats (O(1) via trigger-maintained table)
+  const { data: stats, error } = await supabase
+    .from('campaign_stats')
+    .select('total_contacts, supporters, total_visits, pending_visits')
+    .eq('campaign_id', campaignId)
+    .single()
 
-  if (e1 || e2 || e3 || e4) {
-    return NextResponse.json({ error: 'Failed to fetch KPIs' }, { status: 500 })
+  if (error || !stats) {
+    // Fallback: campaign has no stats row yet (new campaign with 0 contacts)
+    return NextResponse.json({
+      totalContacts: 0,
+      supporters: 0,
+      pendingVisits: 0,
+      totalVisits: 0,
+      supportRate: 0,
+      coverageRate: 0,
+    })
   }
 
-  const tc = totalContacts ?? 0
-  const s = supporters ?? 0
-  const tv = totalVisits ?? 0
-  const pv = pendingVisits ?? 0
+  const tc = stats.total_contacts ?? 0
+  const s = stats.supporters ?? 0
+  const tv = stats.total_visits ?? 0
+  const pv = stats.pending_visits ?? 0
 
   return NextResponse.json({
     totalContacts: tc,

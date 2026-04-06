@@ -23,6 +23,13 @@ interface GeoUnit {
   geojson: object
 }
 
+interface MapBounds {
+  minLat: number
+  minLng: number
+  maxLat: number
+  maxLng: number
+}
+
 interface Props {
   territories: Territory[]
   height?: string
@@ -34,6 +41,7 @@ interface Props {
   defaultCenter?: [number, number]
   defaultZoom?: number
   colorMode?: ColorMode
+  onBoundsChange?: (bounds: MapBounds, zoom: number) => void
 }
 
 export function TerritoryMapDynamic(props: Props) {

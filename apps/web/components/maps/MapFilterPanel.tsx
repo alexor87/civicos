@@ -15,6 +15,9 @@ export interface ContactPoint {
   electoral_priority: string | null
   capture_source: string | null
   visit_id?: string | null
+  // Cluster fields (from server-side clustering)
+  point_count?: number
+  is_cluster?: boolean
 }
 
 export type ColorMode = 'visit_result' | 'status' | 'vote_intention' | 'electoral_priority' | 'campaign_role' | 'capture_source'

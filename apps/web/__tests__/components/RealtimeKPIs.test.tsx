@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, act } from '@testing-library/react'
 import { RealtimeKPIs } from '@/components/dashboard/RealtimeKPIs'
 
 // Mock DashboardKPIs as a simple div with data attributes
@@ -46,6 +46,7 @@ const initialKPIs = {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.resetAllMocks()
   mockSupabase.channel.mockReturnValue(mockChannel)
   mockChannel.on.mockReturnValue(mockChannel)
@@ -61,6 +62,10 @@ beforeEach(() => {
       coverageRate: 80,
     }),
   })
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('RealtimeKPIs', () => {
@@ -89,44 +94,75 @@ describe('RealtimeKPIs', () => {
     expect(tables).toContain('canvass_visits')
   })
 
-  it('fetches fresh KPIs and updates state when realtime event fires', async () => {
+  it('debounces and fetches fresh KPIs after 5 seconds', async () => {
     render(<RealtimeKPIs campaignId="c1" initialKPIs={initialKPIs} />)
 
-    // Get the callback from the first .on() call (contacts listener)
     const callback = mockChannel.on.mock.calls[0][2] as () => void
 
+    // Fire the realtime event
+    act(() => { callback() })
+
+    // Fetch should NOT have been called yet (debounce pending)
+    expect(fetch).not.toHaveBeenCalled()
+
+    // Advance past the 5-second debounce and flush microtasks
     await act(async () => {
+      await vi.advanceTimersByTimeAsync(5100)
+    })
+
+    expect(fetch).toHaveBeenCalledWith('/api/dashboard/kpis?campaignId=c1')
+    expect(screen.getByTestId('kpis').dataset.total).toBe('101')
+  }, 15000)
+
+  it('collapses multiple rapid events into a single fetch', async () => {
+    render(<RealtimeKPIs campaignId="c1" initialKPIs={initialKPIs} />)
+
+    const callback = mockChannel.on.mock.calls[0][2] as () => void
+
+    // Fire 5 rapid events
+    act(() => {
+      callback()
+      callback()
+      callback()
+      callback()
       callback()
     })
 
-    await waitFor(() => {
-      expect(screen.getByTestId('kpis').dataset.total).toBe('101')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5100)
     })
-    expect(fetch).toHaveBeenCalledWith('/api/dashboard/kpis?campaignId=c1')
-  })
+
+    // Should only have fetched once despite 5 events
+    expect(fetch).toHaveBeenCalledTimes(1)
+  }, 15000)
 
   it('does not update state if fetch fails', async () => {
     ;(fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ ok: false })
     render(<RealtimeKPIs campaignId="c1" initialKPIs={initialKPIs} />)
 
     const callback = mockChannel.on.mock.calls[0][2] as () => void
-    await act(async () => { callback() })
+    act(() => { callback() })
 
-    // State should not have changed — still shows 100
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5100)
+    })
+
     expect(screen.getByTestId('kpis').dataset.total).toBe('100')
-  })
+  }, 15000)
 
   it('silently handles fetch exceptions without crashing', async () => {
     ;(fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('network error'))
     render(<RealtimeKPIs campaignId="c1" initialKPIs={initialKPIs} />)
 
     const callback = mockChannel.on.mock.calls[0][2] as () => void
-    // Should not throw
-    await act(async () => { callback() })
+    act(() => { callback() })
 
-    // State unchanged — still shows initial
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5100)
+    })
+
     expect(screen.getByTestId('kpis').dataset.total).toBe('100')
-  })
+  }, 15000)
 
   it('removes channel on unmount', () => {
     const { unmount } = render(<RealtimeKPIs campaignId="c1" initialKPIs={initialKPIs} />)

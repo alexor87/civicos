@@ -145,21 +145,12 @@ export async function POST(request: NextRequest) {
   const adminSupabase = await createAdminClient()
 
   const VALID_STATUSES = ['supporter', 'undecided', 'opponent', 'unknown']
-  const imported: number[] = []
-  const skipped: string[] = []
+  let importedCount = 0
+  let skippedCount = 0
   const errors: string[] = []
   const BATCH_SIZE = 500
 
-  // Fetch existing emails, phones and document numbers for deduplication
-  const { data: existingContacts } = await adminSupabase
-    .from('contacts')
-    .select('email, phone, document_number')
-    .eq('campaign_id', campaignId)
-
-  const existingEmails = new Set(existingContacts?.map(c => c.email?.toLowerCase()).filter(Boolean))
-  const existingPhones = new Set(existingContacts?.map(c => c.phone?.replace(/\D/g, '')).filter(Boolean))
-  const existingDocs = new Set(existingContacts?.map(c => c.document_number?.trim()).filter(Boolean))
-
+  // Build contact objects with validation (JS-side) — dedup handled by DB via ON CONFLICT
   const contactsToInsert = []
 
   for (let i = 0; i < normalizedRows.length; i++) {
@@ -175,20 +166,6 @@ export async function POST(request: NextRequest) {
     const email = row.email?.trim().toLowerCase() || null
     const phone = row.phone?.replace(/\D/g, '') || null
     const documentNumber = row.document_number?.trim() || null
-
-    // Deduplication
-    if (email && existingEmails.has(email)) {
-      skipped.push(`Fila ${i + 2}: Email duplicado (${email})`)
-      continue
-    }
-    if (phone && existingPhones.has(phone)) {
-      skipped.push(`Fila ${i + 2}: Teléfono duplicado (${phone})`)
-      continue
-    }
-    if (documentNumber && existingDocs.has(documentNumber)) {
-      skipped.push(`Fila ${i + 2}: Documento duplicado (${documentNumber})`)
-      continue
-    }
 
     const status = VALID_STATUSES.includes(row.status ?? '') ? row.status! : 'unknown'
 
@@ -230,23 +207,53 @@ export async function POST(request: NextRequest) {
     if (tagsVal) contact.tags = tagsVal.split(',').map((t: string) => t.trim()).filter(Boolean)
 
     contactsToInsert.push(contact)
-    if (email) existingEmails.add(email)
-    if (phone) existingPhones.add(phone)
-    if (documentNumber) existingDocs.add(documentNumber)
   }
 
-  // Batch insert (return IDs + address fields for geocoding)
+  // Batch insert with ON CONFLICT DO NOTHING (dedup handled by DB unique indexes)
   const allInserted: { id: string; address?: string; municipality?: string; department?: string }[] = []
+
   for (let i = 0; i < contactsToInsert.length; i += BATCH_SIZE) {
     const batch = contactsToInsert.slice(i, i + BATCH_SIZE)
+    const batchSize = batch.length
+
     const { data: insertedData, error } = await adminSupabase
       .from('contacts')
-      .insert(batch)
+      .upsert(batch, {
+        onConflict: 'campaign_id,document_number',
+        ignoreDuplicates: true,
+      })
       .select('id, address, municipality, department')
+
     if (error) {
-      errors.push(`Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`)
+      // Handle unique constraint violations on email/phone
+      // These come as PostgreSQL error code 23505
+      if (error.code === '23505') {
+        // Fallback: insert one by one to identify which rows are duplicates
+        for (const row of batch) {
+          const { data: singleInsert, error: singleErr } = await adminSupabase
+            .from('contacts')
+            .upsert([row], {
+              onConflict: 'campaign_id,document_number',
+              ignoreDuplicates: true,
+            })
+            .select('id, address, municipality, department')
+
+          if (singleErr) {
+            skippedCount++
+          } else if (singleInsert?.length) {
+            importedCount++
+            allInserted.push(...singleInsert)
+          } else {
+            skippedCount++
+          }
+        }
+      } else {
+        errors.push(`Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`)
+      }
     } else {
-      imported.push(...batch.map((_, idx) => i + idx))
+      const insertedCount = insertedData?.length ?? 0
+      importedCount += insertedCount
+      skippedCount += batchSize - insertedCount
       if (insertedData) allInserted.push(...insertedData)
     }
   }
@@ -258,8 +265,8 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    imported: imported.length,
-    skipped: skipped.length,
+    imported: importedCount,
+    skipped: skippedCount,
     errors: errors.slice(0, 20),
   })
 }

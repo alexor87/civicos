@@ -28,8 +28,6 @@ export default async function CanvassingPage() {
     { count: totalVisits },
     { count: pendingApproval },
     { data: visitCounts },
-    { data: allVisitResults },
-    { data: visitsWithGeo },
   ] = await Promise.all([
     supabase.from('territories')
       .select('id, name, color, status, priority, geojson, estimated_contacts')
@@ -52,107 +50,12 @@ export default async function CanvassingPage() {
       .select('territory_id')
       .eq('campaign_id', campaignId ?? '')
       .not('territory_id', 'is', null),
-    supabase.from('canvass_visits')
-      .select('id, contact_id, result, vote_intention')
-      .eq('campaign_id', campaignId ?? '')
-      .order('created_at', { ascending: false }),
-    // Visits with GPS — used as fallback for contacts without geo
-    supabase.from('canvass_visits')
-      .select('contact_id, result, vote_intention, geo')
-      .eq('campaign_id', campaignId ?? '')
-      .not('geo', 'is', null)
-      .order('created_at', { ascending: false }),
   ])
 
-  // Contacts with geo — try with new columns (migration 025), fallback to base columns
-  let { data: contactsWithGeo, error: contactsGeoError } = await supabase
-    .from('contacts')
-    .select('id, geo, status, campaign_role, electoral_priority, capture_source')
-    .eq('campaign_id', campaignId ?? '')
-    .not('geo', 'is', null)
-  if (contactsGeoError) {
-    const fallback = await supabase
-      .from('contacts')
-      .select('id, geo, status')
-      .eq('campaign_id', campaignId ?? '')
-      .not('geo', 'is', null)
-    contactsWithGeo = fallback.data
-  }
-
-  // Parse EWKB hex (PostgREST format for GEOGRAPHY) → { lng, lat }
-  function parseWKB(hex: string): { lng: number; lat: number } | null {
-    if (!hex || hex.length < 50) return null
-    try {
-      const lngBuf = Buffer.from(hex.slice(18, 34), 'hex')
-      const latBuf = Buffer.from(hex.slice(34, 50), 'hex')
-      return { lng: lngBuf.readDoubleLE(0), lat: latBuf.readDoubleLE(0) }
-    } catch { return null }
-  }
-
-  // Build contact points for the heat map
-  type VisitRow = { id: string; contact_id: string; result: string; vote_intention: string | null; geo?: string | null }
-  const lastVisit = new Map<string, VisitRow>()
-  for (const v of (allVisitResults ?? []) as VisitRow[]) {
-    if (v.contact_id && !lastVisit.has(v.contact_id)) lastVisit.set(v.contact_id, v)
-  }
-  // Visit-geo fallback: last visit with GPS per contact (for contacts without contacts.geo)
-  const lastVisitGeo = new Map<string, VisitRow>()
-  for (const v of (visitsWithGeo ?? []) as VisitRow[]) {
-    if (v.contact_id && !lastVisitGeo.has(v.contact_id)) lastVisitGeo.set(v.contact_id, v)
-  }
-
-  type ContactPoint = {
-    id: string; lat: number; lng: number; last_result: string | null
-    status: string | null; vote_intention: string | null
-    campaign_role: string | null; electoral_priority: string | null; capture_source: string | null
-    visit_id?: string | null
-  }
-  const seenContactIds = new Set<string>()
-  const mapContactPoints: ContactPoint[] = []
-
-  // Primary: contacts with contacts.geo
-  for (const c of (contactsWithGeo ?? [])) {
-    if (!c.geo) continue
-    const coords = parseWKB(c.geo as string)
-    if (coords) {
-      seenContactIds.add(c.id)
-      const visit = lastVisit.get(c.id)
-      mapContactPoints.push({
-        id:                 c.id,
-        lat:                coords.lat,
-        lng:                coords.lng,
-        last_result:        visit?.result ?? null,
-        status:             (c.status as string | null) ?? null,
-        vote_intention:     visit?.vote_intention ?? null,
-        campaign_role:      (c.campaign_role as string | null) ?? null,
-        electoral_priority: (c.electoral_priority as string | null) ?? null,
-        capture_source:     (c.capture_source as string | null) ?? null,
-        visit_id:           visit?.id ?? null,
-      })
-    }
-  }
-
-  // Fallback: contacts without geo but with a visit that has GPS
-  for (const [contactId, vGeo] of lastVisitGeo) {
-    if (seenContactIds.has(contactId)) continue  // already added via contacts.geo
-    if (!vGeo.geo) continue
-    const coords = parseWKB(vGeo.geo)
-    if (coords) {
-      const visit = lastVisit.get(contactId)
-      mapContactPoints.push({
-        id:                 contactId,
-        lat:                coords.lat,
-        lng:                coords.lng,
-        last_result:        visit?.result ?? vGeo.result ?? null,
-        status:             null,
-        vote_intention:     visit?.vote_intention ?? vGeo.vote_intention ?? null,
-        campaign_role:      null,
-        electoral_priority: null,
-        capture_source:     null,
-        visit_id:           visit?.id ?? vGeo.id ?? null,
-      })
-    }
-  }
+  // NOTE: Contact geo points are NO LONGER loaded server-side.
+  // The map component fetches clustered points on-demand via /api/canvassing/map-points
+  // based on the current viewport bounds and zoom level.
+  // This eliminates loading all contacts with geo into memory (was the main bottleneck).
 
   const canApprove = ['super_admin', 'campaign_manager', 'field_coordinator'].includes(profile?.role ?? '')
 
@@ -228,7 +131,7 @@ export default async function CanvassingPage() {
         />
 
         {/* ── Coverage map ── */}
-        {((territories?.length ?? 0) > 0 || mapContactPoints.length > 0) && (
+        {((territories?.length ?? 0) > 0 || campaignId) && (
           <div className="bg-white border border-[#dcdee6] rounded-md overflow-hidden">
             <div className="px-5 py-3 border-b border-[#dcdee6]">
               <h2 className="text-sm font-semibold text-[#1b1f23]">Cobertura de territorios</h2>
@@ -251,7 +154,7 @@ export default async function CanvassingPage() {
               }))}
               coverageData={coverageData}
               visitData={visitDataForMap}
-              contactPoints={mapContactPoints}
+              campaignId={campaignId ?? ''}
               defaultCenter={[6.1543, -75.3744]}
               defaultZoom={13}
             />

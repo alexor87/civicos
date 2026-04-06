@@ -9,7 +9,7 @@ import { Upload, Layers } from 'lucide-react'
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; page?: string; department?: string; municipality?: string }>
+  searchParams: Promise<{ q?: string; status?: string; cursor?: string; direction?: string; department?: string; municipality?: string }>
 }) {
   const params = await searchParams
   const supabase = await createClient()
@@ -23,9 +23,7 @@ export default async function ContactsPage({
     .single()
 
   const campaignId = profile?.campaign_ids?.[0]
-  const page = parseInt(params.page ?? '1')
   const pageSize = 50
-  const offset = (page - 1) * pageSize
 
   // ── Geo units for cascade filter ────────────────────────────────────────────
   const { data: geoUnitsRaw } = await supabase
@@ -54,20 +52,46 @@ export default async function ContactsPage({
     municipiosByDept[deptName].push(u.name as string)
   }
 
-  // ── Contacts query ───────────────────────────────────────────────────────────
+  // ── Estimated total from campaign_stats (O(1) lookup) ────────────────────────
+  let estimatedTotal = 0
+  if (campaignId) {
+    const { data: stats } = await supabase
+      .from('campaign_stats')
+      .select('total_contacts')
+      .eq('campaign_id', campaignId)
+      .single()
+    estimatedTotal = (stats?.total_contacts as number) ?? 0
+  }
+
+  // ── Contacts query with cursor-based pagination ─────────────────────────────
+  const isGoingBack = params.direction === 'prev'
+
   let query = supabase
     .from('contacts')
-    .select('*', { count: 'exact' })
+    .select('*')
     .eq('campaign_id', campaignId ?? '')
-    .order('created_at', { ascending: false })
-    .range(offset, offset + pageSize - 1)
+    .order('created_at', { ascending: isGoingBack })
+    .limit(pageSize + 1) // Fetch N+1 to detect "has more"
 
-  if (params.q) {
-    const like = `%${params.q}%`
-    query = query.or(
-      `first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`
-    )
+  // Cursor-based pagination
+  if (params.cursor) {
+    if (isGoingBack) {
+      query = query.gt('created_at', params.cursor)
+    } else {
+      query = query.lt('created_at', params.cursor)
+    }
   }
+
+  // Search: full-text search for 3+ chars, prefix ILIKE for 1-2 chars
+  if (params.q) {
+    const q = params.q.trim()
+    if (q.length <= 2) {
+      query = query.or(`first_name.ilike.${q}%,last_name.ilike.${q}%`)
+    } else {
+      query = query.textSearch('search_vec', `'${q.replace(/'/g, "''")}'`, { type: 'websearch', config: 'spanish' })
+    }
+  }
+
   if (params.status) {
     query = query.eq('status', params.status)
   }
@@ -78,14 +102,39 @@ export default async function ContactsPage({
     query = query.eq('municipality', params.municipality)
   }
 
-  const { data: contacts, count } = await query
+  const { data: rawContacts } = await query
+
+  // Process cursor pagination results
+  let contacts = rawContacts ?? []
+
+  // If going backwards, we fetched in ascending order — reverse to show newest first
+  if (isGoingBack) {
+    contacts = contacts.reverse()
+  }
+
+  // Determine if there are more pages
+  const hasMore = contacts.length > pageSize
+  if (hasMore) {
+    contacts = contacts.slice(0, pageSize)
+  }
+
+  // Determine if there's a previous page (we came from somewhere)
+  const hasPrev = !!params.cursor
+
+  // Build cursor values for navigation
+  const nextCursor = hasMore && contacts.length > 0
+    ? contacts[contacts.length - 1].created_at
+    : undefined
+  const prevCursor = hasPrev && contacts.length > 0
+    ? contacts[0].created_at
+    : undefined
 
   return (
     <div className="p-6 space-y-4 animate-page-in">
       <div className="flex items-center justify-between pb-6 border-b border-slate-100 mb-6">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Contactos</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{count?.toLocaleString() ?? 0} contactos en la campaña</p>
+          <p className="text-sm text-slate-500 mt-0.5">{estimatedTotal.toLocaleString()} contactos en la campaña</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/dashboard/contacts/segments">
@@ -120,10 +169,13 @@ export default async function ContactsPage({
       )}
 
       <ContactsTable
-        contacts={contacts ?? []}
-        total={count ?? 0}
-        page={page}
+        contacts={contacts}
+        estimatedTotal={estimatedTotal}
         pageSize={pageSize}
+        nextCursor={nextCursor}
+        prevCursor={prevCursor}
+        hasMore={hasMore}
+        hasPrev={hasPrev}
         searchQuery={params.q}
         statusFilter={params.status}
         campaignId={campaignId ?? ''}

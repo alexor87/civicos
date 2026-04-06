@@ -8,25 +8,6 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { createClient } from '@/lib/supabase/server'
 
-function makeChain(count: number) {
-  const chain: Record<string, unknown> = {}
-  chain.select = vi.fn().mockReturnValue(chain)
-  chain.eq = vi.fn().mockReturnValue(chain)
-  chain.is = vi.fn().mockReturnValue(chain)
-  // Make awaitable
-  chain.then = (resolve: (v: { count: number; error: null }) => void) =>
-    Promise.resolve().then(() => resolve({ count, error: null }))
-  return chain
-}
-
-const mockProfileChain = (campaignIds: string[] | null) => {
-  const chain: Record<string, unknown> = {}
-  chain.select = vi.fn().mockReturnValue(chain)
-  chain.eq = vi.fn().mockReturnValue(chain)
-  chain.single = vi.fn().mockResolvedValue({ data: campaignIds ? { campaign_ids: campaignIds } : null })
-  return chain
-}
-
 const mockSupabase = {
   auth: { getUser: vi.fn() },
   from: vi.fn(),
@@ -44,6 +25,27 @@ function makeRequest(campaignId?: string): NextRequest {
   return new NextRequest(url)
 }
 
+function setupFromCalls(profileData: object | null, statsData: object | null, statsError?: object | null) {
+  let callIndex = 0
+  mockSupabase.from = vi.fn().mockImplementation(() => {
+    callIndex++
+    const chain: Record<string, unknown> = {}
+    chain.select = vi.fn().mockReturnValue(chain)
+    chain.eq = vi.fn().mockReturnValue(chain)
+    if (callIndex === 1) {
+      // profiles query
+      chain.single = vi.fn().mockResolvedValue({ data: profileData })
+    } else {
+      // campaign_stats query
+      chain.single = vi.fn().mockResolvedValue({
+        data: statsData,
+        error: statsError ?? null,
+      })
+    }
+    return chain
+  })
+}
+
 describe('GET /api/dashboard/kpis', () => {
   it('returns 401 if not authenticated', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
@@ -57,16 +59,12 @@ describe('GET /api/dashboard/kpis', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns correct KPI structure for authenticated user', async () => {
+  it('returns correct KPI structure from campaign_stats', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-
-    // First from() call is profiles (ownership check)
-    mockSupabase.from.mockReturnValueOnce(mockProfileChain(['c1']))
-
-    // 4 calls: totalContacts=10, supporters=4, pendingVisits=2, totalVisits=8
-    const counts = [10, 4, 2, 8]
-    let i = 0
-    mockSupabase.from.mockImplementation(() => makeChain(counts[i++] ?? 0))
+    setupFromCalls(
+      { campaign_ids: ['c1'] },
+      { total_contacts: 10, supporters: 4, total_visits: 8, pending_visits: 2 },
+    )
 
     const res = await GET(makeRequest('c1'))
     expect(res.status).toBe(200)
@@ -81,11 +79,10 @@ describe('GET /api/dashboard/kpis', () => {
 
   it('returns zero rates when totalContacts is 0', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-
-    // First from() call is profiles (ownership check)
-    mockSupabase.from.mockReturnValueOnce(mockProfileChain(['c1']))
-
-    mockSupabase.from.mockImplementation(() => makeChain(0))
+    setupFromCalls(
+      { campaign_ids: ['c1'] },
+      { total_contacts: 0, supporters: 0, total_visits: 0, pending_visits: 0 },
+    )
 
     const res = await GET(makeRequest('c1'))
     expect(res.status).toBe(200)
@@ -96,28 +93,25 @@ describe('GET /api/dashboard/kpis', () => {
 
   it('returns 403 if user does not own the campaign', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-    // First from() call is profiles query
-    mockSupabase.from.mockReturnValueOnce(mockProfileChain(['other-campaign']))
+    setupFromCalls({ campaign_ids: ['other-campaign'] }, null)
     const res = await GET(makeRequest('c1'))
     expect(res.status).toBe(403)
   })
 
-  it('returns 500 if a DB query fails', async () => {
+  it('returns zeros when campaign has no stats row (new campaign)', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
-    // First from() is profiles (success), then count queries (one fails)
-    mockSupabase.from.mockReturnValueOnce(mockProfileChain(['c1']))
-
-    const failChain: Record<string, unknown> = {}
-    failChain.select = vi.fn().mockReturnValue(failChain)
-    failChain.eq = vi.fn().mockReturnValue(failChain)
-    failChain.is = vi.fn().mockReturnValue(failChain)
-    failChain.then = (resolve: (v: { count: null; error: { message: string } }) => void) =>
-      Promise.resolve().then(() => resolve({ count: null, error: { message: 'DB error' } }))
-
-    // All 4 count queries fail
-    mockSupabase.from.mockImplementation(() => failChain)
+    setupFromCalls(
+      { campaign_ids: ['c1'] },
+      null,
+      { code: 'PGRST116', message: 'not found' },
+    )
 
     const res = await GET(makeRequest('c1'))
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.totalContacts).toBe(0)
+    expect(json.supporters).toBe(0)
+    expect(json.totalVisits).toBe(0)
+    expect(json.pendingVisits).toBe(0)
   })
 })

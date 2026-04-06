@@ -29,6 +29,13 @@ interface GeoUnit {
   geojson: object
 }
 
+interface MapBounds {
+  minLat: number
+  minLng: number
+  maxLat: number
+  maxLng: number
+}
+
 interface TerritoryMapProps {
   territories: Territory[]
   height?: string
@@ -41,6 +48,7 @@ interface TerritoryMapProps {
   defaultZoom?: number
   colorMode?: ColorMode
   onPointClick?: (point: ContactPoint) => void
+  onBoundsChange?: (bounds: MapBounds, zoom: number) => void
 }
 
 // ── Colombia defaults ──────────────────────────────────────────────────────────
@@ -133,6 +141,7 @@ export function TerritoryMap({
   defaultZoom = 13,
   colorMode = 'visit_result',
   onPointClick,
+  onBoundsChange,
 }: TerritoryMapProps) {
   const mapRef         = useRef<HTMLDivElement>(null)
   const leafletMapRef  = useRef<import('leaflet').Map | null>(null)
@@ -246,6 +255,22 @@ export function TerritoryMap({
         map.setView(defaultCenter, defaultZoom)
       }
 
+      // Fire onBoundsChange on moveend/zoomend
+      if (onBoundsChange) {
+        const fireBounds = () => {
+          const b = map.getBounds()
+          onBoundsChange({
+            minLat: b.getSouth(),
+            minLng: b.getWest(),
+            maxLat: b.getNorth(),
+            maxLng: b.getEast(),
+          }, map.getZoom())
+        }
+        map.on('moveend', fireBounds)
+        // Fire initial bounds after map is ready
+        setTimeout(fireBounds, 100)
+      }
+
       // Mark ready and run any pending marker update
       mapReadyRef.current = true
       if (pendingMarkers.current) {
@@ -282,21 +307,65 @@ export function TerritoryMap({
       const ptBounds: import('leaflet').LatLngBounds[] = []
 
       for (const pt of points) {
-        const color   = getPointColor(pt, colorMode)
-        const tooltip = getPointTooltip(pt, colorMode)
-        const marker = L.circleMarker([pt.lat, pt.lng], {
-          radius:      6,
-          fillColor:   color,
-          color:       '#ffffff',
-          weight:      1.5,
-          opacity:     1,
-          fillOpacity: 0.85,
-        })
-        .bindTooltip(tooltip, { permanent: false, direction: 'top', className: 'territory-tooltip' })
-        if (onPointClick) {
-          marker.on('click', () => onPointClick(pt))
+        const isCluster = (pt as ContactPoint & { is_cluster?: boolean; point_count?: number }).is_cluster
+        const pointCount = (pt as ContactPoint & { point_count?: number }).point_count ?? 1
+
+        if (isCluster && pointCount > 1) {
+          // Cluster marker: larger circle with count label
+          const radius = Math.min(30, Math.max(14, 10 + Math.log10(pointCount) * 8))
+          const color = getPointColor(pt, colorMode)
+          const marker = L.circleMarker([pt.lat, pt.lng], {
+            radius,
+            fillColor:   color,
+            color:       '#ffffff',
+            weight:      2,
+            opacity:     1,
+            fillOpacity: 0.75,
+          })
+          .bindTooltip(`${pointCount.toLocaleString()} contactos`, {
+            permanent: false, direction: 'top', className: 'territory-tooltip',
+          })
+          // Click cluster → zoom in
+          marker.on('click', () => {
+            map.setView([pt.lat, pt.lng], map.getZoom() + 3)
+          })
+          marker.addTo(layer)
+
+          // Add count label via divIcon
+          const label = L.marker([pt.lat, pt.lng], {
+            icon: L.divIcon({
+              className: 'cluster-label',
+              html: `<span style="
+                font-size: ${radius > 20 ? 11 : 9}px;
+                font-weight: 700;
+                color: white;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                pointer-events: none;
+              ">${pointCount > 999 ? `${Math.round(pointCount / 1000)}k` : pointCount}</span>`,
+              iconSize: [radius * 2, radius * 2],
+              iconAnchor: [radius, radius],
+            }),
+            interactive: false,
+          })
+          label.addTo(layer)
+        } else {
+          // Individual point marker
+          const color   = getPointColor(pt, colorMode)
+          const tooltip = getPointTooltip(pt, colorMode)
+          const marker = L.circleMarker([pt.lat, pt.lng], {
+            radius:      6,
+            fillColor:   color,
+            color:       '#ffffff',
+            weight:      1.5,
+            opacity:     1,
+            fillOpacity: 0.85,
+          })
+          .bindTooltip(tooltip, { permanent: false, direction: 'top', className: 'territory-tooltip' })
+          if (onPointClick) {
+            marker.on('click', () => onPointClick(pt))
+          }
+          marker.addTo(layer)
         }
-        marker.addTo(layer)
         try { ptBounds.push(L.latLngBounds([pt.lat, pt.lng], [pt.lat, pt.lng])) } catch { /* skip */ }
       }
 
@@ -332,6 +401,13 @@ export function TerritoryMap({
           white-space: nowrap;
         }
         .territory-tooltip::before { display: none; }
+        .cluster-label {
+          background: transparent !important;
+          border: none !important;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
       `}</style>
       <div ref={mapRef} style={{ height, width: '100%', borderRadius: '8px' }} />
     </>

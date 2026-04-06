@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DashboardKPIs } from '@/components/dashboard/DashboardKPIs'
 
@@ -26,31 +26,43 @@ interface Props {
 
 export function RealtimeKPIs({ campaignId, initialKPIs }: Props) {
   const [kpis, setKpis] = useState<KPIData>(initialKPIs)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const refreshKPIs = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/dashboard/kpis?campaignId=${campaignId}`)
+      if (!res.ok) return
+      const data = await res.json()
+      // weeklyData is not returned by the KPIs endpoint (it requires a separate query);
+      // preserve the server-rendered value via spread
+      setKpis(prev => ({ ...prev, ...data }))
+    } catch {
+      // Network error — keep showing last known data
+    }
+  }, [campaignId])
+
+  // Debounced refresh: collapses rapid-fire changes (e.g. bulk imports) into a single fetch
+  const debouncedRefresh = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      refreshKPIs()
+    }, 5000)
+  }, [refreshKPIs])
 
   useEffect(() => {
     const supabase = createClient()
 
-    async function refreshKPIs() {
-      try {
-        const res = await fetch(`/api/dashboard/kpis?campaignId=${campaignId}`)
-        if (!res.ok) return
-        const data = await res.json()
-        // weeklyData is not returned by the KPIs endpoint (it requires a separate query);
-        // preserve the server-rendered value via spread
-        setKpis(prev => ({ ...prev, ...data }))
-      } catch {
-        // Network error — keep showing last known data
-      }
-    }
-
     const channel = supabase
       .channel(`dashboard-kpis-${campaignId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `campaign_id=eq.${campaignId}` }, refreshKPIs)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'canvass_visits', filter: `campaign_id=eq.${campaignId}` }, refreshKPIs)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts', filter: `campaign_id=eq.${campaignId}` }, debouncedRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'canvass_visits', filter: `campaign_id=eq.${campaignId}` }, debouncedRefresh)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [campaignId])
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      supabase.removeChannel(channel)
+    }
+  }, [campaignId, debouncedRefresh])
 
   return (
     <DashboardKPIs

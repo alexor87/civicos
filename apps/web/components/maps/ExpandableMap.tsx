@@ -25,6 +25,13 @@ interface Territory {
   geojson: object | null
 }
 
+interface MapBounds {
+  minLat: number
+  minLng: number
+  maxLat: number
+  maxLng: number
+}
+
 interface Props {
   territories: Territory[]
   coverageData?: Record<string, number>
@@ -33,6 +40,7 @@ interface Props {
   defaultCenter?: [number, number]
   defaultZoom?: number
   onPointClick?: (point: ContactPoint) => void
+  onBoundsChange?: (bounds: MapBounds, zoom: number) => void
 }
 
 // ── Legend items per color mode ────────────────────────────────────────────────
