@@ -120,18 +120,8 @@ export async function promoteContactToMember(contactId: string, role: string): P
           return {}
         }
 
-        // Different tenant — move to this tenant
-        const { error: updateErr } = await admin
-          .from('profiles')
-          .update({
-            tenant_id:    profile?.tenant_id,
-            role,
-            full_name:    fullName,
-            campaign_ids: profile?.campaign_ids ?? [],
-          })
-          .eq('id', existingUser.id)
-        if (updateErr) return { error: updateErr.message }
-        return {}
+        // Different tenant — cannot move without losing access to the other tenant
+        return { error: 'Este usuario ya pertenece a otra organización. No se puede agregar sin perder su acceso actual.' }
       }
 
       return { error: error.message }
