@@ -91,7 +91,51 @@ export async function promoteContactToMember(contactId: string, role: string): P
         campaign_ids: profile?.campaign_ids ?? [],
       },
     })
-    if (error) return { error: error.message }
+
+    if (error) {
+      // User already exists in auth — add them to this tenant instead
+      if (error.message.includes('already been registered')) {
+        const { data: { users } } = await admin.auth.admin.listUsers()
+        const existingUser = users.find(u => u.email === contact.email)
+        if (!existingUser) return { error: 'No se encontró el usuario registrado' }
+
+        // Check if already a member of this tenant
+        const { data: existingProfile } = await admin
+          .from('profiles')
+          .select('tenant_id, campaign_ids')
+          .eq('id', existingUser.id)
+          .single()
+
+        if (existingProfile?.tenant_id === profile?.tenant_id) {
+          // Same tenant — just make sure campaign_ids are updated
+          const mergedCampaigns = Array.from(new Set([
+            ...(existingProfile.campaign_ids ?? []),
+            ...(profile?.campaign_ids ?? []),
+          ]))
+          const { error: updateErr } = await admin
+            .from('profiles')
+            .update({ role, campaign_ids: mergedCampaigns })
+            .eq('id', existingUser.id)
+          if (updateErr) return { error: updateErr.message }
+          return {}
+        }
+
+        // Different tenant — move to this tenant
+        const { error: updateErr } = await admin
+          .from('profiles')
+          .update({
+            tenant_id:    profile?.tenant_id,
+            role,
+            full_name:    fullName,
+            campaign_ids: profile?.campaign_ids ?? [],
+          })
+          .eq('id', existingUser.id)
+        if (updateErr) return { error: updateErr.message }
+        return {}
+      }
+
+      return { error: error.message }
+    }
   } catch (err) {
     return { error: String(err) }
   }
