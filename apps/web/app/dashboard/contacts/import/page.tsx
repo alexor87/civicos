@@ -150,13 +150,13 @@ export default function ImportContactsPage() {
       return
     }
 
-    // Detect and skip Scrutix template metadata rows:
-    // Row 2 = "✱ Obligatorio"/"Opcional" indicators, Row 3 = example row
+    // Detect and skip Scrutix template metadata row:
+    // Row 2 = "✱ Obligatorio"/"Opcional" indicators; data starts at row 3
     let dataRows = parsedRows
     const firstValues = Object.values(parsedRows[0] ?? {}).map(v => String(v ?? '').trim())
     const isMetaRow = firstValues.some(v => v === '✱ Obligatorio' || v === 'Opcional')
     if (isMetaRow) {
-      dataRows = parsedRows.slice(2)
+      dataRows = parsedRows.slice(1)
     }
 
     if (!dataRows.length) {
