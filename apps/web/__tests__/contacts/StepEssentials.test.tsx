@@ -48,8 +48,13 @@ describe('StepEssentials', () => {
     expect(screen.getByText('Pendiente')).toBeInTheDocument()
   })
 
-  it('renders collapsible email section', () => {
+  it('renders email field as required', () => {
     render(<StepEssentials campaignId="camp-1" />, { wrapper: Wrapper })
-    expect(screen.getByText(/email y teléfono alterno/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument()
+  })
+
+  it('renders collapsible phone alternate section', () => {
+    render(<StepEssentials campaignId="camp-1" />, { wrapper: Wrapper })
+    expect(screen.getByText(/teléfono alterno/i)).toBeInTheDocument()
   })
 })

@@ -108,6 +108,13 @@ export function StepEssentials({ campaignId }: Props) {
         />
       </div>
 
+      {/* Email — required, always visible */}
+      <div className="space-y-1.5">
+        <Label htmlFor="email">Correo electrónico <span className="text-red-500">*</span></Label>
+        <Input id="email" type="email" placeholder="juan@ejemplo.com" {...register('email')} />
+        {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+      </div>
+
       {/* Collapsible extra fields */}
       <button
         type="button"
@@ -115,20 +122,13 @@ export function StepEssentials({ campaignId }: Props) {
         className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
       >
         <ChevronDown className={`h-4 w-4 transition-transform ${showExtra ? 'rotate-180' : ''}`} />
-        Email y teléfono alterno
+        Teléfono alterno
       </button>
 
       {showExtra && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="juan@ejemplo.com" {...register('email')} />
-            {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="phone_alternate">Teléfono alterno</Label>
-            <Input id="phone_alternate" type="tel" placeholder="3114567890" {...register('phone_alternate')} />
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="phone_alternate">Teléfono alterno</Label>
+          <Input id="phone_alternate" type="tel" placeholder="3114567890" {...register('phone_alternate')} />
         </div>
       )}
     </div>

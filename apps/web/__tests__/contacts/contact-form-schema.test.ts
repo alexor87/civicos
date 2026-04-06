@@ -60,6 +60,7 @@ describe('stepEssentialsSchema', () => {
     document_number: '1234567890',
     phone: '3001234567',
     status: 'supporter',
+    email: 'juan@test.com',
   }
 
   it('accepts valid essentials data', () => {
@@ -94,13 +95,18 @@ describe('stepEssentialsSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('accepts optional email and phone_alternate', () => {
+  it('accepts optional phone_alternate', () => {
     const result = stepEssentialsSchema.safeParse({
       ...validData,
-      email: 'juan@test.com',
       phone_alternate: '3009876543',
     })
     expect(result.success).toBe(true)
+  })
+
+  it('rejects missing email', () => {
+    const { email: _, ...withoutEmail } = validData
+    const result = stepEssentialsSchema.safeParse(withoutEmail)
+    expect(result.success).toBe(false)
   })
 
   it('rejects invalid email format', () => {
@@ -204,6 +210,7 @@ describe('contactFormSchema (full)', () => {
       document_number: '1234567890',
       phone: '3001234567',
       status: 'supporter',
+      email: 'juan@test.com',
       department: 'Antioquia',
       municipality: 'Medellín',
       political_affinity: 4,
@@ -215,12 +222,12 @@ describe('contactFormSchema (full)', () => {
   it('rejects when required fields are missing', () => {
     const result = contactFormSchema.safeParse({
       first_name: 'Juan',
-      // missing last_name, document_type, phone, status
+      // missing last_name, document_type, phone, status, email, document_number
     })
     expect(result.success).toBe(false)
   })
 
-  it('accepts empty document_number', () => {
+  it('rejects empty document_number', () => {
     const result = contactFormSchema.safeParse({
       first_name: 'Juan',
       last_name: 'Pérez',
@@ -228,19 +235,21 @@ describe('contactFormSchema (full)', () => {
       document_number: '',
       phone: '3001234567',
       status: 'supporter',
+      email: 'juan@test.com',
     })
-    expect(result.success).toBe(true)
+    expect(result.success).toBe(false)
   })
 
-  it('accepts missing document_number', () => {
+  it('rejects missing document_number', () => {
     const result = contactFormSchema.safeParse({
       first_name: 'Juan',
       last_name: 'Pérez',
       document_type: 'CC',
       phone: '3001234567',
       status: 'supporter',
+      email: 'juan@test.com',
     })
-    expect(result.success).toBe(true)
+    expect(result.success).toBe(false)
   })
 
   it('accepts mobilizes_count as empty string (preprocess)', () => {

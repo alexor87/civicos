@@ -32,10 +32,10 @@ export const stepEssentialsSchema = z.object({
   first_name: z.string().min(1, 'Nombre requerido').max(100, 'Máximo 100 caracteres'),
   last_name: z.string().min(1, 'Apellido requerido').max(100, 'Máximo 100 caracteres'),
   document_type: z.enum(documentTypes),
-  document_number: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),
+  document_number: z.string().min(1, 'Documento requerido').max(20, 'Máximo 20 caracteres'),
   phone: z.string().min(1, 'Teléfono requerido').max(15, 'Máximo 15 caracteres'),
   status: z.enum(contactStatuses),
-  email: z.string().email('Email inválido').max(254, 'Máximo 254 caracteres').optional().or(z.literal('')),
+  email: z.string().email('Email inválido').min(1, 'Email requerido').max(254, 'Máximo 254 caracteres'),
   phone_alternate: z.string().max(15, 'Máximo 15 caracteres').optional(),
 })
 

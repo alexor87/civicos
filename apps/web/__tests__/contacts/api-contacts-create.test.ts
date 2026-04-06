@@ -43,6 +43,7 @@ const validBody = {
   document_number: '1234567890',
   phone: '3001234567',
   status: 'supporter',
+  email: 'juan@test.com',
 }
 
 describe('POST /api/contacts', () => {
