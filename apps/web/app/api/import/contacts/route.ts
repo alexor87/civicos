@@ -35,7 +35,7 @@ const HEADER_ALIASES: Record<string, string> = {
   direccion: 'address', 'dirección': 'address', address: 'address',
   barrio: 'district', 'barrio/vereda': 'district', vereda: 'district',
   district: 'district',
-  ciudad: 'city', city: 'city',
+  ciudad: 'municipality', city: 'municipality',
   comuna: 'commune', origen: 'commune', commune: 'commune',
   referido: 'referred_by', 'nombre de lider/referido': 'referred_by',
   'lider que refiere': 'referred_by', 'líder que refiere': 'referred_by',
