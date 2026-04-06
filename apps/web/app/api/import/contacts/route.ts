@@ -201,6 +201,7 @@ export async function POST(request: NextRequest) {
       phone,
       status: status as 'supporter' | 'undecided' | 'opponent' | 'unknown',
       document_number: documentNumber,
+      metadata: {},
     }
 
     // Add optional fields that exist in DB
