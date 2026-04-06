@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Upload, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Columns3 } from 'lucide-react'
+import { Upload, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Columns3, Download } from 'lucide-react'
 import Link from 'next/link'
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
@@ -285,6 +285,23 @@ export default function ImportContactsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <Download className="h-5 w-5 text-blue-600 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900">¿Primera vez importando?</p>
+                <p className="text-xs text-blue-700 mt-0.5">Descarga nuestra plantilla oficial con todos los campos y un ejemplo de cómo llenarlos.</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+                onClick={() => { window.location.href = '/api/import/contacts/template' }}
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                Descargar plantilla Excel
+              </Button>
+            </div>
+
             <label className="flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 rounded-lg p-4 md:p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
               <Upload className="h-8 w-8 text-slate-400" />
               <div className="text-center">
