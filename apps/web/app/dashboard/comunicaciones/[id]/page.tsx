@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { deleteCampaign } from '../actions'
 import { SendCampaignButton } from '@/components/dashboard/SendCampaignButton'
 import { TestEmailButton } from '@/components/dashboard/TestEmailButton'
-import DOMPurify from 'isomorphic-dompurify'
+import { EmailPreview } from '@/components/dashboard/EmailPreview'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
   draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
@@ -143,25 +143,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
             <p className="text-xs font-semibold text-[#6a737d] uppercase tracking-wide">Vista previa del email</p>
           </div>
 
-          <div className="shadow-xl rounded-md overflow-hidden max-w-[680px]">
-            {/* Inbox bar */}
-            <div className="bg-white border border-[#dcdee6] rounded-t-md px-4 py-3 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-[#2960ec] flex items-center justify-center shrink-0">
-                <span className="text-white text-xs font-bold">C</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#1b1f23]">Scrutix Campaña</span>
-                </div>
-                <p className="text-xs text-[#6a737d] truncate">{campaign.subject}</p>
-              </div>
-            </div>
-            {/* Email body — sanitized to prevent XSS */}
-            <div
-              className="bg-white"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(campaign.body_html ?? '') }}
-            />
-          </div>
+          <EmailPreview subject={campaign.subject} bodyHtml={campaign.body_html ?? ''} />
         </div>
 
         {/* Delete draft */}
