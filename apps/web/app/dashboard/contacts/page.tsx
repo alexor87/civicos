@@ -153,7 +153,7 @@ export default async function ContactsPage({
           <Link href="/dashboard/contacts/import">
             <Button variant="outline" size="sm">
               <Upload className="h-4 w-4 mr-1.5" />
-              Importar CSV
+              Importar contactos
             </Button>
           </Link>
         </div>
