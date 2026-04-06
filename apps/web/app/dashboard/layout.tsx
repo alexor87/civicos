@@ -160,6 +160,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             userFullName={profile.full_name}
             userInitials={userInitials}
             userRole={profile.role}
+            avatarUrl={profile.avatar_url}
             campaigns={allCampaigns}
             activeCampaignId={activeCampaignId}
           />

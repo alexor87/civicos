@@ -38,4 +38,17 @@ describe('DashboardHeader — User Dropdown', () => {
     render(<DashboardHeader {...HEADER_PROPS} />)
     expect(screen.getByText('Elecciones 2026')).toBeInTheDocument()
   })
+
+  it('shows avatar image when avatarUrl is provided', () => {
+    render(<DashboardHeader {...HEADER_PROPS} avatarUrl="https://example.com/photo.jpg" />)
+    const img = screen.getByAltText('Juan Pérez')
+    expect(img).toBeInTheDocument()
+    expect(img).toHaveAttribute('src', 'https://example.com/photo.jpg')
+    expect(screen.queryByText('JP')).not.toBeInTheDocument()
+  })
+
+  it('shows initials when avatarUrl is null', () => {
+    render(<DashboardHeader {...HEADER_PROPS} avatarUrl={null} />)
+    expect(screen.getByText('JP')).toBeInTheDocument()
+  })
 })

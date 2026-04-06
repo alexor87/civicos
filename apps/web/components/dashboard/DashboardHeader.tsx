@@ -50,11 +50,12 @@ interface Props {
   userFullName: string | null
   userInitials: string
   userRole: string
+  avatarUrl?: string | null
   campaigns?: { id: string; name: string }[]
   activeCampaignId?: string
 }
 
-export function DashboardHeader({ campaignName, userFullName, userInitials, userRole, campaigns = [], activeCampaignId }: Props) {
+export function DashboardHeader({ campaignName, userFullName, userInitials, userRole, avatarUrl, campaigns = [], activeCampaignId }: Props) {
   const pathname  = usePathname()
   const router    = useRouter()
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -304,8 +305,12 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
                 <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">{userFullName ?? 'Usuario'}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">{ROLE_LABELS[userRole] ?? userRole}</p>
               </div>
-              <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs font-semibold">{userInitials}</span>
+              <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={userFullName ?? 'Avatar'} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-white text-xs font-semibold">{userInitials}</span>
+                )}
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
