@@ -30,6 +30,13 @@ const STEPS = [
   { label: 'Adicional', schema: stepAdditionalSchema },
 ]
 
+const STEP_FIELDS: Record<number, (keyof ContactForm)[]> = {
+  1: ['first_name', 'last_name', 'document_type', 'document_number', 'phone', 'status', 'email', 'phone_alternate'],
+  2: ['department', 'municipality', 'commune', 'district_barrio', 'sector', 'address', 'voting_place', 'voting_table'],
+  3: ['political_affinity', 'vote_intention', 'electoral_priority', 'campaign_role', 'preferred_party'],
+  4: ['birth_date', 'gender', 'marital_status', 'contact_source', 'source_detail', 'referred_by', 'mobilizes_count', 'main_need', 'economic_sector', 'beneficiary_program'],
+}
+
 interface Props {
   campaignId: string
   initialData?: Partial<ContactForm>
@@ -111,8 +118,7 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
       const values = methods.getValues()
       const result = schema.safeParse(values)
       if (!result.success) {
-        // Trigger validation for current step fields
-        await methods.trigger()
+        await methods.trigger(STEP_FIELDS[currentStep])
         return
       }
     }
