@@ -57,7 +57,7 @@ export function PromoteToMemberButton({ contactId, contactName }: Props) {
           {ROLES.map(r => (
             <DropdownMenuItem
               key={r.value}
-              onSelect={() => handlePromote(r.value)}
+              onClick={() => handlePromote(r.value)}
               className="cursor-pointer"
             >
               {r.label}
