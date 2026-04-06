@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -48,19 +49,21 @@ export function PromoteToMemberButton({ contactId, contactName }: Props) {
         {loading ? 'Invitando…' : 'Agregar al equipo'}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-          Selecciona el rol
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {ROLES.map(r => (
-          <DropdownMenuItem
-            key={r.value}
-            onSelect={() => handlePromote(r.value)}
-            className="cursor-pointer"
-          >
-            {r.label}
-          </DropdownMenuItem>
-        ))}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+            Selecciona el rol
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {ROLES.map(r => (
+            <DropdownMenuItem
+              key={r.value}
+              onSelect={() => handlePromote(r.value)}
+              className="cursor-pointer"
+            >
+              {r.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
