@@ -21,35 +21,35 @@ export const maritalStatuses = [
 /* ── Quick Add (15s flow — 3 fields) ── */
 
 export const quickAddSchema = z.object({
-  full_name: z.string().min(1, 'Nombre requerido'),
-  phone: z.string().min(1, 'Teléfono requerido'),
+  full_name: z.string().min(1, 'Nombre requerido').max(200, 'Máximo 200 caracteres'),
+  phone: z.string().min(1, 'Teléfono requerido').max(15, 'Máximo 15 caracteres'),
   political_affinity: z.number().int().min(1).max(5).optional(),
 })
 
 /* ── Step 1: Essentials ── */
 
 export const stepEssentialsSchema = z.object({
-  first_name: z.string().min(1, 'Nombre requerido'),
-  last_name: z.string().min(1, 'Apellido requerido'),
+  first_name: z.string().min(1, 'Nombre requerido').max(100, 'Máximo 100 caracteres'),
+  last_name: z.string().min(1, 'Apellido requerido').max(100, 'Máximo 100 caracteres'),
   document_type: z.enum(documentTypes),
-  document_number: z.string().optional().or(z.literal('')),
-  phone: z.string().min(1, 'Teléfono requerido'),
+  document_number: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),
+  phone: z.string().min(1, 'Teléfono requerido').max(15, 'Máximo 15 caracteres'),
   status: z.enum(contactStatuses),
-  email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone_alternate: z.string().optional(),
+  email: z.string().email('Email inválido').max(254, 'Máximo 254 caracteres').optional().or(z.literal('')),
+  phone_alternate: z.string().max(15, 'Máximo 15 caracteres').optional(),
 })
 
 /* ── Step 2: Location ── */
 
 export const stepLocationSchema = z.object({
-  department: z.string().optional(),
-  municipality: z.string().optional(),
-  commune: z.string().optional(),
-  district_barrio: z.string().optional(),
-  sector: z.string().optional(),
-  address: z.string().optional(),
-  voting_place: z.string().optional(),
-  voting_table: z.string().optional(),
+  department: z.string().max(100, 'Máximo 100 caracteres').optional(),
+  municipality: z.string().max(100, 'Máximo 100 caracteres').optional(),
+  commune: z.string().max(100, 'Máximo 100 caracteres').optional(),
+  district_barrio: z.string().max(100, 'Máximo 100 caracteres').optional(),
+  sector: z.string().max(100, 'Máximo 100 caracteres').optional(),
+  address: z.string().max(200, 'Máximo 200 caracteres').optional(),
+  voting_place: z.string().max(150, 'Máximo 150 caracteres').optional(),
+  voting_table: z.string().max(10, 'Máximo 10 caracteres').optional(),
   location_lat: z.number().nullable().optional(),
   location_lng: z.number().nullable().optional(),
   geocoding_status: z.string().optional(),
@@ -62,7 +62,7 @@ export const stepPoliticalSchema = z.object({
   vote_intention: z.enum(voteIntentions).optional(),
   electoral_priority: z.enum(electoralPriorities).optional(),
   campaign_role: z.enum(campaignRoles).optional(),
-  preferred_party: z.string().optional(),
+  preferred_party: z.string().max(100, 'Máximo 100 caracteres').optional(),
 })
 
 /* ── Step 4: Additional ── */
@@ -72,15 +72,15 @@ export const stepAdditionalSchema = z.object({
   gender: z.enum(genders).optional(),
   marital_status: z.enum(maritalStatuses).optional(),
   contact_source: z.enum(contactSources).optional(),
-  source_detail: z.string().optional(),
-  referred_by: z.string().optional(),
+  source_detail: z.string().max(200, 'Máximo 200 caracteres').optional(),
+  referred_by: z.string().max(100, 'Máximo 100 caracteres').optional(),
   mobilizes_count: z.preprocess(
     (v) => (v === '' || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
     z.number().int().min(0).optional()
   ),
-  main_need: z.string().optional(),
-  economic_sector: z.string().optional(),
-  beneficiary_program: z.string().optional(),
+  main_need: z.string().max(150, 'Máximo 150 caracteres').optional(),
+  economic_sector: z.string().max(100, 'Máximo 100 caracteres').optional(),
+  beneficiary_program: z.string().max(150, 'Máximo 150 caracteres').optional(),
 })
 
 /* ── Full contact form (merge of all 4 steps) ── */
@@ -90,8 +90,8 @@ export const contactFormSchema = stepEssentialsSchema
   .merge(stepPoliticalSchema)
   .merge(stepAdditionalSchema)
   .extend({
-    tags: z.string().optional(),
-    notes: z.string().optional(),
+    tags: z.string().max(500, 'Máximo 500 caracteres').optional(),
+    notes: z.string().max(2000, 'Máximo 2000 caracteres').optional(),
   })
 
 export type QuickAddForm = z.infer<typeof quickAddSchema>
