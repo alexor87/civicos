@@ -11,6 +11,14 @@ const VALID_CONTACT_FIELDS = new Set([
   'status', 'campaign_role', 'electoral_priority', 'capture_source', 'notes',
 ])
 
+// Fields that go into the metadata JSONB column (not direct DB columns)
+const META_FIELDS = new Set([
+  'phone_alternate', 'marital_status', 'political_affinity',
+  'vote_intention', 'preferred_party', 'source_detail',
+  'referred_by', 'mobilizes_count', 'main_need',
+  'economic_sector', 'beneficiary_program', 'sector',
+])
+
 // ── Header alias map (fallback for pre-mapped imports) ──────────────────────
 
 const HEADER_ALIASES: Record<string, string> = {
@@ -28,9 +36,27 @@ const HEADER_ALIASES: Record<string, string> = {
   district: 'district',
   ciudad: 'city', city: 'city',
   comuna: 'commune', origen: 'commune', commune: 'commune',
-  referido: 'notes', 'nombre de lider/referido': 'notes',
+  referido: 'referred_by', 'nombre de lider/referido': 'referred_by',
+  'lider que refiere': 'referred_by', 'líder que refiere': 'referred_by',
+  referred_by: 'referred_by',
   estado: 'status', status: 'status',
   notes: 'notes',
+  'telefono alterno': 'phone_alternate', 'celular alterno': 'phone_alternate',
+  phone_alternate: 'phone_alternate',
+  sector: 'sector',
+  'afinidad politica': 'political_affinity', 'afinidad política': 'political_affinity',
+  political_affinity: 'political_affinity',
+  'intencion de voto': 'vote_intention', 'intención de voto': 'vote_intention',
+  vote_intention: 'vote_intention',
+  'partido preferido': 'preferred_party', preferred_party: 'preferred_party',
+  'estado civil': 'marital_status', marital_status: 'marital_status',
+  'detalle de fuente': 'source_detail', source_detail: 'source_detail',
+  'votos que moviliza': 'mobilizes_count', mobilizes_count: 'mobilizes_count',
+  'necesidad principal': 'main_need', main_need: 'main_need',
+  'sector economico': 'economic_sector', 'sector económico': 'economic_sector',
+  economic_sector: 'economic_sector',
+  'beneficiario de programa': 'beneficiary_program', beneficiary_program: 'beneficiary_program',
+  etiquetas: 'tags', tags: 'tags',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -188,6 +214,18 @@ export async function POST(request: NextRequest) {
         contact[field] = val
       }
     }
+
+    // Add metadata fields (stored in JSONB column)
+    const metadata: Record<string, unknown> = {}
+    for (const field of META_FIELDS) {
+      const val = row[field]?.trim()
+      if (val) metadata[field] = val
+    }
+    if (Object.keys(metadata).length) contact.metadata = metadata
+
+    // Tags (comma-separated → array)
+    const tagsVal = row.tags?.trim()
+    if (tagsVal) contact.tags = tagsVal.split(',').map((t: string) => t.trim()).filter(Boolean)
 
     contactsToInsert.push(contact)
     if (email) existingEmails.add(email)

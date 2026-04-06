@@ -278,9 +278,9 @@ describe('POST /api/import/contacts', () => {
     expect(inserted.address).toBe('Calle 54#5231')
     expect(inserted.district).toBe('Alto del medio')
     expect(inserted.commune).toBe('COMUNA 1')
-    // referred_by maps to notes since it's not a DB column
-    expect(inserted.notes).toBe('Juan Esteban Ospina')
-    // These should NOT exist (not valid DB columns)
+    // referred_by goes into metadata JSONB
+    expect((inserted.metadata as Record<string, unknown>).referred_by).toBe('Juan Esteban Ospina')
+    // These should NOT exist as direct columns
     expect(inserted.district_barrio).toBeUndefined()
     expect(inserted.referred_by).toBeUndefined()
   })
@@ -331,6 +331,37 @@ describe('POST /api/import/contacts', () => {
   })
 
   // ── Pre-mapped rows (from column mapper UI) ───────────────────────────
+
+  it('stores metadata fields in metadata JSONB', async () => {
+    setupAuth('campaign_manager')
+    const { getInserted } = setupAdminCapture()
+    const rows = [{
+      first_name: 'Ana', last_name: 'López',
+      referred_by: 'Carlos Pérez',
+      sector: 'Centro',
+      political_affinity: '4',
+      vote_intention: 'si',
+    }]
+    await POST(makeRequest({ rows, preMapped: true }))
+    const inserted = getInserted()[0] as Record<string, unknown>
+    const meta = inserted.metadata as Record<string, unknown>
+    expect(meta.referred_by).toBe('Carlos Pérez')
+    expect(meta.sector).toBe('Centro')
+    expect(meta.political_affinity).toBe('4')
+    expect(meta.vote_intention).toBe('si')
+    // These should NOT be direct columns
+    expect(inserted.referred_by).toBeUndefined()
+    expect(inserted.sector).toBeUndefined()
+  })
+
+  it('parses tags as comma-separated array', async () => {
+    setupAuth('campaign_manager')
+    const { getInserted } = setupAdminCapture()
+    const rows = [{ first_name: 'Ana', last_name: 'López', tags: 'líder, comuna 1, activo' }]
+    await POST(makeRequest({ rows, preMapped: true }))
+    const inserted = getInserted()[0] as Record<string, unknown>
+    expect(inserted.tags).toEqual(['líder', 'comuna 1', 'activo'])
+  })
 
   it('accepts preMapped rows without applying header aliases', async () => {
     setupAuth('campaign_manager')

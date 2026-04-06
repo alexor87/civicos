@@ -10,30 +10,47 @@ import Link from 'next/link'
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 
-// ── Importable fields (actual DB columns) ──────────────────────────────────
+// ── Importable fields (DB columns + metadata fields) ────────────────────────
 
 const IMPORTABLE_FIELDS = [
+  // Datos básicos
   { value: 'first_name', label: 'Nombre', required: true },
   { value: 'last_name', label: 'Apellido', required: true },
   { value: 'email', label: 'Correo electrónico' },
   { value: 'phone', label: 'Teléfono' },
+  { value: 'phone_alternate', label: 'Teléfono alterno' },
   { value: 'document_type', label: 'Tipo de documento' },
   { value: 'document_number', label: 'Nro. documento' },
   { value: 'birth_date', label: 'Fecha de nacimiento' },
   { value: 'gender', label: 'Género' },
+  { value: 'marital_status', label: 'Estado civil' },
+  // Ubicación
   { value: 'address', label: 'Dirección' },
   { value: 'city', label: 'Ciudad' },
   { value: 'district', label: 'Barrio / Vereda' },
+  { value: 'sector', label: 'Sector' },
   { value: 'department', label: 'Departamento' },
   { value: 'municipality', label: 'Municipio' },
   { value: 'commune', label: 'Comuna' },
   { value: 'voting_place', label: 'Puesto de votación' },
   { value: 'voting_table', label: 'Mesa de votación' },
+  // Perfil político
   { value: 'status', label: 'Estado del contacto' },
-  { value: 'campaign_role', label: 'Rol en campaña' },
+  { value: 'political_affinity', label: 'Afinidad política' },
+  { value: 'vote_intention', label: 'Intención de voto' },
+  { value: 'preferred_party', label: 'Partido preferido' },
   { value: 'electoral_priority', label: 'Prioridad electoral' },
+  { value: 'campaign_role', label: 'Rol en campaña' },
+  // Adicional
   { value: 'capture_source', label: 'Fuente de captura' },
+  { value: 'source_detail', label: 'Detalle de fuente' },
+  { value: 'referred_by', label: 'Líder que refiere' },
+  { value: 'mobilizes_count', label: 'Votos que moviliza' },
+  { value: 'main_need', label: 'Necesidad principal' },
+  { value: 'economic_sector', label: 'Sector económico' },
+  { value: 'beneficiary_program', label: 'Beneficiario de programa' },
   { value: 'notes', label: 'Notas' },
+  { value: 'tags', label: 'Etiquetas' },
 ] as const
 
 // ── Auto-mapping aliases ────────────────────────────────────────────────────
@@ -52,11 +69,29 @@ const HEADER_ALIASES: Record<string, string> = {
   barrio: 'district', 'barrio/vereda': 'district', vereda: 'district', district: 'district',
   ciudad: 'city', city: 'city',
   comuna: 'commune', origen: 'commune', commune: 'commune',
-  referido: 'notes', 'nombre de lider/referido': 'notes',
+  referido: 'referred_by', 'nombre de lider/referido': 'referred_by',
+  'lider que refiere': 'referred_by', 'líder que refiere': 'referred_by',
+  referred_by: 'referred_by',
   estado: 'status', status: 'status', notes: 'notes',
   departamento: 'department', department: 'department',
   municipio: 'municipality', municipality: 'municipality',
   genero: 'gender', 'género': 'gender', gender: 'gender',
+  'telefono alterno': 'phone_alternate', 'celular alterno': 'phone_alternate',
+  phone_alternate: 'phone_alternate',
+  sector: 'sector',
+  'afinidad politica': 'political_affinity', 'afinidad política': 'political_affinity',
+  political_affinity: 'political_affinity',
+  'intencion de voto': 'vote_intention', 'intención de voto': 'vote_intention',
+  vote_intention: 'vote_intention',
+  'partido preferido': 'preferred_party', preferred_party: 'preferred_party',
+  'estado civil': 'marital_status', marital_status: 'marital_status',
+  'detalle de fuente': 'source_detail', source_detail: 'source_detail',
+  'votos que moviliza': 'mobilizes_count', mobilizes_count: 'mobilizes_count',
+  'necesidad principal': 'main_need', main_need: 'main_need',
+  'sector economico': 'economic_sector', 'sector económico': 'economic_sector',
+  economic_sector: 'economic_sector',
+  'beneficiario de programa': 'beneficiary_program', beneficiary_program: 'beneficiary_program',
+  etiquetas: 'tags', tags: 'tags',
 }
 
 function autoMap(headers: string[]): Record<string, string | null> {
