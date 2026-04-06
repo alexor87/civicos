@@ -52,9 +52,11 @@ export async function GET(_req: NextRequest) {
   // ── Hoja 1: Plantilla ────────────────────────────────────────────────────
 
   const headers = TEMPLATE_COLUMNS.map(c => c.header)
+  const requiredRow = TEMPLATE_COLUMNS.map(c => c.required ? '✱ Obligatorio' : 'Opcional')
   const exampleRow = TEMPLATE_COLUMNS.map(c => c.example)
 
-  const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow])
+  // Fila 1: encabezados | Fila 2: obligatoriedad | Fila 3: ejemplo | Fila 4+: datos
+  const ws = XLSX.utils.aoa_to_sheet([headers, requiredRow, exampleRow])
 
   // Style header row: blue background, white bold text
   const headerStyle = {
@@ -69,9 +71,19 @@ export async function GET(_req: NextRequest) {
     ws[cellRef].s = headerStyle
   }
 
+  // Style required/optional row (row index 1)
+  for (let col = 0; col < TEMPLATE_COLUMNS.length; col++) {
+    const isRequired = TEMPLATE_COLUMNS[col].required
+    const cellRef = XLSX.utils.encode_cell({ r: 1, c: col })
+    if (!ws[cellRef]) ws[cellRef] = { v: requiredRow[col], t: 's' }
+    ws[cellRef].s = isRequired
+      ? { fill: { fgColor: { rgb: 'FEE2E2' } }, font: { bold: true, color: { rgb: 'B91C1C' } }, alignment: { horizontal: 'center' } }
+      : { fill: { fgColor: { rgb: 'F1F5F9' } }, font: { color: { rgb: '64748B' } }, alignment: { horizontal: 'center' } }
+  }
+
   // Column widths based on content length
   ws['!cols'] = TEMPLATE_COLUMNS.map(c => ({
-    wch: Math.max(c.header.length, c.example.length, 12) + 2,
+    wch: Math.max(c.header.length, c.example.length, 14) + 2,
   }))
 
   XLSX.utils.book_append_sheet(wb, ws, 'Plantilla')
@@ -116,7 +128,8 @@ export async function GET(_req: NextRequest) {
     ['Etiquetas (separadas por coma)', 'No', 'etiqueta1,etiqueta2,etiqueta3', 'Sin espacios entre comas'],
     ['Notas', 'No', 'Texto libre', 'Observaciones generales del contacto'],
     [''],
-    ['IMPORTANTE: No modifiques los encabezados de la hoja "Plantilla". Solo llena los datos desde la fila 3 en adelante.'],
+    ['IMPORTANTE: No modifiques las filas 1 y 2 de la hoja "Plantilla". Solo llena los datos desde la fila 4 en adelante.'],
+    ['Fila 1 = encabezados | Fila 2 = obligatoriedad (✱ Obligatorio / Opcional) | Fila 3 = ejemplo | Fila 4+ = tus datos'],
     ['Los campos marcados como SÍ son obligatorios. Las filas sin Nombre o Apellido serán omitidas.'],
     ['Para Estado del Contacto usa exactamente: supporter, undecided, opponent o unknown (en inglés).'],
   ]
