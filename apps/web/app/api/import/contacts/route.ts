@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { geocodeAddress } from '@/lib/geocoding'
 
 // ── Valid DB columns for contacts (excludes auto-generated fields) ───────────
 
@@ -234,15 +235,26 @@ export async function POST(request: NextRequest) {
     if (documentNumber) existingDocs.add(documentNumber)
   }
 
-  // Batch insert
+  // Batch insert (return IDs + address fields for geocoding)
+  const allInserted: { id: string; address?: string; municipality?: string; department?: string }[] = []
   for (let i = 0; i < contactsToInsert.length; i += BATCH_SIZE) {
     const batch = contactsToInsert.slice(i, i + BATCH_SIZE)
-    const { error } = await adminSupabase.from('contacts').insert(batch)
+    const { data: insertedData, error } = await adminSupabase
+      .from('contacts')
+      .insert(batch)
+      .select('id, address, municipality, department')
     if (error) {
       errors.push(`Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`)
     } else {
       imported.push(...batch.map((_, idx) => i + idx))
+      if (insertedData) allInserted.push(...insertedData)
     }
+  }
+
+  // Fire-and-forget: geocode contacts that have an address
+  const toGeocode = allInserted.filter(c => c.address)
+  if (toGeocode.length) {
+    geocodeBatch(toGeocode, adminSupabase).catch(console.error)
   }
 
   return NextResponse.json({
@@ -250,4 +262,45 @@ export async function POST(request: NextRequest) {
     skipped: skipped.length,
     errors: errors.slice(0, 20),
   })
+}
+
+// ── Background geocoding ──────────────────────────────────────────────────────
+
+async function geocodeBatch(
+  contacts: { id: string; address?: string; municipality?: string; department?: string }[],
+  supabase: Awaited<ReturnType<typeof createAdminClient>>,
+) {
+  for (const contact of contacts) {
+    try {
+      const result = await geocodeAddress(
+        contact.address!,
+        contact.municipality,
+        contact.department,
+      )
+      if (result) {
+        await supabase.from('contacts').update({
+          location_lat: result.lat,
+          location_lng: result.lng,
+          geocoding_status: 'geocoded',
+          geocoding_type: 'import',
+          geocoding_precision: result.locationType,
+        }).eq('id', contact.id)
+        await supabase.rpc('update_contact_geo', {
+          p_contact_id: contact.id,
+          p_lat: result.lat,
+          p_lng: result.lng,
+        })
+      } else {
+        await supabase.from('contacts').update({
+          geocoding_status: 'failed',
+        }).eq('id', contact.id)
+      }
+    } catch {
+      await supabase.from('contacts').update({
+        geocoding_status: 'failed',
+      }).eq('id', contact.id).then(() => {})
+    }
+    // Rate limit: 100ms between Google Maps API calls
+    await new Promise(r => setTimeout(r, 100))
+  }
 }

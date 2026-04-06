@@ -50,7 +50,9 @@ function setupAdmin(existingContacts: { email?: string | null; phone?: string | 
     const chain: Record<string, unknown> = {}
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
-    chain.insert = vi.fn().mockResolvedValue({ error: null })
+    chain.insert = vi.fn().mockReturnValue({
+      select: vi.fn().mockResolvedValue({ data: [], error: null }),
+    })
     if (callCount === 1) {
       chain.then = (resolve: (v: { data: typeof existingContacts }) => void) =>
         Promise.resolve().then(() => resolve({ data: existingContacts }))
@@ -70,7 +72,9 @@ function setupAdminCapture(): { getInserted: () => unknown[] } {
     chain.eq = vi.fn().mockReturnValue(chain)
     chain.insert = vi.fn().mockImplementation((batch: unknown[]) => {
       insertedBatch = batch
-      return Promise.resolve({ error: null })
+      return {
+        select: vi.fn().mockResolvedValue({ data: [], error: null }),
+      }
     })
     chain.then = (resolve: (v: { data: [] }) => void) =>
       Promise.resolve().then(() => resolve({ data: [] }))
