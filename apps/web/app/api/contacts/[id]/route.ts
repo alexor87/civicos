@@ -99,7 +99,8 @@ export async function PATCH(
   }).eq('id', id).eq('campaign_id', campaignId)  // IDOR fix: ensure contact belongs to user's campaign
 
   if (error) {
-    return NextResponse.json({ error: 'db_error', message: error.message }, { status: 500 })
+    console.error('[contacts/id] DB error:', error)
+    return NextResponse.json({ error: 'Error interno. Inténtalo de nuevo.' }, { status: 500 })
   }
 
   // Update PostGIS geo column if coordinates are available
@@ -112,6 +113,42 @@ export async function PATCH(
       p_lat: data.location_lat,
       p_lng: data.location_lng,
     })
+  }
+
+  return NextResponse.json({ success: true })
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('campaign_ids, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  }
+
+  const campaignId = profile.campaign_ids?.[0]
+  if (!campaignId) return NextResponse.json({ error: 'no_campaign' }, { status: 400 })
+
+  const { error } = await supabase
+    .from('contacts')
+    .delete()
+    .eq('id', id)
+    .eq('campaign_id', campaignId)
+
+  if (error) {
+    console.error('[contacts/id] DELETE error:', error)
+    return NextResponse.json({ error: 'Error interno. Inténtalo de nuevo.' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

@@ -23,16 +23,21 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       // canvass_visits
       return {
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn().mockResolvedValue({ data: { campaign_id: 'camp1' } }),
+          })),
+        })),
         update: vi.fn((data: unknown) => {
           const d = data as Record<string, unknown>
           if (d.status === 'rejected') capturedRejectUpdates.push(data)
           else capturedVisitUpdates.push(data)
-          return {
-            eq: vi.fn(() => ({
-              error: null,
-              select: vi.fn(() => ({ single: mockVisitSingle })),
-            })),
+          const chain: Record<string, unknown> = {
+            error: null,
+            select: vi.fn(() => ({ single: mockVisitSingle })),
           }
+          chain.eq = vi.fn(() => chain)
+          return chain
         }),
       }
     }),
@@ -83,7 +88,7 @@ describe('POST /api/canvassing/approve', () => {
 
   it('approves visit — redirects and sets status to approved', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'coord-1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'field_coordinator' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'field_coordinator', campaign_ids: ['camp1'] } })
 
     const res = await POST(makeRequest({ visitId: 'v1', action: 'approve' }))
     expect(res.status).toBe(307)
@@ -92,7 +97,7 @@ describe('POST /api/canvassing/approve', () => {
 
   it('rejects visit — redirects and sets status to rejected with reason', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'coord-1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager', campaign_ids: ['camp1'] } })
 
     const res = await POST(makeRequest({ visitId: 'v2', action: 'reject', rejection_reason: 'Datos incorrectos' }))
     expect(res.status).toBe(307)

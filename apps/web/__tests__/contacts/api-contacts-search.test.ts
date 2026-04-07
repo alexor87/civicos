@@ -9,9 +9,18 @@ const mockLimit = vi.fn()
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => Promise.resolve({
     auth: { getUser: mockGetUser },
-    from: () => ({
-      select: mockSelect,
-    }),
+    from: (table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn().mockResolvedValue({ data: { campaign_ids: ['camp-1'] } }),
+            })),
+          })),
+        }
+      }
+      return { select: mockSelect }
+    },
   })),
 }))
 

@@ -99,7 +99,14 @@ vi.mock('@/lib/ai/call-ai', () => ({
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: vi.fn(() => ({})),
+  createAdminClient: vi.fn(() => ({
+    from: vi.fn((table: string) => {
+      if (table === 'campaigns') {
+        return { select: vi.fn(() => ({ eq: vi.fn(mockCampaignsSelect) })) }
+      }
+      return {}
+    }),
+  })),
 }))
 
 import { POST } from '@/app/api/agents/territory-redistribution/route'
@@ -178,8 +185,8 @@ describe('POST /api/agents/territory-redistribution — coverage adequate', () =
     mockDefaults()
     // Territory with high coverage (80 visits / 100 contacts = 80%)
     mockTerritoriesSelect.mockResolvedValue({ data: [{ id: 't1', name: 'Norte', priority: 'high' }] })
-    mockVisitCount.mockResolvedValue({ count: 80 })
-    mockContactCount.mockResolvedValue({ count: 100 })
+    mockVisitCount.mockResolvedValue({ data: Array.from({ length: 80 }, () => ({ territory_id: 't1' })) })
+    mockContactCount.mockResolvedValue({ data: Array.from({ length: 100 }, () => ({ district: 'Norte' })) })
 
     const res  = await POST(makeRequest('secret123'))
     const body = await res.json()
@@ -200,14 +207,15 @@ describe('POST /api/agents/territory-redistribution — low coverage', () => {
       { id: 't1', name: 'Sur', priority: 'high' },
       { id: 't2', name: 'Norte', priority: 'normal' },
     ] })
-    // Sur: 10/100 = 10% (low)
-    // Norte: 90/100 = 90% (high)
-    mockVisitCount
-      .mockResolvedValueOnce({ count: 10 })   // Sur visits
-      .mockResolvedValueOnce({ count: 90 })   // Norte visits
-    mockContactCount
-      .mockResolvedValueOnce({ count: 100 })  // Sur contacts
-      .mockResolvedValueOnce({ count: 100 })  // Norte contacts
+    // Sur: 10/100 = 10% (low); Norte: 90/100 = 90% (high) — bulk queries return all rows
+    mockVisitCount.mockResolvedValueOnce({ data: [
+      ...Array.from({ length: 10 }, () => ({ territory_id: 't1' })),
+      ...Array.from({ length: 90 }, () => ({ territory_id: 't2' })),
+    ] })
+    mockContactCount.mockResolvedValueOnce({ data: [
+      ...Array.from({ length: 100 }, () => ({ district: 'Sur' })),
+      ...Array.from({ length: 100 }, () => ({ district: 'Norte' })),
+    ] })
     mockRecentVisits.mockResolvedValue({ data: [] })
 
     mockCallAI.mockResolvedValueOnce({
@@ -234,8 +242,8 @@ describe('POST /api/agents/territory-redistribution — HITL', () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
     mockTerritoriesSelect.mockResolvedValue({ data: [{ id: 't1', name: 'Sur', priority: 'high' }] })
-    mockVisitCount.mockResolvedValue({ count: 5 })
-    mockContactCount.mockResolvedValue({ count: 100 })
+    mockVisitCount.mockResolvedValue({ data: Array.from({ length: 5 }, () => ({ territory_id: 't1' })) })
+    mockContactCount.mockResolvedValue({ data: Array.from({ length: 100 }, () => ({ district: 'Sur' })) })
     mockCallAI.mockResolvedValueOnce({
       content: JSON.stringify(CLAUDE_PROPOSAL),
     })
@@ -257,8 +265,8 @@ describe('POST /api/agents/territory-redistribution — deduplication', () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
     mockTerritoriesSelect.mockResolvedValue({ data: [{ id: 't1', name: 'Sur', priority: 'high' }] })
-    mockVisitCount.mockResolvedValue({ count: 5 })
-    mockContactCount.mockResolvedValue({ count: 100 })
+    mockVisitCount.mockResolvedValue({ data: Array.from({ length: 5 }, () => ({ territory_id: 't1' })) })
+    mockContactCount.mockResolvedValue({ data: Array.from({ length: 100 }, () => ({ district: 'Sur' })) })
     mockSuggestionsSelect.mockResolvedValue({ data: [{ id: 'existing' }] })  // already exists
     mockCallAI.mockResolvedValueOnce({
       content: JSON.stringify(CLAUDE_PROPOSAL),
@@ -279,8 +287,8 @@ describe('POST /api/agents/territory-redistribution — resilience', () => {
     mockCampaignsSelect.mockResolvedValueOnce({ data: [CAMPAIGN] })
     mockDefaults()
     mockTerritoriesSelect.mockResolvedValue({ data: [{ id: 't1', name: 'Sur', priority: 'high' }] })
-    mockVisitCount.mockResolvedValue({ count: 5 })
-    mockContactCount.mockResolvedValue({ count: 100 })
+    mockVisitCount.mockResolvedValue({ data: Array.from({ length: 5 }, () => ({ territory_id: 't1' })) })
+    mockContactCount.mockResolvedValue({ data: Array.from({ length: 100 }, () => ({ district: 'Sur' })) })
     mockCallAI.mockResolvedValueOnce({
       content: 'no es JSON',
     })

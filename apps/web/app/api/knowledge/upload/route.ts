@@ -96,6 +96,11 @@ export async function POST(req: NextRequest) {
   if (!file)        return NextResponse.json({ error: 'No file provided' }, { status: 400 })
   if (!campaign_id) return NextResponse.json({ error: 'campaign_id required' }, { status: 400 })
 
+  // I-7: verify campaign_id belongs to this user
+  if (!profile?.campaign_ids?.includes(campaign_id)) {
+    return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+  }
+
   const title    = titleInput?.trim() || file.name.replace(/\.[^/.]+$/, '')
   const ext      = file.name.split('.').pop()?.toLowerCase() ?? 'txt'
   const filePath = `${profile!.tenant_id}/${campaign_id}/${Date.now()}-${file.name}`

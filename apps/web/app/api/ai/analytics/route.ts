@@ -32,8 +32,9 @@ interface CampaignMetrics {
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
 function isAuthorized(req: NextRequest): boolean {
-  const secret = req.headers.get('x-cron-secret')
-  return secret === (process.env.CRON_SECRET ?? '')
+  const secret = process.env.CRON_SECRET
+  if (!secret) return false // fail closed
+  return req.headers.get('x-cron-secret') === secret
 }
 
 // ── Metrics collection ────────────────────────────────────────────────────────

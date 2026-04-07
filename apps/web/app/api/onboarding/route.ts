@@ -1,13 +1,24 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendVerificationEmail } from '@/lib/email/send-verification-email'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const onboardingSchema = z.object({
+  orgName: z.string().min(2, 'Nombre muy corto').max(100, 'Nombre muy largo'),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(8, 'Contraseña mínimo 8 caracteres').max(100),
+})
 
 export async function POST(request: NextRequest) {
-  const { orgName, email, password } = await request.json()
+  let body: unknown
+  try { body = await request.json() }
+  catch { return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 }) }
 
-  if (!orgName || !email || !password) {
-    return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+  const parsed = onboardingSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
   }
+  const { orgName, email, password } = parsed.data
 
   const supabase = await createAdminClient()
 
@@ -56,7 +67,7 @@ export async function POST(request: NextRequest) {
     // Cleanup on failure
     await supabase.from('tenant_branding').delete().eq('tenant_id', tenant.id)
     await supabase.from('tenants').delete().eq('id', tenant.id)
-    return NextResponse.json({ error: authError?.message || 'Error al crear usuario' }, { status: 500 })
+    return NextResponse.json({ error: 'Error al crear usuario' }, { status: 500 })
   }
 
   // 5. Upsert profile (no campaign_ids yet — seed will set them)

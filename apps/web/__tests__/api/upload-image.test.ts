@@ -39,16 +39,27 @@ import { POST } from '@/app/api/upload/image/route'
 import { NextRequest } from 'next/server'
 
 function makeRequest(file?: File): NextRequest {
-  const formData = new FormData()
-  if (file) formData.append('file', file)
-  return new NextRequest('http://localhost/api/upload/image', {
+  const req = new NextRequest('http://localhost/api/upload/image', {
     method: 'POST',
-    body:   formData,
+    body: '{}', // placeholder — formData() is mocked below
   })
+  // jsdom's FormData doesn't serialize binary files correctly through
+  // the NextRequest multipart pipeline. Mock formData() to return the
+  // file directly so arrayBuffer() works on the original File instance.
+  Object.defineProperty(req, 'formData', {
+    value: async () => {
+      const fd = new FormData()
+      if (file) fd.append('file', file)
+      return fd
+    },
+  })
+  return req
 }
 
 function makeFile(name = 'photo.jpg', type = 'image/jpeg'): File {
-  return new File(['fake-image-bytes'], name, { type })
+  // JPEG magic bytes: FF D8 FF E0
+  const bytes = new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10])
+  return new File([bytes], name, { type })
 }
 
 beforeEach(() => {

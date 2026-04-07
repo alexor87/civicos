@@ -18,23 +18,16 @@ export default async function DashboardPage() {
 
   const campaignId = profile.campaign_ids?.[0]
 
-  // Parallel KPI queries
+  // M-3: use pre-computed campaign_stats (O(1)) instead of 4 COUNT queries
   const [
-    { count: totalContacts },
-    { count: supporters },
-    { count: pendingVisits },
-    { count: totalVisits },
+    { data: stats },
     { data: suggestions },
     { data: recentRuns },
   ] = await Promise.all([
-    supabase.from('contacts').select('*', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId ?? ''),
-    supabase.from('contacts').select('*', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId ?? '').eq('status', 'supporter'),
-    supabase.from('canvass_visits').select('*', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId ?? '').is('approved_at', null),
-    supabase.from('canvass_visits').select('*', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId ?? ''),
+    supabase.from('campaign_stats')
+      .select('total_contacts, supporters, total_visits, pending_visits')
+      .eq('campaign_id', campaignId ?? '')
+      .single(),
     supabase.from('ai_suggestions').select('id, title, priority, module, status, created_at, description')
       .eq('campaign_id', campaignId ?? '')
       .in('status', ['active', 'pending_approval'])
@@ -46,8 +39,13 @@ export default async function DashboardPage() {
       .limit(3),
   ])
 
-  const supportRate = totalContacts ? Math.round(((supporters ?? 0) / totalContacts) * 100) : 0
-  const coverageRate = totalContacts ? Math.round(((totalVisits ?? 0) / totalContacts) * 100) : 0
+  const totalContacts = stats?.total_contacts ?? 0
+  const supporters = stats?.supporters ?? 0
+  const totalVisits = stats?.total_visits ?? 0
+  const pendingVisits = stats?.pending_visits ?? 0
+
+  const supportRate = totalContacts ? Math.round((supporters / totalContacts) * 100) : 0
+  const coverageRate = totalContacts ? Math.round((totalVisits / totalContacts) * 100) : 0
 
   const { data: recentContacts } = await supabase
     .from('contacts')

@@ -95,7 +95,14 @@ vi.mock('@/lib/ai/call-ai', () => ({
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: vi.fn(() => ({})),
+  createAdminClient: vi.fn(() => ({
+    from: vi.fn((table: string) => {
+      if (table === 'campaigns') {
+        return { select: vi.fn(() => ({ eq: vi.fn(mockCampaignsSelect) })) }
+      }
+      return {}
+    }),
+  })),
 }))
 
 import { POST } from '@/app/api/agents/smart-comms/route'

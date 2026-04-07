@@ -55,11 +55,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'first_name and last_name are required' }, { status: 422 })
   }
 
+  // I-9: resolve tenant_id from campaign — required by RLS and stats triggers
+  const { data: campaign } = await supabase
+    .from('campaigns').select('tenant_id').eq('id', ctx.campaignId).single()
+
   // Allowlist fields — no mass assignment
   const { data: contact, error } = await supabase
     .from('contacts')
     .insert({
       campaign_id:     ctx.campaignId,
+      tenant_id:       campaign?.tenant_id,
       first_name:      firstName,
       last_name:       lastName,
       email:           truncate(body.email,   FIELD_LIMITS.email),

@@ -21,14 +21,19 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       // canvass_visits
       return {
-        update: vi.fn(() => ({
+        select: vi.fn(() => ({
           eq: vi.fn(() => ({
-            // for reject path: direct error
-            error: null,
-            // for approve path: .select().single()
-            select: vi.fn(() => ({ single: mockVisitSingle })),
+            single: vi.fn().mockResolvedValue({ data: { campaign_id: 'camp1' } }),
           })),
         })),
+        update: vi.fn(() => {
+          const chain: Record<string, unknown> = {
+            error: null,
+            select: vi.fn(() => ({ single: mockVisitSingle })),
+          }
+          chain.eq = vi.fn(() => chain)
+          return chain
+        }),
       }
     }),
   })),
@@ -81,7 +86,7 @@ describe('POST /api/canvassing/approve', () => {
 
   it('redirects to canvassing page when field_coordinator approves', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'field_coordinator' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'field_coordinator', campaign_ids: ['camp1'] } })
 
     const res = await POST(makeFormRequest('visit-1'))
     expect(res.status).toBe(307)
@@ -90,7 +95,7 @@ describe('POST /api/canvassing/approve', () => {
 
   it('redirects to canvassing page when super_admin approves', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'super_admin' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'super_admin', campaign_ids: ['camp1'] } })
 
     const res = await POST(makeFormRequest('visit-99'))
     expect(res.status).toBe(307)
@@ -98,7 +103,7 @@ describe('POST /api/canvassing/approve', () => {
 
   it('redirects after rejecting a visit', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager' } })
+    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'campaign_manager', campaign_ids: ['camp1'] } })
 
     const res = await POST(makeFormRequest('visit-1', 'reject', 'Datos incorrectos'))
     expect(res.status).toBe(307)

@@ -10,11 +10,11 @@ export async function POST(request: NextRequest) {
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, campaign_ids')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as { role: string } | null
+  const profile = profileData as { role: string; campaign_ids: string[] } | null
   if (!profile || !ALLOWED_ROLES.includes(profile.role)) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
@@ -25,6 +25,17 @@ export async function POST(request: NextRequest) {
   const rejectionReason = (formData.get('rejection_reason') as string) || null
 
   if (!visitId) return NextResponse.json({ error: 'Missing visitId' }, { status: 400 })
+
+  // C-3: verify the visit belongs to a campaign this user has access to
+  const { data: visitCheck } = await supabase
+    .from('canvass_visits')
+    .select('campaign_id')
+    .eq('id', visitId)
+    .single()
+
+  if (!visitCheck || !profile.campaign_ids?.includes(visitCheck.campaign_id)) {
+    return NextResponse.redirect(new URL('/dashboard/canvassing?error=forbidden', request.url))
+  }
 
   const now = new Date().toISOString()
 
@@ -39,8 +50,9 @@ export async function POST(request: NextRequest) {
         rejection_reason: rejectionReason,
       } as any)
       .eq('id', visitId)
+      .eq('campaign_id', visitCheck.campaign_id)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.redirect(new URL('/dashboard/canvassing?error=server_error', request.url))
   } else {
     // Approve: update status, legacy approved_at, and trigger CRM update
     const { data: visit, error } = await supabase
@@ -53,10 +65,11 @@ export async function POST(request: NextRequest) {
         reviewed_at: now,
       } as any)
       .eq('id', visitId)
+      .eq('campaign_id', visitCheck.campaign_id)
       .select('contact_id, sympathy_level, wants_to_volunteer, result')
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.redirect(new URL('/dashboard/canvassing?error=server_error', request.url))
 
     // Update CRM: sync sympathy_level to contact metadata
     if (visit && visit.sympathy_level != null) {

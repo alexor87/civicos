@@ -6,6 +6,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // I-8: replay attack prevention — reject requests older than 5 minutes
+  const timestamp = request.headers.get('x-webhook-timestamp')
+  if (timestamp) {
+    const ts = parseInt(timestamp, 10)
+    if (isNaN(ts) || Math.abs(Date.now() - ts) > 5 * 60 * 1000) {
+      return NextResponse.json({ error: 'Request expirado' }, { status: 401 })
+    }
+  }
+
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceRoleKey) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })

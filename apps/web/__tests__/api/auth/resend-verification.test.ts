@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const mockGenerateLink = vi.fn()
-vi.mock('@/lib/supabase/server', () => ({
-  createAdminClient: vi.fn(async () => ({
+vi.mock('@/lib/supabase/server', () => ({}))
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
     auth: { admin: { generateLink: mockGenerateLink } },
   })),
 }))

@@ -120,7 +120,8 @@ export async function POST(request: Request) {
   }).select('id').single()
 
   if (error) {
-    return NextResponse.json({ error: 'db_error', message: error.message }, { status: 500 })
+    console.error('[contacts] DB error:', error)
+    return NextResponse.json({ error: 'Error interno. Inténtalo de nuevo.' }, { status: 500 })
   }
 
   // Update PostGIS geo column if coordinates are available

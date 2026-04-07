@@ -39,9 +39,19 @@ export async function POST(request: NextRequest) {
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   })
 
+  // M-7: validate magic bytes — browser-supplied MIME type is user-controlled
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const bytes = new Uint8Array(buffer)
+  const isJpeg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF
+  const isPng  = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47
+  const isWebp = bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  const isGif  = bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46
+  if (!isJpeg && !isPng && !isWebp && !isGif) {
+    return NextResponse.json({ error: 'Formato de imagen no válido' }, { status: 400 })
+  }
+
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
   const path = `${user.id}/${Date.now()}.${ext}`
-  const buffer = Buffer.from(await file.arrayBuffer())
 
   const { error: uploadError } = await adminStorage
     .from(BUCKET)

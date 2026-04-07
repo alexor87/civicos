@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
 import { resolveThresholds } from '@/lib/agents/thresholds'
 import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
+import { sanitizeForPrompt } from '@/lib/security/sanitize'
 
 // Agent 4 — Territory Redistribution
 // HITL: all proposals are pending_approval.
@@ -12,7 +13,9 @@ import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 const AGENT_ID = 'agent-territory-redistribution'
 
 function isAuthorized(req: NextRequest): boolean {
-  return req.headers.get('x-cron-secret') === (process.env.CRON_SECRET ?? '')
+  const secret = process.env.CRON_SECRET
+  if (!secret) return false // fail closed
+  return req.headers.get('x-cron-secret') === secret
 }
 
 export async function POST(req: NextRequest) {
@@ -42,14 +45,17 @@ export async function POST(req: NextRequest) {
   const now = new Date()
   const cutoff14d = new Date(now.getTime() - 14 * 86_400_000).toISOString()
 
-  const { data: campaigns } = await supabase
+  // C-5: use admin client — cron has no user session, RLS would block
+  const adminSupabase = createAdminClient()
+  const { data: campaigns, error: campaignsError } = await adminSupabase
     .from('campaigns')
     .select('id, tenant_id, name, election_date, config')
     .eq('is_active', true)
 
-  if (!campaigns?.length) return NextResponse.json({ processed: 0, proposals_created: 0 })
-
-  const adminSupabase = createAdminClient()
+  if (campaignsError || !campaigns?.length) {
+    console.error('[territory-redistribution] No campaigns found or error:', campaignsError)
+    return NextResponse.json({ processed: 0, proposals_created: 0 })
+  }
   let proposalsCreated = 0
 
   for (const campaign of campaigns) {
@@ -78,23 +84,37 @@ export async function POST(req: NextRequest) {
       interface TerritoryMetric { id: string; name: string; visits: number; contacts_in_zone: number; coverage_pct: number; priority: string }
       const territoryMetrics: TerritoryMetric[] = []
 
-      for (const t of territories ?? []) {
-        const { count: visitCount } = await supabase
-          .from('canvass_visits').select('id', { count: 'exact', head: true })
-          .eq('campaign_id', campaign.id).eq('territory_id', t.id)
+      if ((territories ?? []).length > 0) {
+        // M-4: bulk queries instead of N+1 (2 queries per territory)
+        const territoryIds = (territories ?? []).map(t => t.id)
+        const territoryNames = (territories ?? []).map(t => t.name)
 
-        const { count: contactsInZone } = await supabase
-          .from('contacts').select('id', { count: 'exact', head: true })
-          .eq('campaign_id', campaign.id).eq('district', t.name)
+        const [{ data: allVisits }, { data: allContacts }] = await Promise.all([
+          supabase.from('canvass_visits').select('territory_id')
+            .eq('campaign_id', campaign.id).in('territory_id', territoryIds),
+          supabase.from('contacts').select('district')
+            .eq('campaign_id', campaign.id).in('district', territoryNames),
+        ])
 
-        const coverage = contactsInZone
-          ? Math.round(((visitCount ?? 0) / contactsInZone) * 100) : 0
+        const visitCountMap = new Map<string, number>()
+        for (const v of allVisits ?? []) {
+          if (v.territory_id) visitCountMap.set(v.territory_id, (visitCountMap.get(v.territory_id) ?? 0) + 1)
+        }
+        const contactCountMap = new Map<string, number>()
+        for (const c of allContacts ?? []) {
+          if (c.district) contactCountMap.set(c.district, (contactCountMap.get(c.district) ?? 0) + 1)
+        }
 
-        territoryMetrics.push({
-          id: t.id, name: t.name, visits: visitCount ?? 0,
-          contacts_in_zone: contactsInZone ?? 0,
-          coverage_pct: coverage, priority: t.priority ?? 'normal',
-        })
+        for (const t of territories ?? []) {
+          const visits = visitCountMap.get(t.id) ?? 0
+          const contactsInZone = contactCountMap.get(t.name) ?? 0
+          const coverage = contactsInZone ? Math.round((visits / contactsInZone) * 100) : 0
+          territoryMetrics.push({
+            id: t.id, name: t.name, visits,
+            contacts_in_zone: contactsInZone,
+            coverage_pct: coverage, priority: t.priority ?? 'normal',
+          })
+        }
       }
 
       const { data: recentVisits } = await supabase
@@ -131,7 +151,8 @@ export async function POST(req: NextRequest) {
       const highSummary = highCoverage.map(t => `  - ${t.name}: ${t.coverage_pct}%`).join('\n') || '  - Ninguno'
       const volSummary = Object.values(volMap).slice(0, 8).map(v => `  - ${v.full_name}: ${v.visit_count} visitas`).join('\n') || '  - Sin datos'
 
-      const prompt = `Analiza la campaña "${campaign.name}" y genera una propuesta de redistribución de voluntarios.
+      const safeName = sanitizeForPrompt(campaign.name, 200)
+      const prompt = `Analiza la campaña "${safeName}" y genera una propuesta de redistribución de voluntarios.
 
 ZONAS CON BAJA COBERTURA (<40%):
 ${lowSummary}

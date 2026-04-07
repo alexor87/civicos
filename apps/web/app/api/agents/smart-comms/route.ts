@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
 import { resolveThresholds } from '@/lib/agents/thresholds'
 import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
+import { sanitizeForPrompt } from '@/lib/security/sanitize'
 
 // Agent 3 — Smart Communications
 // Can be triggered manually from the AI Center UI (Campaign Manager+)
@@ -12,8 +13,9 @@ import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 const AGENT_ID = 'agent-smart-comms'
 
 function isAuthorized(req: NextRequest): boolean {
-  const secret = req.headers.get('x-cron-secret')
-  return secret === (process.env.CRON_SECRET ?? '')
+  const secret = process.env.CRON_SECRET
+  if (!secret) return false // fail closed — CRON_SECRET not configured
+  return req.headers.get('x-cron-secret') === secret
 }
 
 async function requireManagerAuth(supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -53,16 +55,17 @@ export async function POST(req: NextRequest) {
 
   const now = new Date()
 
-  const { data: campaigns } = await supabase
+  // C-5: use admin client for campaign fetch — cron has no user session, RLS would block
+  const adminSupabase = createAdminClient()
+  const { data: campaigns, error: campaignsError } = await adminSupabase
     .from('campaigns')
     .select('id, tenant_id, name, config')
     .eq('is_active', true)
 
-  if (!campaigns?.length) {
+  if (campaignsError || !campaigns?.length) {
+    console.error('[smart-comms] No campaigns found or error:', campaignsError)
     return NextResponse.json({ processed: 0, suggestions_created: 0 })
   }
-
-  const adminSupabase = createAdminClient()
   let suggestionsCreated = 0
 
   for (const campaign of campaigns) {
@@ -126,7 +129,8 @@ export async function POST(req: NextRequest) {
 
       steps.push({ step: 'collect_metrics', completed_at: new Date().toISOString() })
 
-      const prompt = `Analiza el rendimiento de comunicaciones de la campaña "${campaign.name}" y genera sugerencias.
+      const safeName = sanitizeForPrompt(campaign.name, 200)
+      const prompt = `Analiza el rendimiento de comunicaciones de la campaña "${safeName}" y genera sugerencias.
 
 EMAIL (últimas 10 campañas):
 ${emailMetricsSummary}

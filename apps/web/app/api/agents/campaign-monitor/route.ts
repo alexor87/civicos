@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
 import { resolveThresholds } from '@/lib/agents/thresholds'
 import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
+import { sanitizeForPrompt } from '@/lib/security/sanitize'
 
 // Agent 5 — Campaign Monitor
 // Collects daily KPIs, detects anomalies, generates a daily report suggestion.
@@ -12,7 +13,9 @@ import { checkAgentRateLimit } from '@/lib/agent-rate-limit'
 const AGENT_ID = 'agent-campaign-monitor'
 
 function isAuthorized(req: NextRequest): boolean {
-  return req.headers.get('x-cron-secret') === (process.env.CRON_SECRET ?? '')
+  const secret = process.env.CRON_SECRET
+  if (!secret) return false // fail closed
+  return req.headers.get('x-cron-secret') === secret
 }
 
 export async function POST(req: NextRequest) {
@@ -45,14 +48,17 @@ export async function POST(req: NextRequest) {
   const cutoff7d = new Date(now.getTime() - 7 * 86_400_000).toISOString()
   const today = now.toISOString().slice(0, 10)
 
-  const { data: campaigns } = await supabase
+  // C-5: use admin client — cron has no user session, RLS would block
+  const adminSupabase = createAdminClient()
+  const { data: campaigns, error: campaignsError } = await adminSupabase
     .from('campaigns')
     .select('id, tenant_id, name, election_date, config')
     .eq('is_active', true)
 
-  if (!campaigns?.length) return NextResponse.json({ processed: 0, reports_created: 0 })
-
-  const adminSupabase = createAdminClient()
+  if (campaignsError || !campaigns?.length) {
+    console.error('[campaign-monitor] No campaigns found or error:', campaignsError)
+    return NextResponse.json({ processed: 0, reports_created: 0 })
+  }
   let reportsCreated = 0
 
   for (const campaign of campaigns) {
@@ -118,7 +124,8 @@ export async function POST(req: NextRequest) {
       const alertLevel = alerts.length === 0 ? 'verde' : alerts.length === 1 ? 'amarillo' : 'rojo'
       const priority = alertLevel === 'rojo' ? 'high' : alertLevel === 'amarillo' ? 'medium' : 'low'
 
-      const prompt = `Genera un reporte diario conciso para la campaña "${campaign.name}".
+      const safeName = sanitizeForPrompt(campaign.name, 200)
+      const prompt = `Genera un reporte diario conciso para la campaña "${safeName}".
 
 KPIs:
 - Contactos totales: ${totalContacts ?? 0} | Simpatizantes: ${supporters ?? 0} (${supportRate}%)
