@@ -107,31 +107,34 @@ export function GeoSelector({ departmentCode, municipalityCode, localityName, ne
     ? geoData.ciudades.find(c => c.municipio_codigo === municipality)
     : null
 
-  const localities = selectedCity
-    ? (selectedCity.localidades ?? selectedCity.comunas ?? [])
-        .map(l => l.nombre)
-        .sort()
+  const divisionNames = selectedCity
+    ? (selectedCity.localidades ?? selectedCity.comunas ?? []).map(l => l.nombre)
     : []
+  const corrNames = selectedCity
+    ? (selectedCity.corregimientos ?? []).map(c => c.nombre)
+    : []
+  const localities = [...divisionNames, ...corrNames].sort()
 
-  // Barrios de la localidad/comuna seleccionada
+  // Barrios de la localidad/comuna, o veredas del corregimiento seleccionado
   const getBarrios = (): string[] => {
     if (!selectedCity || !locality) return []
-    const divisions = selectedCity.localidades ?? selectedCity.comunas ?? []
-    const div = divisions.find(l => l.nombre === locality)
-    if (!div) return []
 
-    // Bogotá: localidad > upz > barrios
-    if (div.upz) {
-      return div.upz.flatMap(u => u.barrios).sort()
+    // Comunas/localidades
+    const divs = selectedCity.localidades ?? selectedCity.comunas ?? []
+    const div = divs.find(l => l.nombre === locality)
+    if (div) {
+      if (div.upz) return div.upz.flatMap(u => u.barrios).sort()
+      if (div.barrios) return div.barrios.map(b => typeof b === 'string' ? b : b.nombre).sort()
     }
 
-    // Otras ciudades: barrios directo (string[] o {nombre}[])
-    if (div.barrios) {
-      return div.barrios.map(b => typeof b === 'string' ? b : b.nombre).sort()
-    }
+    // Corregimientos → veredas
+    const corr = selectedCity.corregimientos?.find(c => c.nombre === locality)
+    if (corr) return [...corr.veredas].sort()
 
     return []
   }
+
+  const isCorregimiento = !!selectedCity?.corregimientos?.find(c => c.nombre === locality)
 
   const neighborhoods = getBarrios()
 
@@ -209,7 +212,9 @@ export function GeoSelector({ departmentCode, municipalityCode, localityName, ne
 
       <div>
         <label className="text-sm font-medium text-slate-700 mb-1 block">
-          {selectedCity?.tipo_division_urbana === 'localidad' ? 'Localidad' : 'Comuna'}
+          {corrNames.length > 0 && divisionNames.length > 0
+            ? 'Comuna / Corregimiento'
+            : selectedCity?.tipo_division_urbana === 'localidad' ? 'Localidad' : 'Comuna'}
         </label>
         <select
           value={locality}
@@ -225,7 +230,7 @@ export function GeoSelector({ departmentCode, municipalityCode, localityName, ne
       </div>
 
       <div>
-        <label className="text-sm font-medium text-slate-700 mb-1 block">Barrio</label>
+        <label className="text-sm font-medium text-slate-700 mb-1 block">{isCorregimiento ? 'Vereda' : 'Barrio'}</label>
         <select
           value={neighborhood}
           onChange={e => handleChange('neighborhood', e.target.value)}

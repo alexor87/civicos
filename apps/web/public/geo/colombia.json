@@ -3617,8 +3617,7 @@
             "Cuchillas de San José",
             "Abreito",
             "Abreo",
-            "Chachafruto",
-            "Barro Blanco"
+            "Chachafruto"
           ]
         },
         {
@@ -3629,14 +3628,14 @@
             "Santa Ana",
             "Chipre",
             "Tres Puertas",
-            "Guayabito",
             "San Antonio",
             "Vilachuaga",
-            "Cabeceras de Llanogrande",
             "El Higuerón",
             "Pontezuela",
             "El Capiro",
-            "Santa Teresa"
+            "Santa Teresa",
+            "Cabeceras",
+            "Llanogrande"
           ]
         },
         {
@@ -3649,13 +3648,13 @@
             "Yarumal",
             "Aeropuerto",
             "La Convención",
-            "El Tablazo",
+            "Tablazo",
             "Tablacito"
           ]
         },
         {
           "codigo": "C04",
-          "nombre": "Corregimiento Norte Néstor Esteban Sanint",
+          "nombre": "Corregimiento Norte Néstor Esteban Sanint Arbelaez",
           "veredas": [
             "San Luis",
             "Río Abajo",
