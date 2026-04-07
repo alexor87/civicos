@@ -34,6 +34,10 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }))
 
+vi.mock('@/lib/impersonation-guard', () => ({
+  rejectIfImpersonating: vi.fn().mockResolvedValue(null),
+}))
+
 import { POST } from '@/app/api/contacts/route'
 
 const validBody = {

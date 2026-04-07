@@ -103,10 +103,10 @@ describe('stepEssentialsSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejects missing email', () => {
+  it('accepts missing email (optional field)', () => {
     const { email: _, ...withoutEmail } = validData
     const result = stepEssentialsSchema.safeParse(withoutEmail)
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
   })
 
   it('rejects invalid email format', () => {

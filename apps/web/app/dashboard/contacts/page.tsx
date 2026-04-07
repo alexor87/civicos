@@ -68,7 +68,7 @@ export default async function ContactsPage({
 
   let query = supabase
     .from('contacts')
-    .select('*')
+    .select('id, first_name, last_name, phone, email, status, document_number, document_type, address, city, district, department, municipality, commune, voting_place, voting_table, birth_date, gender, tags, notes, metadata, campaign_id, tenant_id, location_lat, location_lng, geocoding_status, created_at, updated_at')
     .eq('campaign_id', campaignId ?? '')
     .order('created_at', { ascending: isGoingBack })
     .limit(pageSize + 1) // Fetch N+1 to detect "has more"

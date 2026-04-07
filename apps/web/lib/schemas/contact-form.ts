@@ -35,7 +35,7 @@ export const stepEssentialsSchema = z.object({
   document_number: z.string().min(1, 'Documento requerido').max(20, 'Máximo 20 caracteres'),
   phone: z.string().min(1, 'Teléfono requerido').max(15, 'Máximo 15 caracteres'),
   status: z.enum(contactStatuses),
-  email: z.string().email('Email inválido').min(1, 'Email requerido').max(254, 'Máximo 254 caracteres'),
+  email: z.string().email('Email inválido').max(254, 'Máximo 254 caracteres').optional().or(z.literal('')),
   phone_alternate: z.string().max(15, 'Máximo 15 caracteres').optional(),
 })
 
@@ -52,7 +52,7 @@ export const stepLocationSchema = z.object({
   voting_table: z.string().max(10, 'Máximo 10 caracteres').optional(),
   location_lat: z.number().nullable().optional(),
   location_lng: z.number().nullable().optional(),
-  geocoding_status: z.string().optional(),
+  geocoding_status: z.enum(['pending', 'geocoded', 'failed', 'manual_pin', 'skip']).optional(),
 })
 
 /* ── Step 3: Political ── */
