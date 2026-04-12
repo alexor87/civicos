@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendVerificationEmail } from '@/lib/email/send-verification-email'
+import { sendOnboardingEmail } from '@/lib/email/onboarding-sequence'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -125,6 +126,34 @@ export async function POST(request: NextRequest) {
       console.error('[onboarding] sendVerificationEmail failed:', result.error)
     }
   }
+
+  // 9. Send welcome onboarding email (non-fatal, fire-and-forget)
+  sendOnboardingEmail({
+    step: 'welcome',
+    email,
+    tenantId: tenant.id,
+    orgName,
+    appUrl: siteUrl,
+  }).then(async (result) => {
+    if (result.ok) {
+      // Record welcome step in sequence state using service-role client
+      const { createClient } = await import('@supabase/supabase-js')
+      const adminDb = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      await adminDb.from('email_sequence_state').insert({
+        tenant_id: tenant.id,
+        user_id: authData.user.id,
+        email,
+        step: 'welcome',
+      })
+    } else {
+      console.error('[onboarding] welcome email failed:', result.error)
+    }
+  }).catch((err) => {
+    console.error('[onboarding] welcome email unexpected error:', err)
+  })
 
   return NextResponse.json({
     success: true,
