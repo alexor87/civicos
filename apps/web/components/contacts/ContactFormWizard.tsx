@@ -176,7 +176,13 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
       }
 
       const data = await res.json()
+      // Stop auto-save interval before reset to prevent it from restoring old data
+      if (autoSaveRef.current) {
+        clearInterval(autoSaveRef.current)
+        autoSaveRef.current = null
+      }
       store.reset()
+      methods.reset()
       toast.success(contactId ? 'Contacto actualizado' : 'Contacto creado')
       router.push(`/dashboard/contacts/${data.id ?? contactId}`)
       router.refresh()
