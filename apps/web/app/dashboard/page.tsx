@@ -53,6 +53,7 @@ export default async function DashboardPage() {
     .eq('campaign_id', campaignId ?? '')
     .gte('created_at', new Date(Date.now() - 56 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: true })
+    .limit(500)
 
   const weeklyMap: Record<string, number> = {}
   recentContacts?.forEach(c => {

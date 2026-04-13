@@ -33,6 +33,7 @@ export default async function ContactsPage({
     .in('type', ['departamento', 'municipio'])
     .order('type')
     .order('name')
+    .limit(500)
 
   const departments = (geoUnitsRaw ?? [])
     .filter(u => u.type === 'departamento')

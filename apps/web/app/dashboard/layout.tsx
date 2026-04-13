@@ -32,19 +32,35 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login?error=no-profile')
   }
 
-  // Fetch tenant branding (source of truth for brand identity)
-  const { data: tenantBranding } = await supabase
-    .from('tenant_branding')
-    .select('*')
-    .eq('tenant_id', profile.tenant_id)
-    .single()
+  // Derive synchronous values from profile before any more DB calls
+  const cookieStore = await cookies()
+  const cookieCampaignId = cookieStore.get('active_campaign_id')?.value
+  const campaignIds: string[] = profile.campaign_ids ?? []
+  const activeCampaignId = (cookieCampaignId && campaignIds.includes(cookieCampaignId))
+    ? cookieCampaignId
+    : campaignIds[0] ?? ''
+  const tenantName = (profile.tenants as { name: string } | null)?.name ?? 'Scrutix'
+  const tenantPlan = ((profile.tenants as { plan?: string } | null)?.plan ?? 'esencial') as PlanName
 
-  // Check onboarding state — demo tenants skip the branding wizard
-  const { data: onboardingState } = await supabase
-    .from('onboarding_state')
-    .select('stage')
-    .eq('tenant_id', profile.tenant_id)
-    .single()
+  // Parallelize all remaining DB calls — they all depend only on profile (already fetched)
+  const [
+    { data: tenantBranding },
+    { data: onboardingState },
+    { data: campaignsData },
+    { data: resolvedFeatures },
+    { count: suggestionCount },
+  ] = await Promise.all([
+    supabase.from('tenant_branding').select('*').eq('tenant_id', profile.tenant_id).single(),
+    supabase.from('onboarding_state').select('stage').eq('tenant_id', profile.tenant_id).single(),
+    campaignIds.length > 0
+      ? supabase.from('campaigns').select('id, name').in('id', campaignIds).order('name')
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    supabase.rpc('resolve_all_tenant_features', { p_tenant_id: profile.tenant_id, p_plan: tenantPlan }),
+    supabase.from('ai_suggestions')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', activeCampaignId)
+      .in('status', ['active', 'pending_approval']) as Promise<{ count: number }>,
+  ])
 
   const isDemoOrPending = onboardingState?.stage === 'demo' || onboardingState?.stage === 'pending' || onboardingState?.stage === 'seeding'
 
@@ -58,25 +74,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/onboarding')
   }
 
-  // Determine active campaign (cookie > first in array)
-  const cookieStore = await cookies()
-  const cookieCampaignId = cookieStore.get('active_campaign_id')?.value
-  const campaignIds: string[] = profile.campaign_ids ?? []
-  const activeCampaignId = (cookieCampaignId && campaignIds.includes(cookieCampaignId))
-    ? cookieCampaignId
-    : campaignIds[0] ?? ''
-
-  // Fetch all user campaigns for the switcher
-  let allCampaigns: { id: string; name: string }[] = []
-  if (campaignIds.length > 0) {
-    const { data } = await supabase
-      .from('campaigns')
-      .select('id, name')
-      .in('id', campaignIds)
-      .order('name')
-    allCampaigns = data ?? []
-  }
-
+  const allCampaigns = campaignsData ?? []
   const campaignName = allCampaigns.find(c => c.id === activeCampaignId)?.name ?? 'Sin campaña'
   const firstCampaignId = activeCampaignId
 
@@ -107,27 +105,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .toUpperCase()
     .slice(0, 2) ?? '?'
 
-  const tenantName = (profile.tenants as { name: string } | null)?.name ?? 'Scrutix'
-  const tenantPlan = ((profile.tenants as { plan?: string } | null)?.plan ?? 'esencial') as PlanName
-
-  // Resolve feature flags for the tenant
-  const { data: resolvedFeatures } = await supabase.rpc('resolve_all_tenant_features', {
-    p_tenant_id: profile.tenant_id,
-    p_plan: tenantPlan,
-  })
   const features: Record<string, unknown> = {}
   if (resolvedFeatures && Array.isArray(resolvedFeatures)) {
     for (const row of resolvedFeatures) {
       features[row.feature_key] = row.resolved_value
     }
   }
-
-  // Active suggestion count for the realtime badge
-  const { count: suggestionCount } = await supabase
-    .from('ai_suggestions')
-    .select('id', { count: 'exact', head: true })
-    .eq('campaign_id', firstCampaignId)
-    .in('status', ['active', 'pending_approval']) as { count: number }
 
   return (
     <>
