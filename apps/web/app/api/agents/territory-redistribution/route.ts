@@ -172,7 +172,7 @@ Genera UNA propuesta en JSON:
         { role: 'user', content: prompt },
       ], { maxTokens: 1200 })
 
-      const text = aiResult.content || '{}'
+      const text = (aiResult.content || '{}').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
       let proposal: { title: string; description: string; reasoning: string; estimated_impact: string; redistribution_plan: unknown[]; priority: string }
       try { proposal = JSON.parse(text) }
       catch {

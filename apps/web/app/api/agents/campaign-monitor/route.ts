@@ -144,7 +144,7 @@ Responde SOLO con JSON:
         { role: 'user', content: prompt },
       ], { maxTokens: 600 })
 
-      const text = aiResult.content || '{}'
+      const text = (aiResult.content || '{}').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
       let report: { title: string; description: string; reasoning: string; estimated_impact: string }
       try { report = JSON.parse(text) }
       catch {

@@ -148,7 +148,7 @@ Genera hasta 3 sugerencias. Responde SOLO con array JSON:
         { role: 'user', content: prompt },
       ], { maxTokens: 1200 })
 
-      const text = aiResult.content || '[]'
+      const text = (aiResult.content || '[]').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
       let suggestions: { type: string; module: string; priority: string; title: string; description: string; reasoning: string; estimated_impact: string; action_payload: Record<string, unknown> }[] = []
       try { suggestions = JSON.parse(text); if (!Array.isArray(suggestions)) suggestions = [] } catch { suggestions = [] }
 
