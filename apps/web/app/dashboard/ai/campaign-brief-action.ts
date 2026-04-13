@@ -132,7 +132,7 @@ Devuelve ÚNICAMENTE este JSON (sin texto extra):
       { maxTokens: 1024 },
     )
 
-    const text = aiResult.content || ''
+    const text = (aiResult.content || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
     const parsed = JSON.parse(text)
 
     const brief: CampaignBrief = {

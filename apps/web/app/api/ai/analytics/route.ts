@@ -175,7 +175,7 @@ Devuelve ÚNICAMENTE un array JSON con esta estructura exacta (sin texto extra):
     { role: 'user', content: prompt },
   ], { maxTokens: 2048 })
 
-  const text = aiResult.content || '[]'
+  const text = (aiResult.content || '[]').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
 
   try {
     const parsed = JSON.parse(text)

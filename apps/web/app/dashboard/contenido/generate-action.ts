@@ -288,7 +288,7 @@ export async function generateContent(
       { maxTokens: 2048 },
     )
 
-    const text = aiResult.content || ''
+    const text = (aiResult.content || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
     const parsed = JSON.parse(text)
 
     if (type === 'email') {

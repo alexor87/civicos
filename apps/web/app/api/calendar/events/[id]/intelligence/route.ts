@@ -227,7 +227,7 @@ Responde SOLO con el JSON, sin texto adicional.`
       { role: 'user', content: prompt },
     ], { maxTokens: 1024 })
 
-    const text = (aiResult.content || '').trim()
+    const text = (aiResult.content || '').replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
     const briefing = JSON.parse(text)
 
     await supabase
