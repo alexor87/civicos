@@ -101,7 +101,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* AI Suggestions Panel */}
-      {(suggestions?.length ?? 0) > 0 && (
+      {(suggestions?.length ?? 0) > 0 ? (
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
@@ -144,6 +144,27 @@ export default async function DashboardPage() {
               )
             })}
           </div>
+        </section>
+      ) : (
+        <section>
+          <a
+            href="/dashboard/ai"
+            className="group flex items-center gap-5 bg-white dark:bg-slate-900 border-2 border-dashed border-primary/30 rounded-xl p-6 hover:border-primary hover:bg-primary/5 transition-all"
+          >
+            <div className="w-16 h-16 rounded-xl flex-shrink-0 bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
+              <Brain className="h-8 w-8 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h5 className="font-bold text-slate-900 dark:text-white text-sm">Los agentes IA aún no han generado reportes</h5>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Genera el primer análisis inteligente de tu campaña. Los reportes se actualizan automáticamente cada día.
+              </p>
+            </div>
+            <div className="shrink-0 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold group-hover:shadow-lg group-hover:shadow-primary/30 transition-all flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Activar agentes
+            </div>
+          </a>
         </section>
       )}
 
