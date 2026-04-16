@@ -3,9 +3,9 @@
 import { cn } from '@/lib/utils'
 
 const ORIENTATIONS = [
-  { value: 'derecha', label: 'Derecha', icon: '→' },
-  { value: 'centro', label: 'Centro', icon: '•' },
-  { value: 'izquierda', label: 'Izquierda', icon: '←' },
+  { value: 'derecha', label: 'Derecha', color: 'bg-blue-500 text-white', ring: 'ring-blue-500/30' },
+  { value: 'centro', label: 'Centro', color: 'bg-purple-500 text-white', ring: 'ring-purple-500/30' },
+  { value: 'izquierda', label: 'Izquierda', color: 'bg-rose-500 text-white', ring: 'ring-rose-500/30' },
 ] as const
 
 interface Props {
@@ -18,7 +18,7 @@ export function OrientationSelector({ value, onChange }: Props) {
     <div
       role="radiogroup"
       aria-label="Orientación política"
-      className="grid grid-cols-3 gap-3"
+      className="flex gap-2 w-full"
     >
       {ORIENTATIONS.map((o) => {
         const selected = value === o.value
@@ -30,14 +30,13 @@ export function OrientationSelector({ value, onChange }: Props) {
             aria-checked={selected}
             onClick={() => onChange(selected ? null : o.value)}
             className={cn(
-              'flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-4 text-sm font-medium transition-all',
+              'flex-1 h-12 rounded-lg text-sm font-medium transition-all',
               selected
-                ? 'border-primary bg-primary/5 text-primary shadow-sm'
-                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                ? cn(o.color, 'ring-2', o.ring, 'shadow-sm')
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
             )}
           >
-            <span className="text-lg">{o.icon}</span>
-            <span>{o.label}</span>
+            {o.label}
           </button>
         )
       })}
