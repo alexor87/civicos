@@ -75,7 +75,6 @@ mockFrom.mockImplementation((table: string) => {
                 political_affinity: 4,
                 vote_intention: 'yes',
                 campaign_role: 'coordinador',
-                preferred_party: 'Alianza Verde',
               },
             },
           }),

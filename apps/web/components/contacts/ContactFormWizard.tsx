@@ -33,7 +33,7 @@ const STEPS = [
 const STEP_FIELDS: Record<number, (keyof ContactForm)[]> = {
   1: ['first_name', 'last_name', 'document_type', 'document_number', 'phone', 'status', 'email', 'phone_alternate'],
   2: ['department', 'municipality', 'commune', 'district_barrio', 'sector', 'address', 'voting_place', 'voting_table'],
-  3: ['political_affinity', 'vote_intention', 'electoral_priority', 'campaign_role', 'preferred_party'],
+  3: ['political_affinity', 'vote_intention', 'electoral_priority', 'campaign_role'],
   4: ['birth_date', 'gender', 'marital_status', 'contact_source', 'source_detail', 'referred_by', 'mobilizes_count', 'main_need', 'economic_sector', 'beneficiary_program'],
 }
 

@@ -11,11 +11,10 @@ import {
 } from '@/components/ui/select'
 import { AffinitySelector } from '@/components/contacts/selectors/AffinitySelector'
 import { VoteIntentionSelector } from '@/components/contacts/selectors/VoteIntentionSelector'
-import { PartyCombobox } from '@/components/contacts/selectors/PartyCombobox'
 import type { ContactForm } from '@/lib/schemas/contact-form'
 
 export function StepPolitical() {
-  const { register, setValue, watch } = useFormContext<ContactForm>()
+  const { setValue, watch } = useFormContext<ContactForm>()
 
   return (
     <div className="space-y-5">
@@ -86,14 +85,6 @@ export function StepPolitical() {
         </Select>
       </div>
 
-      {/* Preferred Party */}
-      <div className="space-y-1.5">
-        <Label>Partido preferido</Label>
-        <PartyCombobox
-          value={watch('preferred_party') ?? ''}
-          onChange={(v) => setValue('preferred_party', v)}
-        />
-      </div>
     </div>
   )
 }

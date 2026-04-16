@@ -38,12 +38,4 @@ describe('StepPolitical', () => {
     render(<StepPolitical />, { wrapper: Wrapper })
     expect(screen.getByLabelText(/rol en campaña/i)).toBeInTheDocument()
   })
-
-  it('renders preferred party combobox', () => {
-    render(<StepPolitical />, { wrapper: Wrapper })
-    expect(screen.getByText(/partido preferido/i)).toBeInTheDocument()
-    // Two comboboxes: campaign_role Select + PartyCombobox
-    const comboboxes = screen.getAllByRole('combobox')
-    expect(comboboxes.length).toBeGreaterThanOrEqual(2)
-  })
 })

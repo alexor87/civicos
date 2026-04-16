@@ -53,7 +53,6 @@ Proveer una plantilla Excel oficial que las campañas descarguen, llenen con su 
 | Estado del Contacto | status | — |
 | Afinidad Política | political_affinity | — |
 | Intención de Voto | vote_intention | — |
-| Partido Preferido | preferred_party | — |
 | Prioridad Electoral | electoral_priority | — |
 | Rol en Campaña | campaign_role | — |
 | Fuente de Captura | capture_source | — |

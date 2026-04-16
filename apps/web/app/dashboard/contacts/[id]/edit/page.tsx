@@ -61,7 +61,6 @@ export default async function EditContactPage({
     vote_intention: meta.vote_intention as ContactForm['vote_intention'],
     electoral_priority: meta.electoral_priority as ContactForm['electoral_priority'],
     campaign_role: meta.campaign_role as ContactForm['campaign_role'],
-    preferred_party: (meta.preferred_party as string) ?? '',
     // Source
     contact_source: meta.contact_source as ContactForm['contact_source'],
     source_detail: (meta.source_detail as string) ?? '',

@@ -27,7 +27,6 @@ const emptyFormData: ContactForm = {
   vote_intention: undefined,
   electoral_priority: undefined,
   campaign_role: undefined,
-  preferred_party: '',
   birth_date: '',
   gender: undefined,
   marital_status: undefined,

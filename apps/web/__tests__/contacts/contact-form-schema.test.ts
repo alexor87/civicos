@@ -147,7 +147,6 @@ describe('stepPoliticalSchema', () => {
       vote_intention: 'si',
       electoral_priority: 'alta',
       campaign_role: 'lider_barrial',
-      preferred_party: 'Partido Verde',
     })
     expect(result.success).toBe(true)
   })

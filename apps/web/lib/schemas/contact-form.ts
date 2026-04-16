@@ -62,7 +62,6 @@ export const stepPoliticalSchema = z.object({
   vote_intention: z.enum(voteIntentions).optional(),
   electoral_priority: z.enum(electoralPriorities).optional(),
   campaign_role: z.enum(campaignRoles).optional(),
-  preferred_party: z.string().max(100, 'Máximo 100 caracteres').optional(),
 })
 
 /* ── Step 4: Additional ── */
