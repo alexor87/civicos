@@ -3,9 +3,9 @@
 import { cn } from '@/lib/utils'
 
 const ORIENTATIONS = [
-  { value: 'derecha', label: 'Derecha', color: 'bg-blue-500 text-white', ring: 'ring-blue-500/30' },
-  { value: 'centro', label: 'Centro', color: 'bg-purple-500 text-white', ring: 'ring-purple-500/30' },
-  { value: 'izquierda', label: 'Izquierda', color: 'bg-rose-500 text-white', ring: 'ring-rose-500/30' },
+  { value: 'derecha', label: 'Derecha' },
+  { value: 'centro', label: 'Centro' },
+  { value: 'izquierda', label: 'Izquierda' },
 ] as const
 
 interface Props {
@@ -32,7 +32,7 @@ export function OrientationSelector({ value, onChange }: Props) {
             className={cn(
               'flex-1 h-12 rounded-lg text-sm font-medium transition-all',
               selected
-                ? cn(o.color, 'ring-2', o.ring, 'shadow-sm')
+                ? 'bg-primary text-white ring-2 ring-primary/30 shadow-sm'
                 : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
             )}
           >
