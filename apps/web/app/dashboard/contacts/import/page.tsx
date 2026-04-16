@@ -37,6 +37,7 @@ const IMPORTABLE_FIELDS = [
   // Perfil político
   { value: 'status', label: 'Estado del contacto' },
   { value: 'political_affinity', label: 'Afinidad política' },
+  { value: 'political_orientation', label: 'Orientación política' },
   { value: 'vote_intention', label: 'Intención de voto' },
   { value: 'electoral_priority', label: 'Prioridad electoral' },
   { value: 'campaign_role', label: 'Rol en campaña' },
@@ -80,6 +81,8 @@ const HEADER_ALIASES: Record<string, string> = {
   sector: 'sector',
   'afinidad politica': 'political_affinity', 'afinidad política': 'political_affinity',
   political_affinity: 'political_affinity',
+  'orientacion politica': 'political_orientation', 'orientación política': 'political_orientation',
+  political_orientation: 'political_orientation',
   'intencion de voto': 'vote_intention', 'intención de voto': 'vote_intention',
   vote_intention: 'vote_intention',
   'estado civil': 'marital_status', marital_status: 'marital_status',

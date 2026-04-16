@@ -58,6 +58,7 @@ export default async function EditContactPage({
     marital_status: meta.marital_status as ContactForm['marital_status'],
     // Political
     political_affinity: meta.political_affinity ? Number(meta.political_affinity) : undefined,
+    political_orientation: meta.political_orientation as ContactForm['political_orientation'],
     vote_intention: meta.vote_intention as ContactForm['vote_intention'],
     electoral_priority: meta.electoral_priority as ContactForm['electoral_priority'],
     campaign_role: meta.campaign_role as ContactForm['campaign_role'],

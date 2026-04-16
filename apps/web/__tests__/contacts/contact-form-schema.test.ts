@@ -144,11 +144,17 @@ describe('stepPoliticalSchema', () => {
   it('accepts full political data', () => {
     const result = stepPoliticalSchema.safeParse({
       political_affinity: 4,
+      political_orientation: 'centro',
       vote_intention: 'si',
       electoral_priority: 'alta',
       campaign_role: 'lider_barrial',
     })
     expect(result.success).toBe(true)
+  })
+
+  it('rejects invalid political_orientation', () => {
+    const result = stepPoliticalSchema.safeParse({ political_orientation: 'extremo' })
+    expect(result.success).toBe(false)
   })
 
   it('rejects invalid vote_intention', () => {

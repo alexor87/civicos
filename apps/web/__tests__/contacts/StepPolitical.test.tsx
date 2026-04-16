@@ -21,6 +21,13 @@ describe('StepPolitical', () => {
     expect(screen.getByText('Aliado')).toBeInTheDocument()
   })
 
+  it('renders orientation selector', () => {
+    render(<StepPolitical />, { wrapper: Wrapper })
+    expect(screen.getByText('Derecha')).toBeInTheDocument()
+    expect(screen.getByText('Centro')).toBeInTheDocument()
+    expect(screen.getByText('Izquierda')).toBeInTheDocument()
+  })
+
   it('renders vote intention selector', () => {
     render(<StepPolitical />, { wrapper: Wrapper })
     expect(screen.getByText(/Sí, votará/)).toBeInTheDocument()

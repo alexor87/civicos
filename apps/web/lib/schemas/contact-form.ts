@@ -7,6 +7,7 @@ export const contactStatuses = ['unknown', 'supporter', 'undecided', 'opponent']
 export const genders = ['M', 'F', 'NB', 'NE'] as const
 export const voteIntentions = ['si', 'no', 'indeciso'] as const
 export const electoralPriorities = ['alta', 'media', 'baja'] as const
+export const politicalOrientations = ['derecha', 'centro', 'izquierda'] as const
 export const campaignRoles = [
   'votante', 'lider_barrial', 'coordinador', 'voluntario', 'donante', 'testigo',
 ] as const
@@ -59,6 +60,7 @@ export const stepLocationSchema = z.object({
 
 export const stepPoliticalSchema = z.object({
   political_affinity: z.number().int().min(1).max(5).optional(),
+  political_orientation: z.enum(politicalOrientations).optional(),
   vote_intention: z.enum(voteIntentions).optional(),
   electoral_priority: z.enum(electoralPriorities).optional(),
   campaign_role: z.enum(campaignRoles).optional(),

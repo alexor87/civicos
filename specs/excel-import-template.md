@@ -52,6 +52,7 @@ Proveer una plantilla Excel oficial que las campañas descarguen, llenen con su 
 | Mesa de Votación | voting_table | — |
 | Estado del Contacto | status | — |
 | Afinidad Política | political_affinity | — |
+| Orientación Política | political_orientation | Derecha, Centro, Izquierda |
 | Intención de Voto | vote_intention | — |
 | Prioridad Electoral | electoral_priority | — |
 | Rol en Campaña | campaign_role | — |

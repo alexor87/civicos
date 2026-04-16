@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { AffinitySelector } from '@/components/contacts/selectors/AffinitySelector'
+import { OrientationSelector } from '@/components/contacts/selectors/OrientationSelector'
 import { VoteIntentionSelector } from '@/components/contacts/selectors/VoteIntentionSelector'
 import type { ContactForm } from '@/lib/schemas/contact-form'
 
@@ -24,6 +25,15 @@ export function StepPolitical() {
         <AffinitySelector
           value={watch('political_affinity') ?? null}
           onChange={(v) => setValue('political_affinity', v ?? undefined)}
+        />
+      </div>
+
+      {/* Political Orientation */}
+      <div className="space-y-1.5">
+        <Label>Orientación política</Label>
+        <OrientationSelector
+          value={watch('political_orientation') ?? null}
+          onChange={(v) => setValue('political_orientation', v ?? undefined)}
         />
       </div>
 

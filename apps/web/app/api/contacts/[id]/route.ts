@@ -56,7 +56,7 @@ export async function PATCH(
   const metadata: Record<string, unknown> = {}
   const metaFields = [
     'phone_alternate', 'marital_status', 'political_affinity',
-    'vote_intention', 'electoral_priority',
+    'political_orientation', 'vote_intention', 'electoral_priority',
     'campaign_role', 'contact_source', 'source_detail',
     'referred_by', 'mobilizes_count', 'main_need',
     'economic_sector', 'beneficiary_program',

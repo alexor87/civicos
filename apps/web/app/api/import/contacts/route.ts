@@ -15,7 +15,7 @@ const VALID_CONTACT_FIELDS = new Set([
 // Fields that go into the metadata JSONB column (not direct DB columns)
 const META_FIELDS = new Set([
   'phone_alternate', 'marital_status', 'political_affinity',
-  'vote_intention', 'source_detail',
+  'political_orientation', 'vote_intention', 'source_detail',
   'referred_by', 'mobilizes_count', 'main_need',
   'economic_sector', 'beneficiary_program', 'sector',
 ])
@@ -47,6 +47,8 @@ const HEADER_ALIASES: Record<string, string> = {
   sector: 'sector',
   'afinidad politica': 'political_affinity', 'afinidad política': 'political_affinity',
   political_affinity: 'political_affinity',
+  'orientacion politica': 'political_orientation', 'orientación política': 'political_orientation',
+  political_orientation: 'political_orientation',
   'intencion de voto': 'vote_intention', 'intención de voto': 'vote_intention',
   vote_intention: 'vote_intention',
   'estado civil': 'marital_status', marital_status: 'marital_status',

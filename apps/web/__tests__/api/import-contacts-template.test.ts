@@ -69,7 +69,7 @@ describe('GET /api/import/contacts/template', () => {
     expect(wb.SheetNames[1]).toBe('Instrucciones')
   })
 
-  it('la hoja Plantilla tiene 32 columnas', async () => {
+  it('la hoja Plantilla tiene 33 columnas', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'u1' } } })
 
     const res = await GET(makeRequest())
@@ -78,7 +78,7 @@ describe('GET /api/import/contacts/template', () => {
 
     const ws = wb.Sheets['Plantilla']
     const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 }) as string[][]
-    expect(rows[0]).toHaveLength(32)
+    expect(rows[0]).toHaveLength(33)
   })
 
   it('la fila de encabezados contiene los campos obligatorios', async () => {

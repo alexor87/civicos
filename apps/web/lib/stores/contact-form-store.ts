@@ -24,6 +24,7 @@ const emptyFormData: ContactForm = {
   location_lng: null,
   geocoding_status: 'pending',
   political_affinity: undefined,
+  political_orientation: undefined,
   vote_intention: undefined,
   electoral_priority: undefined,
   campaign_role: undefined,
