@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
         .from('contacts')
         .select('metadata')
         .eq('id', visit.contact_id)
+        .is('deleted_at', null)
         .single()
 
       const meta = (contact?.metadata as Record<string, unknown>) ?? {}

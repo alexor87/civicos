@@ -5,6 +5,7 @@ const mockSelect = vi.fn()
 const mockEq     = vi.fn()
 const mockOr     = vi.fn()
 const mockIlike  = vi.fn()
+const mockIs     = vi.fn()
 const mockLimit  = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -18,6 +19,7 @@ vi.mock('@/lib/supabase/server', () => ({
         eq:     mockEq.mockReturnThis(),
         or:     mockOr.mockReturnThis(),
         ilike:  mockIlike.mockReturnThis(),
+        is:     mockIs.mockReturnThis(),
         limit:  mockLimit,
       }
       if (table === 'profiles') {

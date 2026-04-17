@@ -28,6 +28,7 @@ export async function GET(request: Request) {
       .select('id, first_name, last_name, email, phone')
       .eq('campaign_id', campaignId)
       .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
+      .is('deleted_at', null)
       .limit(5),
     supabase
       .from('territories')

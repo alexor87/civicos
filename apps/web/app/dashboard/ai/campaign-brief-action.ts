@@ -72,8 +72,8 @@ export async function generateCampaignBrief(): Promise<BriefResult> {
     prevVisitsRes,
     emailCampsRes,
   ] = await Promise.all([
-    supabase.from('contacts').select('id').eq('campaign_id', campaignId),
-    supabase.from('contacts').select('id').eq('campaign_id', campaignId).eq('status', 'supporter'),
+    supabase.from('contacts').select('id').eq('campaign_id', campaignId).is('deleted_at', null),
+    supabase.from('contacts').select('id').eq('campaign_id', campaignId).is('deleted_at', null).eq('status', 'supporter'),
     supabase.from('canvass_visits').select('id').eq('campaign_id', campaignId).gte('created_at', since7d),
     supabase.from('canvass_visits').select('id').eq('campaign_id', campaignId).gte('created_at', prev7dStart).lt('created_at', since7d),
     supabase.from('email_campaigns').select('id, name, subject, recipient_count, sent_at, status').eq('campaign_id', campaignId).order('sent_at', { ascending: false }).limit(10),

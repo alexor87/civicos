@@ -24,6 +24,7 @@ interface ClusteredPoint {
   contact_id: string | null
   dominant_status: string | null
   dominant_result: string | null
+  contact_level: string | null
 }
 
 interface MapBounds {
@@ -88,6 +89,7 @@ export function CanvassingMapWithPanel(props: Props) {
         campaign_role: null,
         electoral_priority: null,
         capture_source: null,
+        contact_level: c.contact_level,
         visit_id: null,
         // Cluster metadata
         point_count: c.point_count,

@@ -72,6 +72,7 @@ export async function registerVolunteer(input: RegisterVolunteerInput): Promise<
     .select('id')
     .eq('campaign_id', campaignId)
     .eq('email', email.toLowerCase().trim())
+    .is('deleted_at', null)
     .maybeSingle()
 
   if (existing) {

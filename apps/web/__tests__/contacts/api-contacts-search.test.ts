@@ -32,7 +32,7 @@ describe('GET /api/contacts/search', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockSelect.mockReturnValue({ eq: mockEq })
     mockEq.mockReturnValue({ or: mockOr })
-    mockOr.mockReturnValue({ limit: mockLimit })
+    mockOr.mockReturnValue({ is: vi.fn().mockReturnValue({ limit: mockLimit }) })
     mockLimit.mockResolvedValue({
       data: [{ id: '1', first_name: 'Ana', last_name: 'Gómez', phone: '300123' }],
     })

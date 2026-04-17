@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
     .from('contacts')
     .select('id, first_name, last_name, email, phone, status, document_id, department, municipality, gender, tags, created_at')
     .eq('campaign_id', campaignId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(10000)
 

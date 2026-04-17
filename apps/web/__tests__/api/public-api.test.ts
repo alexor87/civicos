@@ -33,8 +33,10 @@ vi.mock('@/lib/supabase/server', () => ({
         return {
           select: vi.fn(() => ({
             eq: vi.fn(() => ({
-              order: vi.fn(() => ({
-                range: vi.fn(() => mockContactSelect()),
+              is: vi.fn(() => ({
+                order: vi.fn(() => ({
+                  range: vi.fn(() => mockContactSelect()),
+                })),
               })),
             })),
           })),

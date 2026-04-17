@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     .select('id, first_name, last_name, phone')
     .eq('campaign_id', campaignId)
     .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm}`)
+    .is('deleted_at', null)
     .limit(5)
 
   return NextResponse.json({ results: data ?? [] })

@@ -33,6 +33,7 @@ export default async function ContactProfilePage({
     .select('*')
     .eq('id', id)
     .eq('campaign_id', campaignId!)
+    .is('deleted_at', null)
     .single()
 
   if (contactError && contactError.code !== 'PGRST116') {

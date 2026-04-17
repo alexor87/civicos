@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { ContactFormWizard } from '@/components/contacts/ContactFormWizard'
-import type { ContactForm } from '@/lib/schemas/contact-form'
+import type { ContactForm, ContactLevel } from '@/lib/schemas/contact-form'
 
 export default async function EditContactPage({
   params,
@@ -29,16 +29,18 @@ export default async function EditContactPage({
     .from('contacts')
     .select('*')
     .eq('id', id)
+    .is('deleted_at', null)
     .single()
 
   if (!contact) notFound()
 
   const meta = (contact.metadata as Record<string, unknown>) ?? {}
+  const contactLevel = ((contact as Record<string, unknown>).contact_level as ContactLevel) ?? 'completo'
 
   // Map DB row → ContactForm shape
   const initialData: Partial<ContactForm> = {
-    first_name: contact.first_name,
-    last_name: contact.last_name,
+    first_name: contact.first_name ?? '',
+    last_name: contact.last_name ?? '',
     document_type: ((contact as Record<string, unknown>).document_type as ContactForm['document_type']) ?? 'CC',
     document_number: (contact as Record<string, unknown>).document_number as string ?? '',
     phone: contact.phone ?? '',
@@ -87,7 +89,9 @@ export default async function EditContactPage({
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Editar Contacto</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{contact.first_name} {contact.last_name}</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {((contact as Record<string, unknown>).display_name as string) ?? (`${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim() || 'Contacto anónimo')}
+          </p>
         </div>
       </div>
 
@@ -95,6 +99,7 @@ export default async function EditContactPage({
         campaignId={campaignId}
         initialData={initialData}
         contactId={id}
+        initialLevel={contactLevel}
       />
     </div>
   )

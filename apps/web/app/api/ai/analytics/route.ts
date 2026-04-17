@@ -53,13 +53,15 @@ async function collectMetrics(
   const { count: contacts_total = 0 } = await supabase
     .from('contacts')
     .select('id', { count: 'exact', head: true })
-    .eq('campaign_id', campaignId) as { count: number }
+    .eq('campaign_id', campaignId)
+    .is('deleted_at', null) as { count: number }
 
   // Contacts with no visit in 30+ days
   const { count: contacts_unvisited_30d = 0 } = await supabase
     .from('contacts')
     .select('id', { count: 'exact', head: true })
     .eq('campaign_id', campaignId)
+    .is('deleted_at', null)
     .not('id', 'in',
       `(SELECT DISTINCT contact_id FROM canvass_visits WHERE created_at >= '${cutoff30d}')`
     ) as { count: number }
@@ -69,6 +71,7 @@ async function collectMetrics(
     .from('contacts')
     .select('id', { count: 'exact', head: true })
     .eq('campaign_id', campaignId)
+    .is('deleted_at', null)
     .lte('created_at', cutoff7d)
     .eq('tags', '{}') as { count: number }
 

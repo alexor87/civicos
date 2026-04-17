@@ -1,8 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ContactForm } from '@/lib/schemas/contact-form'
+import type { ContactForm, ContactLevel } from '@/lib/schemas/contact-form'
 
-const TOTAL_STEPS = 4
 
 const emptyFormData: ContactForm = {
   first_name: '',
@@ -44,22 +43,32 @@ const emptyFormData: ContactForm = {
 
 interface ContactFormState {
   currentStep: number
+  contactLevel: ContactLevel
   formData: ContactForm
   isDirty: boolean
   lastSaved: Date | null
 
+  setContactLevel: (level: ContactLevel) => void
   setFormData: (partial: Partial<ContactForm>) => void
   nextStep: () => void
   prevStep: () => void
   setStep: (step: number) => void
   reset: () => void
   markSaved: () => void
-  loadInitialData: (data: Partial<ContactForm>) => void
+  loadInitialData: (data: Partial<ContactForm>, level?: ContactLevel) => void
   hasDraft: () => boolean
+  totalSteps: () => number
+}
+
+const STEPS_PER_LEVEL: Record<ContactLevel, number> = {
+  completo: 4,
+  opinion: 3,
+  anonimo: 2,
 }
 
 const initialState = {
   currentStep: 1,
+  contactLevel: 'completo' as ContactLevel,
   formData: { ...emptyFormData },
   isDirty: false,
   lastSaved: null,
@@ -70,6 +79,9 @@ export const useContactFormStore = create<ContactFormState>()(
     (set, get) => ({
       ...initialState,
 
+      setContactLevel: (level) =>
+        set({ contactLevel: level, currentStep: 1 }),
+
       setFormData: (partial) =>
         set((state) => ({
           formData: { ...state.formData, ...partial },
@@ -78,7 +90,7 @@ export const useContactFormStore = create<ContactFormState>()(
 
       nextStep: () =>
         set((state) => ({
-          currentStep: Math.min(state.currentStep + 1, TOTAL_STEPS),
+          currentStep: Math.min(state.currentStep + 1, STEPS_PER_LEVEL[state.contactLevel]),
         })),
 
       prevStep: () =>
@@ -87,27 +99,31 @@ export const useContactFormStore = create<ContactFormState>()(
         })),
 
       setStep: (step) =>
-        set(() => ({
-          currentStep: Math.max(1, Math.min(step, TOTAL_STEPS)),
+        set((state) => ({
+          currentStep: Math.max(1, Math.min(step, STEPS_PER_LEVEL[state.contactLevel])),
         })),
 
       reset: () => set({ ...initialState, formData: { ...emptyFormData } }),
 
       markSaved: () => set({ isDirty: false, lastSaved: new Date() }),
 
-      loadInitialData: (data) =>
+      loadInitialData: (data, level) =>
         set({
           formData: { ...emptyFormData, ...data },
+          contactLevel: level ?? 'completo',
           isDirty: false,
           currentStep: 1,
         }),
 
       hasDraft: () => get().isDirty,
+
+      totalSteps: () => STEPS_PER_LEVEL[get().contactLevel],
     }),
     {
       name: 'scrutix-contact-draft',
       partialize: (state) => ({
         currentStep: state.currentStep,
+        contactLevel: state.contactLevel,
         formData: state.formData,
         isDirty: state.isDirty,
       }),

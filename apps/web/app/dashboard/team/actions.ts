@@ -73,6 +73,7 @@ export async function promoteContactToMember(contactId: string, role: string): P
     .from('contacts')
     .select('first_name, last_name, email, phone')
     .eq('id', contactId)
+    .is('deleted_at', null)
     .single()
 
   if (!contact)       return { error: 'Contacto no encontrado' }

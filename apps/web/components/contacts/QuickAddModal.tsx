@@ -17,7 +17,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { AffinitySelector } from '@/components/contacts/selectors/AffinitySelector'
-import { quickAddSchema, type QuickAddForm } from '@/lib/schemas/contact-form'
+import { quickAddSchema, quickAddOpinionSchema, type QuickAddForm } from '@/lib/schemas/contact-form'
+import type { ContactLevel } from '@/lib/schemas/contact-form'
 
 interface Props {
   open: boolean
@@ -28,6 +29,9 @@ interface Props {
 export function QuickAddModal({ open, onOpenChange, campaignId }: Props) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [level, setLevel] = useState<'completo' | 'opinion'>('completo')
+
+  const isOpinion = level === 'opinion'
 
   const {
     register,
@@ -37,7 +41,7 @@ export function QuickAddModal({ open, onOpenChange, campaignId }: Props) {
     watch,
     formState: { errors },
   } = useForm<QuickAddForm>({
-    resolver: zodResolver(quickAddSchema),
+    resolver: zodResolver(isOpinion ? quickAddOpinionSchema : quickAddSchema),
     defaultValues: { full_name: '', phone: '' },
   })
 
@@ -51,26 +55,36 @@ export function QuickAddModal({ open, onOpenChange, campaignId }: Props) {
       const first_name = parts[0] ?? ''
       const last_name = parts.slice(1).join(' ') || first_name
 
+      const body: Record<string, unknown> = {
+        first_name,
+        last_name,
+        status: 'unknown',
+        contact_level: level,
+        ...(data.political_affinity != null && {
+          political_affinity: data.political_affinity,
+        }),
+      }
+
+      if (isOpinion) {
+        // Opinion: phone is optional
+        if (data.phone) body.phone = data.phone
+      } else {
+        // Completo: phone + document required
+        body.phone = data.phone
+        body.document_type = 'CC'
+        body.document_number = data.phone // Temporary: use phone as doc number for quick add
+      }
+
       const res = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          first_name,
-          last_name,
-          phone: data.phone,
-          document_type: 'CC',
-          document_number: data.phone, // Temporary: use phone as doc number for quick add
-          status: 'unknown',
-          ...(data.political_affinity != null && {
-            political_affinity: data.political_affinity,
-          }),
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) {
         const err = await res.json()
         if (err.error === 'duplicate') {
-          toast.error('Ya existe un contacto con ese teléfono')
+          toast.error(isOpinion ? 'Ya existe un contacto con ese nombre' : 'Ya existe un contacto con ese teléfono')
         } else {
           toast.error('Error al crear contacto')
         }
@@ -97,8 +111,33 @@ export function QuickAddModal({ open, onOpenChange, campaignId }: Props) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Captura rápida</DialogTitle>
-          <DialogDescription>Agrega un contacto en segundos. Solo nombre y teléfono.</DialogDescription>
+          <DialogDescription>
+            {isOpinion
+              ? 'Registra un voto de opinión. Solo nombre obligatorio.'
+              : 'Agrega un contacto en segundos. Solo nombre y teléfono.'}
+          </DialogDescription>
         </DialogHeader>
+
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+          <button
+            type="button"
+            className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-colors ${
+              !isOpinion ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'
+            }`}
+            onClick={() => setLevel('completo')}
+          >
+            Completo
+          </button>
+          <button
+            type="button"
+            className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-colors ${
+              isOpinion ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'
+            }`}
+            onClick={() => setLevel('opinion')}
+          >
+            Opinión
+          </button>
+        </div>
 
         <form
           onSubmit={handleSubmit((data) => submit(data, false))}
@@ -118,7 +157,10 @@ export function QuickAddModal({ open, onOpenChange, campaignId }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="quick_phone">Teléfono <span className="text-red-500">*</span></Label>
+            <Label htmlFor="quick_phone">
+              Teléfono {!isOpinion && <span className="text-red-500">*</span>}
+              {isOpinion && <span className="text-slate-400 text-xs ml-1">(Opcional)</span>}
+            </Label>
             <Input
               id="quick_phone"
               type="tel"

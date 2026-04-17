@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
       .select('id, full_name, neighborhood_name, municipality_name')
       .eq('campaign_id', campaignId)
       .not('full_name', 'is', null)
+      .is('deleted_at', null)
       .limit(5)
 
     const previewContact = contacts?.[0] ?? null

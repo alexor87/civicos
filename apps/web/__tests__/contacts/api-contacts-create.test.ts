@@ -17,11 +17,14 @@ const mockChain = () => ({
   insert: mockInsert,
 })
 
+const mockIs = vi.fn()
+
 // Each chainable method returns the chain
-mockSelect.mockReturnValue({ eq: mockEq, single: mockSingle, limit: mockLimit })
-mockEq.mockReturnValue({ eq: mockEq, single: mockSingle, limit: mockLimit, or: mockOr, select: mockSelect })
+mockSelect.mockReturnValue({ eq: mockEq, single: mockSingle, limit: mockLimit, is: mockIs })
+mockEq.mockReturnValue({ eq: mockEq, single: mockSingle, limit: mockLimit, or: mockOr, select: mockSelect, is: mockIs })
+mockIs.mockReturnValue({ eq: mockEq, single: mockSingle, limit: mockLimit })
 mockLimit.mockReturnValue({ single: mockSingle })
-mockOr.mockReturnValue({ limit: mockLimit, single: mockSingle })
+mockOr.mockReturnValue({ limit: mockLimit, single: mockSingle, is: mockIs })
 mockInsert.mockReturnValue({ select: mockSelect })
 
 const mockGetUser = vi.fn()
@@ -87,9 +90,10 @@ describe('POST /api/contacts', () => {
     })
 
     // Default: no duplicate found
-    mockEq.mockReturnValue({ eq: mockEq, single: () => Promise.resolve({ data: null }), limit: mockLimit, or: mockOr })
+    mockIs.mockReturnValue({ eq: mockEq, single: () => Promise.resolve({ data: null }), limit: mockLimit })
+    mockEq.mockReturnValue({ eq: mockEq, single: () => Promise.resolve({ data: null }), limit: mockLimit, or: mockOr, is: mockIs })
     mockLimit.mockReturnValue({ single: () => Promise.resolve({ data: null }) })
-    mockOr.mockReturnValue({ limit: mockLimit })
+    mockOr.mockReturnValue({ limit: mockLimit, is: mockIs })
   })
 
   it('returns 401 when not authenticated', async () => {

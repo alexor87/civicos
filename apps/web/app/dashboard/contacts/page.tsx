@@ -9,7 +9,7 @@ import { Upload, Layers } from 'lucide-react'
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; cursor?: string; direction?: string; department?: string; municipality?: string }>
+  searchParams: Promise<{ q?: string; status?: string; level?: string; cursor?: string; direction?: string; department?: string; municipality?: string }>
 }) {
   const params = await searchParams
   const supabase = await createClient()
@@ -69,8 +69,9 @@ export default async function ContactsPage({
 
   let query = supabase
     .from('contacts')
-    .select('id, first_name, last_name, phone, email, status, document_number, document_type, address, city, district, department, municipality, commune, voting_place, voting_table, birth_date, gender, tags, notes, metadata, campaign_id, tenant_id, location_lat, location_lng, geocoding_status, created_at, updated_at')
+    .select('id, first_name, last_name, phone, email, status, document_number, document_type, address, city, district, department, municipality, commune, voting_place, voting_table, birth_date, gender, tags, notes, metadata, campaign_id, tenant_id, location_lat, location_lng, geocoding_status, contact_level, display_name, created_at, updated_at')
     .eq('campaign_id', campaignId ?? '')
+    .is('deleted_at', null)
     .order('created_at', { ascending: isGoingBack })
     .limit(pageSize + 1) // Fetch N+1 to detect "has more"
 
@@ -95,6 +96,9 @@ export default async function ContactsPage({
 
   if (params.status) {
     query = query.eq('status', params.status)
+  }
+  if (params.level) {
+    query = query.eq('contact_level', params.level)
   }
   if (params.department) {
     query = query.eq('department', params.department)
@@ -179,6 +183,7 @@ export default async function ContactsPage({
         hasPrev={hasPrev}
         searchQuery={params.q}
         statusFilter={params.status}
+        levelFilter={params.level}
         campaignId={campaignId ?? ''}
       />
     </div>

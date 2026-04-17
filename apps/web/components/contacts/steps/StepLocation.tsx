@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { ContactGeoSelector, type GeoValues } from '@/components/contacts/ContactGeoSelector'
 import { useGeocoding } from '@/hooks/useGeocoding'
 import { Loader2, CheckCircle2, AlertCircle, MapPin } from 'lucide-react'
-import type { ContactForm } from '@/lib/schemas/contact-form'
+import type { ContactForm, ContactLevel } from '@/lib/schemas/contact-form'
 import type { GeocodingState, ManualPin } from '@/hooks/useGeocoding'
 
 const GeocodingMap = dynamic(
@@ -18,7 +18,11 @@ const GeocodingMap = dynamic(
 
 const COLOMBIA_CENTER = { lat: 4.5709, lng: -74.2973 }
 
-export function StepLocation() {
+interface Props {
+  contactLevel?: ContactLevel
+}
+
+export function StepLocation({ contactLevel = 'completo' }: Props) {
   const { register, setValue, watch } = useFormContext<ContactForm>()
   const { state, manualPin, geocode, handleMapClick, handlePinDrag, finalCoords } = useGeocoding()
 
@@ -58,6 +62,26 @@ export function StepLocation() {
     : state.status === 'approximate'
     ? state.center
     : COLOMBIA_CENTER
+
+  const isAnonimo = contactLevel === 'anonimo'
+
+  // For anónimo contacts: show only department + municipality
+  if (isAnonimo) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-slate-500">
+          Ubicación aproximada del contacto anónimo (opcional)
+        </p>
+        <ContactGeoSelector
+          defaultDepartment={watch('department') || null}
+          defaultMunicipality={watch('municipality') || null}
+          defaultCommune={null}
+          defaultBarrio={null}
+          onGeoChange={handleGeoChange}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5">

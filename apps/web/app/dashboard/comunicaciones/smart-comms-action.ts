@@ -79,6 +79,7 @@ export async function analyzeSmartComms(
       .from('contacts')
       .select('id')
       .eq('campaign_id', campaignId)
+      .is('deleted_at', null)
       .lt('created_at', since30d),
   ])
 

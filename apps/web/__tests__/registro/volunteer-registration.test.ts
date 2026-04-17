@@ -25,7 +25,9 @@ vi.mock('@supabase/supabase-js', () => ({
         return {
           select: vi.fn(() => ({
             eq: vi.fn(() => ({
-              eq: vi.fn(() => ({ maybeSingle: mockContactMaybeSingle })),
+              eq: vi.fn(() => ({
+                is: vi.fn(() => ({ maybeSingle: mockContactMaybeSingle })),
+              })),
             })),
           })),
           insert: vi.fn(() => mockContactInsert()),
@@ -114,7 +116,7 @@ describe('registerVolunteer', () => {
         }
         if (table === 'contacts') {
           return {
-            select: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: mockContactMaybeSingle })) })) })),
+            select: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ is: vi.fn(() => ({ maybeSingle: mockContactMaybeSingle })) })) })) })),
             insert: vi.fn((row: Record<string, unknown>) => {
               insertedEmail = row.email as string
               return mockContactInsert()

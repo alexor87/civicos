@@ -34,6 +34,7 @@ export default async function EditCalendarEventPage({ params }: { params: Promis
       .from('contacts')
       .select('id, first_name, last_name')
       .in('id', contactIds)
+      .is('deleted_at', null)
     linkedContacts = (contactsData ?? []) as any
   }
 

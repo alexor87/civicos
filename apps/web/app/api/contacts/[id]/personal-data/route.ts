@@ -24,6 +24,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .from('contacts')
     .select('id, first_name, last_name, email, phone, address, city, district, document_type, document_number, birth_date, gender, department, municipality, commune, voting_place, voting_table, status, tags, notes, created_at, updated_at, campaign_id')
     .eq('id', id)
+    .is('deleted_at', null)
     .single()
 
   if (error || !contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -110,6 +111,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     .from('contacts')
     .select('id, campaign_id, metadata')
     .eq('id', id)
+    .is('deleted_at', null)
     .single()
 
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })

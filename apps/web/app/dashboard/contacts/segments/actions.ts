@@ -31,6 +31,7 @@ export async function applyFilters(
     .from('contacts')
     .select('id, first_name, last_name, status, department, municipality, gender, tags, created_at', { count: 'exact' })
     .eq('campaign_id', campaignId)
+    .is('deleted_at', null)
 
   for (const f of filters) {
     switch (f.field) {

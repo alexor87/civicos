@@ -25,7 +25,7 @@ const {
 
 function makeChain(terminalFn: ReturnType<typeof vi.fn>) {
   const chain: Record<string, unknown> = {}
-  const methods = ['eq', 'in', 'order', 'limit', 'gte', 'single', 'select']
+  const methods = ['eq', 'in', 'order', 'limit', 'gte', 'single', 'select', 'is']
   for (const m of methods) { chain[m] = vi.fn(() => chain) }
   chain.then = vi.fn((resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
     terminalFn().then(resolve, reject)

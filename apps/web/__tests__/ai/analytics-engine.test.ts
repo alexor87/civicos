@@ -33,7 +33,7 @@ const {
 // Helper: builds a fully-chainable Supabase query builder that resolves via `then`
 function makeChain(terminalFn: ReturnType<typeof vi.fn>) {
   const chain: Record<string, unknown> = {}
-  const methods = ['eq', 'lte', 'gte', 'in', 'order', 'single', 'limit', 'range']
+  const methods = ['eq', 'lte', 'gte', 'in', 'order', 'single', 'limit', 'range', 'is']
   for (const m of methods) {
     chain[m] = vi.fn(() => chain)
   }

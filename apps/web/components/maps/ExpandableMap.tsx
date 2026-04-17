@@ -13,6 +13,7 @@ import {
   ROLE_COLORS, ROLE_LABELS,
   SOURCE_COLORS, SOURCE_LABELS,
   RESULT_COLORS, RESULT_LABELS_PANEL,
+  LEVEL_COLORS, LEVEL_LABELS,
   DIMENSIONS,
 } from './MapFilterPanel'
 
@@ -56,6 +57,8 @@ function getLegendItems(colorMode: ColorMode): { color: string; label: string }[
       return Object.entries(ROLE_LABELS).map(([k, label]) => ({ color: ROLE_COLORS[k] ?? '#94a3b8', label }))
     case 'capture_source':
       return Object.entries(SOURCE_LABELS).map(([k, label]) => ({ color: SOURCE_COLORS[k] ?? '#94a3b8', label }))
+    case 'contact_level':
+      return Object.entries(LEVEL_LABELS).map(([k, label]) => ({ color: LEVEL_COLORS[k] ?? '#94a3b8', label }))
     default:
       return Object.entries(RESULT_LABELS_PANEL).map(([k, label]) => ({ color: RESULT_COLORS[k] ?? '#94a3b8', label }))
   }

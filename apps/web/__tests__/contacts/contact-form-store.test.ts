@@ -40,11 +40,11 @@ describe('useContactFormStore', () => {
     expect(useContactFormStore.getState().currentStep).toBe(1)
   })
 
-  it('does not go above step 4', () => {
+  it('does not go above max step for current level', () => {
     for (let i = 0; i < 10; i++) {
       useContactFormStore.getState().nextStep()
     }
-    expect(useContactFormStore.getState().currentStep).toBe(4)
+    expect(useContactFormStore.getState().currentStep).toBe(4) // completo has 4 steps
   })
 
   it('sets step directly', () => {
@@ -52,7 +52,7 @@ describe('useContactFormStore', () => {
     expect(useContactFormStore.getState().currentStep).toBe(3)
   })
 
-  it('clamps setStep to valid range', () => {
+  it('clamps setStep to valid range for completo', () => {
     useContactFormStore.getState().setStep(10)
     expect(useContactFormStore.getState().currentStep).toBe(4)
     useContactFormStore.getState().setStep(0)
@@ -95,5 +95,64 @@ describe('useContactFormStore', () => {
     expect(useContactFormStore.getState().hasDraft()).toBe(false)
     useContactFormStore.getState().setFormData({ first_name: 'Juan' })
     expect(useContactFormStore.getState().hasDraft()).toBe(true)
+  })
+
+  it('starts with completo contact level', () => {
+    expect(useContactFormStore.getState().contactLevel).toBe('completo')
+  })
+
+  it('sets contact level and resets to step 1', () => {
+    useContactFormStore.getState().nextStep()
+    useContactFormStore.getState().nextStep()
+    expect(useContactFormStore.getState().currentStep).toBe(3)
+
+    useContactFormStore.getState().setContactLevel('opinion')
+    expect(useContactFormStore.getState().contactLevel).toBe('opinion')
+    expect(useContactFormStore.getState().currentStep).toBe(1)
+  })
+
+  it('limits steps to 3 for opinion level', () => {
+    useContactFormStore.getState().setContactLevel('opinion')
+    for (let i = 0; i < 10; i++) {
+      useContactFormStore.getState().nextStep()
+    }
+    expect(useContactFormStore.getState().currentStep).toBe(3)
+  })
+
+  it('limits steps to 2 for anonimo level', () => {
+    useContactFormStore.getState().setContactLevel('anonimo')
+    for (let i = 0; i < 10; i++) {
+      useContactFormStore.getState().nextStep()
+    }
+    expect(useContactFormStore.getState().currentStep).toBe(2)
+  })
+
+  it('totalSteps returns correct count per level', () => {
+    expect(useContactFormStore.getState().totalSteps()).toBe(4) // completo
+    useContactFormStore.getState().setContactLevel('opinion')
+    expect(useContactFormStore.getState().totalSteps()).toBe(3)
+    useContactFormStore.getState().setContactLevel('anonimo')
+    expect(useContactFormStore.getState().totalSteps()).toBe(2)
+  })
+
+  it('reset restores contactLevel to completo', () => {
+    useContactFormStore.getState().setContactLevel('anonimo')
+    useContactFormStore.getState().reset()
+    expect(useContactFormStore.getState().contactLevel).toBe('completo')
+  })
+
+  it('loadInitialData sets contact level', () => {
+    useContactFormStore.getState().loadInitialData(
+      { first_name: 'Test', last_name: 'User' },
+      'opinion'
+    )
+    expect(useContactFormStore.getState().contactLevel).toBe('opinion')
+    expect(useContactFormStore.getState().formData.first_name).toBe('Test')
+  })
+
+  it('loadInitialData defaults to completo when no level provided', () => {
+    useContactFormStore.getState().setContactLevel('anonimo')
+    useContactFormStore.getState().loadInitialData({ first_name: 'Test' })
+    expect(useContactFormStore.getState().contactLevel).toBe('completo')
   })
 })

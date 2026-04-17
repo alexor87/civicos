@@ -46,6 +46,7 @@ export async function GET() {
       .from('contacts')
       .select('id, sympathy_level, intention_vote')
       .eq('campaign_id', campaignId)
+      .is('deleted_at', null)
       .limit(500),
 
     // Q3: recent visits (last 14 days)

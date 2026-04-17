@@ -41,18 +41,18 @@ export async function GET(req: NextRequest) {
     { data: allVisitRows },
     { data: contactsByDept },
   ] = await Promise.all([
-    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId),
-    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'supporter'),
-    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'opponent'),
-    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'undecided'),
+    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).is('deleted_at', null),
+    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'supporter').is('deleted_at', null),
+    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'opponent').is('deleted_at', null),
+    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'undecided').is('deleted_at', null),
     supabase.from('canvass_visits').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId),
     supabase.from('canvass_visits').select('created_at, result').eq('campaign_id', campaignId).gte('created_at', cutoff30d).order('created_at', { ascending: true }),
-    supabase.from('contacts').select('status').eq('campaign_id', campaignId),
+    supabase.from('contacts').select('status').eq('campaign_id', campaignId).is('deleted_at', null),
     supabase.from('email_campaigns').select('recipient_count').eq('campaign_id', campaignId).eq('status', 'sent'),
     supabase.from('sms_campaigns').select('recipient_count').eq('campaign_id', campaignId).eq('status', 'sent'),
     supabase.from('canvass_visits').select('volunteer_id').eq('campaign_id', campaignId).gte('created_at', cutoff7d),
     supabase.from('canvass_visits').select('volunteer_id, territory_id, territories(name)').eq('campaign_id', campaignId),
-    supabase.from('contacts').select('department').eq('campaign_id', campaignId).not('department', 'is', null),
+    supabase.from('contacts').select('department').eq('campaign_id', campaignId).not('department', 'is', null).is('deleted_at', null),
   ])
 
   // ── KPIs ──────────────────────────────────────────────────────────────────

@@ -42,6 +42,7 @@ const IMPORTABLE_FIELDS = [
   { value: 'electoral_priority', label: 'Prioridad electoral' },
   { value: 'campaign_role', label: 'Rol en campaña' },
   // Adicional
+  { value: 'contact_level', label: 'Nivel de contacto' },
   { value: 'capture_source', label: 'Fuente de captura' },
   { value: 'source_detail', label: 'Detalle de fuente' },
   { value: 'referred_by', label: 'Líder que refiere' },
@@ -92,6 +93,7 @@ const HEADER_ALIASES: Record<string, string> = {
   'sector economico': 'economic_sector', 'sector económico': 'economic_sector',
   economic_sector: 'economic_sector',
   'beneficiario de programa': 'beneficiary_program', beneficiary_program: 'beneficiary_program',
+  'nivel de contacto': 'contact_level', nivel: 'contact_level', contact_level: 'contact_level',
   etiquetas: 'tags', tags: 'tags',
 }
 

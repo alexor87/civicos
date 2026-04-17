@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,10 +11,14 @@ import { ChevronLeft, ChevronRight, Save, Check, CheckCircle, Loader2 } from 'lu
 import {
   contactFormSchema,
   stepEssentialsSchema,
+  stepEssentialsOpinionSchema,
   stepLocationSchema,
   stepPoliticalSchema,
   stepAdditionalSchema,
+  getStepEssentialsSchema,
+  getContactFormSchema,
   type ContactForm,
+  type ContactLevel,
 } from '@/lib/schemas/contact-form'
 import { useContactFormStore } from '@/lib/stores/contact-form-store'
 import { StepEssentials } from './steps/StepEssentials'
@@ -22,54 +26,86 @@ import { StepLocation } from './steps/StepLocation'
 import { StepPolitical } from './steps/StepPolitical'
 import { StepAdditional } from './steps/StepAdditional'
 import { ContactFormSidebar } from './ContactFormSidebar'
+import { LevelSelector } from './LevelSelector'
 
-const STEPS = [
-  { label: 'Datos básicos', schema: stepEssentialsSchema },
-  { label: 'Ubicación', schema: stepLocationSchema },
-  { label: 'Perfil político', schema: stepPoliticalSchema },
-  { label: 'Adicional', schema: stepAdditionalSchema },
-]
+/* ── Step definitions per level ── */
 
-const STEP_FIELDS: Record<number, (keyof ContactForm)[]> = {
-  1: ['first_name', 'last_name', 'document_type', 'document_number', 'phone', 'status', 'email', 'phone_alternate'],
-  2: ['department', 'municipality', 'commune', 'district_barrio', 'sector', 'address', 'voting_place', 'voting_table'],
-  3: ['political_affinity', 'political_orientation', 'vote_intention', 'electoral_priority', 'campaign_role'],
-  4: ['birth_date', 'gender', 'marital_status', 'contact_source', 'source_detail', 'referred_by', 'mobilizes_count', 'main_need', 'economic_sector', 'beneficiary_program'],
+interface StepDef {
+  label: string
+  schema: ReturnType<typeof getStepEssentialsSchema>
+  fields: (keyof ContactForm)[]
+}
+
+function getSteps(level: ContactLevel): StepDef[] {
+  switch (level) {
+    case 'completo':
+      return [
+        { label: 'Datos básicos', schema: stepEssentialsSchema, fields: ['first_name', 'last_name', 'document_type', 'document_number', 'phone', 'status', 'email', 'phone_alternate'] },
+        { label: 'Ubicación', schema: stepLocationSchema, fields: ['department', 'municipality', 'commune', 'district_barrio', 'sector', 'address', 'voting_place', 'voting_table'] },
+        { label: 'Perfil político', schema: stepPoliticalSchema, fields: ['political_affinity', 'political_orientation', 'vote_intention', 'electoral_priority', 'campaign_role'] },
+        { label: 'Adicional', schema: stepAdditionalSchema, fields: ['birth_date', 'gender', 'marital_status', 'contact_source', 'source_detail', 'referred_by', 'mobilizes_count', 'main_need', 'economic_sector', 'beneficiary_program'] },
+      ]
+    case 'opinion':
+      return [
+        { label: 'Datos básicos', schema: stepEssentialsOpinionSchema, fields: ['first_name', 'last_name', 'document_type', 'document_number', 'phone', 'status', 'email'] },
+        { label: 'Ubicación', schema: stepLocationSchema, fields: ['department', 'municipality', 'commune', 'district_barrio', 'sector', 'address', 'voting_place', 'voting_table'] },
+        { label: 'Perfil político', schema: stepPoliticalSchema, fields: ['political_affinity', 'political_orientation', 'vote_intention', 'electoral_priority', 'campaign_role'] },
+      ]
+    case 'anonimo':
+      return [
+        { label: 'Perfil político', schema: stepPoliticalSchema, fields: ['political_affinity', 'political_orientation', 'vote_intention', 'electoral_priority', 'campaign_role'] },
+        { label: 'Ubicación', schema: stepLocationSchema, fields: ['department', 'municipality'] },
+      ]
+  }
 }
 
 interface Props {
   campaignId: string
   initialData?: Partial<ContactForm>
   contactId?: string
+  initialLevel?: ContactLevel
 }
 
-export function ContactFormWizard({ campaignId, initialData, contactId }: Props) {
+export function ContactFormWizard({ campaignId, initialData, contactId, initialLevel }: Props) {
   const router = useRouter()
   const store = useContactFormStore()
   const [saving, setSaving] = useState(false)
-  const [direction, setDirection] = useState(1) // 1 = forward, -1 = backward
+  const [direction, setDirection] = useState(1)
   const [showDraftBanner, setShowDraftBanner] = useState(false)
   const [autoSaving, setAutoSaving] = useState(false)
   const [lastSavedAgo, setLastSavedAgo] = useState<string | null>(null)
+  const [levelSelected, setLevelSelected] = useState(!!initialData || !!initialLevel)
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Set initial level for edit mode
+  useEffect(() => {
+    if (initialLevel) {
+      store.setContactLevel(initialLevel)
+      setLevelSelected(true)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const contactLevel = store.contactLevel
+  const steps = useMemo(() => getSteps(contactLevel), [contactLevel])
+  const currentStep = store.currentStep
+
   const methods = useForm<ContactForm>({
-    resolver: zodResolver(contactFormSchema),
+    resolver: zodResolver(getContactFormSchema(contactLevel)),
     mode: 'onBlur',
     defaultValues: initialData ?? store.formData,
   })
 
-  const currentStep = store.currentStep
-
   // Check for existing draft on mount
   useEffect(() => {
-    if (!initialData && store.hasDraft() && store.formData.first_name) {
+    if (!initialData && store.hasDraft() && (store.formData.first_name || contactLevel === 'anonimo')) {
       setShowDraftBanner(true)
+      setLevelSelected(true)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save to store every 10s
   useEffect(() => {
+    if (!levelSelected) return
     autoSaveRef.current = setInterval(() => {
       const values = methods.getValues()
       setAutoSaving(true)
@@ -80,7 +116,7 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
     return () => {
       if (autoSaveRef.current) clearInterval(autoSaveRef.current)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [levelSelected]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update "saved X ago" label every 5s
   useEffect(() => {
@@ -95,12 +131,18 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
     update()
     const id = setInterval(update, 5000)
     return () => clearInterval(id)
-  }) // runs every render to pick up store.lastSaved changes
+  })
+
+  const handleLevelSelect = useCallback((level: ContactLevel) => {
+    store.setContactLevel(level)
+    setLevelSelected(true)
+  }, [store])
 
   const discardDraft = useCallback(() => {
     store.reset()
     methods.reset()
     setShowDraftBanner(false)
+    setLevelSelected(false)
   }, [store, methods])
 
   const continueDraft = useCallback(() => {
@@ -113,20 +155,19 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
   }, [currentStep, store])
 
   const nextStep = useCallback(async () => {
-    const schema = STEPS[currentStep - 1]?.schema
-    if (schema) {
+    const stepDef = steps[currentStep - 1]
+    if (stepDef?.schema) {
       const values = methods.getValues()
-      const result = schema.safeParse(values)
+      const result = stepDef.schema.safeParse(values)
       if (!result.success) {
-        await methods.trigger(STEP_FIELDS[currentStep])
+        await methods.trigger(stepDef.fields)
         return
       }
     }
-    // Sync to store
     store.setFormData(methods.getValues())
     setDirection(1)
     store.nextStep()
-  }, [currentStep, methods, store])
+  }, [currentStep, methods, store, steps])
 
   const prevStep = useCallback(() => {
     store.setFormData(methods.getValues())
@@ -142,9 +183,9 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
 
   const submitForm = useCallback(async () => {
     const values = methods.getValues()
+    const schema = getContactFormSchema(contactLevel)
 
-    // Validate full schema
-    const fullResult = contactFormSchema.safeParse(values)
+    const fullResult = schema.safeParse(values)
     if (!fullResult.success) {
       const fields = fullResult.error.issues.map(i => i.path.join('.')).join(', ')
       await methods.trigger()
@@ -160,13 +201,17 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, contact_level: contactLevel }),
       })
 
       if (!res.ok) {
         const err = await res.json()
         if (err.error === 'duplicate') {
-          toast.error('Ya existe un contacto con ese número de documento')
+          if (contactLevel === 'opinion') {
+            toast.error('Ya existe un contacto de opinión con ese nombre')
+          } else {
+            toast.error('Ya existe un contacto con ese número de documento')
+          }
         } else if (err.error === 'validation') {
           toast.error('Datos inválidos. Revisa los campos.')
         } else {
@@ -176,7 +221,6 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
       }
 
       const data = await res.json()
-      // Stop auto-save interval before reset to prevent it from restoring old data
       if (autoSaveRef.current) {
         clearInterval(autoSaveRef.current)
         autoSaveRef.current = null
@@ -189,9 +233,37 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
     } finally {
       setSaving(false)
     }
-  }, [methods, contactId, store, router])
+  }, [methods, contactId, store, router, contactLevel])
 
-  const isLastStep = currentStep === 4
+  const isLastStep = currentStep === steps.length
+
+  // ── Level selection screen (Step 0) ──
+  if (!levelSelected) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-8">
+        <LevelSelector value={contactLevel} onSelect={handleLevelSelect} />
+      </div>
+    )
+  }
+
+  // ── Render the current step component ──
+  function renderStep() {
+    const stepDef = steps[currentStep - 1]
+    if (!stepDef) return null
+
+    switch (stepDef.label) {
+      case 'Datos básicos':
+        return <StepEssentials campaignId={campaignId} contactLevel={contactLevel} />
+      case 'Ubicación':
+        return <StepLocation contactLevel={contactLevel} />
+      case 'Perfil político':
+        return <StepPolitical />
+      case 'Adicional':
+        return <StepAdditional campaignId={campaignId} />
+      default:
+        return null
+    }
+  }
 
   return (
     <FormProvider {...methods}>
@@ -200,7 +272,10 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
         {showDraftBanner && (
           <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 flex items-center justify-between">
             <p className="text-sm text-blue-700">
-              Tienes un borrador sin guardar de <strong>{store.formData.first_name} {store.formData.last_name}</strong>
+              Tienes un borrador sin guardar
+              {contactLevel !== 'anonimo' && store.formData.first_name && (
+                <> de <strong>{store.formData.first_name} {store.formData.last_name}</strong></>
+              )}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={discardDraft}>Descartar</Button>
@@ -211,7 +286,7 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
 
         {/* Progress bar */}
         <nav aria-label="Progreso del formulario" className="flex items-center gap-2">
-          {STEPS.map((step, i) => {
+          {steps.map((step, i) => {
             const stepNum = i + 1
             const isActive = stepNum === currentStep
             const isCompleted = stepNum < currentStep
@@ -239,7 +314,7 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
                 }`}>
                   {step.label}
                 </span>
-                {i < STEPS.length - 1 && (
+                {i < steps.length - 1 && (
                   <div className={`flex-1 h-0.5 rounded ${
                     isCompleted ? 'bg-emerald-300' : 'bg-slate-200'
                   }`} />
@@ -261,10 +336,7 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
                   exit={{ opacity: 0, x: direction * -30 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {currentStep === 1 && <StepEssentials campaignId={campaignId} />}
-                  {currentStep === 2 && <StepLocation />}
-                  {currentStep === 3 && <StepPolitical />}
-                  {currentStep === 4 && <StepAdditional campaignId={campaignId} />}
+                  {renderStep()}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -274,11 +346,10 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
               <Button
                 type="button"
                 variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
+                onClick={currentStep === 1 ? () => { setLevelSelected(false); store.setStep(1) } : prevStep}
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Anterior
+                {currentStep === 1 ? 'Cambiar tipo' : 'Anterior'}
               </Button>
 
               <div className="flex items-center gap-3">
@@ -314,7 +385,7 @@ export function ContactFormWizard({ campaignId, initialData, contactId }: Props)
           </div>
 
           {/* Sidebar */}
-          <ContactFormSidebar currentStep={currentStep} />
+          <ContactFormSidebar currentStep={currentStep} contactLevel={contactLevel} />
         </div>
       </div>
     </FormProvider>

@@ -3,21 +3,37 @@
 import { useFormContext } from 'react-hook-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TagInput } from '@/components/contacts/selectors/TagInput'
-import type { ContactForm } from '@/lib/schemas/contact-form'
+import { CheckCircle, MessageCircle, EyeOff } from 'lucide-react'
+import type { ContactForm, ContactLevel } from '@/lib/schemas/contact-form'
+
+const LEVEL_BADGES: Record<ContactLevel, { label: string; icon: typeof CheckCircle; className: string }> = {
+  completo: { label: 'Completo', icon: CheckCircle, className: 'text-emerald-700 bg-emerald-50' },
+  opinion: { label: 'Opinión', icon: MessageCircle, className: 'text-blue-700 bg-blue-50' },
+  anonimo: { label: 'Anónimo', icon: EyeOff, className: 'text-slate-600 bg-slate-100' },
+}
 
 interface Props {
   currentStep: number
+  contactLevel?: ContactLevel
 }
 
-export function ContactFormSidebar({ currentStep }: Props) {
+export function ContactFormSidebar({ currentStep, contactLevel = 'completo' }: Props) {
   const { register, watch, setValue } = useFormContext<ContactForm>()
 
-  // Parse tags from comma-separated string
   const tagsString = watch('tags') ?? ''
   const tagsArray = tagsString ? tagsString.split(',').map(t => t.trim()).filter(Boolean) : []
 
+  const badge = LEVEL_BADGES[contactLevel]
+  const BadgeIcon = badge.icon
+
   return (
     <div className="space-y-4">
+      {/* Level badge */}
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${badge.className}`}>
+        <BadgeIcon className="h-4 w-4" />
+        {badge.label}
+      </div>
+
       {/* Notes */}
       <Card>
         <CardHeader className="pb-3">
@@ -53,18 +69,18 @@ export function ContactFormSidebar({ currentStep }: Props) {
             <CardTitle className="text-base">Resumen</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-slate-600 space-y-1">
-            <SummaryLine label="Nombre" value={`${watch('first_name')} ${watch('last_name')}`} />
-            <SummaryLine label="Teléfono" value={watch('phone')} />
-            {currentStep > 2 && (
-              <>
-                <SummaryLine label="Departamento" value={watch('department')} />
-                <SummaryLine label="Municipio" value={watch('municipality')} />
-              </>
+            {contactLevel === 'anonimo' ? (
+              <p className="text-slate-500 italic">Contacto anónimo</p>
+            ) : (
+              <SummaryLine label="Nombre" value={`${watch('first_name') ?? ''} ${watch('last_name') ?? ''}`} />
             )}
-            {currentStep > 3 && (
-              <SummaryLine label="Afinidad" value={
-                watch('political_affinity') ? `${watch('political_affinity')}/5` : undefined
-              } />
+            {contactLevel === 'completo' && (
+              <SummaryLine label="Teléfono" value={watch('phone')} />
+            )}
+            <SummaryLine label="Departamento" value={watch('department')} />
+            <SummaryLine label="Municipio" value={watch('municipality')} />
+            {watch('political_affinity') && (
+              <SummaryLine label="Afinidad" value={`${watch('political_affinity')}/5`} />
             )}
           </CardContent>
         </Card>

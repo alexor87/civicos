@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('campaign_id', campaignId)
       .not('email', 'is', null)
+      .is('deleted_at', null)
 
     return NextResponse.json({ count: count ?? 0 })
   }

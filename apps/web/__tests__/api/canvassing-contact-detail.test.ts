@@ -45,6 +45,7 @@ describe('GET /api/canvassing/contacts/:id', () => {
     const chain: Record<string, unknown> = {}
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
+    chain.is = vi.fn().mockReturnValue(chain)
     chain.single = vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
     mockSupabase.from.mockReturnValue(chain)
 
@@ -72,6 +73,7 @@ describe('GET /api/canvassing/contacts/:id', () => {
     const contactChain: Record<string, unknown> = {}
     contactChain.select = vi.fn().mockReturnValue(contactChain)
     contactChain.eq = vi.fn().mockReturnValue(contactChain)
+    contactChain.is = vi.fn().mockReturnValue(contactChain)
     contactChain.single = vi.fn().mockResolvedValue({ data: contactData, error: null })
 
     // Second call: visits query
@@ -108,6 +110,7 @@ describe('GET /api/canvassing/contacts/:id', () => {
     const contactChain: Record<string, unknown> = {}
     contactChain.select = vi.fn().mockReturnValue(contactChain)
     contactChain.eq = vi.fn().mockReturnValue(contactChain)
+    contactChain.is = vi.fn().mockReturnValue(contactChain)
     contactChain.single = vi.fn().mockResolvedValue({ data: contactData, error: null })
 
     const visitChain: Record<string, unknown> = {}

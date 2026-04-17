@@ -9,7 +9,7 @@ const VALID_CONTACT_FIELDS = new Set([
   'document_type', 'document_number', 'birth_date', 'gender',
   'address', 'city', 'district', 'department', 'municipality', 'commune',
   'voting_place', 'voting_table',
-  'status', 'campaign_role', 'electoral_priority', 'capture_source', 'notes',
+  'status', 'contact_level', 'campaign_role', 'electoral_priority', 'capture_source', 'notes',
 ])
 
 // Fields that go into the metadata JSONB column (not direct DB columns)
@@ -58,6 +58,7 @@ const HEADER_ALIASES: Record<string, string> = {
   'sector economico': 'economic_sector', 'sector económico': 'economic_sector',
   economic_sector: 'economic_sector',
   'beneficiario de programa': 'beneficiary_program', beneficiary_program: 'beneficiary_program',
+  'nivel de contacto': 'contact_level', nivel: 'contact_level', contact_level: 'contact_level',
   etiquetas: 'tags', tags: 'tags',
 }
 
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
         const nr: NormalizedRow = {}
         for (const [k, v] of Object.entries(row)) {
           // Only allow known fields — prevents arbitrary column injection
-          if (VALID_CONTACT_FIELDS.has(k) || META_FIELDS.has(k) || k === 'tags') {
+          if (VALID_CONTACT_FIELDS.has(k) || META_FIELDS.has(k) || k === 'tags' || k === 'contact_level') {
             nr[k] = typeof v === 'number' ? String(v) : (v as string)
           }
         }
@@ -179,6 +180,20 @@ export async function POST(request: NextRequest) {
 
     const status = VALID_STATUSES.includes(row.status ?? '') ? row.status! : 'unknown'
 
+    // Resolve contact_level: use explicit value or auto-detect
+    const VALID_LEVELS = ['completo', 'opinion', 'anonimo']
+    let contactLevel = row.contact_level?.trim().toLowerCase() ?? ''
+    if (!VALID_LEVELS.includes(contactLevel)) {
+      // Auto-detect level based on available data
+      if (!firstName) {
+        contactLevel = 'anonimo'
+      } else if (!documentNumber && !phone) {
+        contactLevel = 'opinion'
+      } else {
+        contactLevel = 'completo'
+      }
+    }
+
     // Build contact object with only valid DB columns
     const contact: Record<string, unknown> = {
       tenant_id: profile.tenant_id,
@@ -188,6 +203,7 @@ export async function POST(request: NextRequest) {
       email,
       phone,
       status: status as 'supporter' | 'undecided' | 'opponent' | 'unknown',
+      contact_level: contactLevel,
       document_number: documentNumber,
       metadata: {},
     }

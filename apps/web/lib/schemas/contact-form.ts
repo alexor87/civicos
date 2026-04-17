@@ -2,6 +2,9 @@ import { z } from 'zod'
 
 /* ── Enums ── */
 
+export const contactLevels = ['completo', 'opinion', 'anonimo'] as const
+export type ContactLevel = (typeof contactLevels)[number]
+
 export const documentTypes = ['CC', 'CE', 'TI', 'Pasaporte'] as const
 export const contactStatuses = ['unknown', 'supporter', 'undecided', 'opponent'] as const
 export const genders = ['M', 'F', 'NB', 'NE'] as const
@@ -24,6 +27,12 @@ export const maritalStatuses = [
 export const quickAddSchema = z.object({
   full_name: z.string().min(1, 'Nombre requerido').max(200, 'Máximo 200 caracteres'),
   phone: z.string().min(1, 'Teléfono requerido').max(15, 'Máximo 15 caracteres'),
+  political_affinity: z.number().int().min(1).max(5).optional(),
+})
+
+export const quickAddOpinionSchema = z.object({
+  full_name: z.string().min(1, 'Nombre requerido').max(200, 'Máximo 200 caracteres'),
+  phone: z.string().max(15, 'Máximo 15 caracteres').optional().or(z.literal('')),
   political_affinity: z.number().int().min(1).max(5).optional(),
 })
 
@@ -84,13 +93,69 @@ export const stepAdditionalSchema = z.object({
   beneficiary_program: z.string().max(150, 'Máximo 150 caracteres').optional(),
 })
 
-/* ── Full contact form (merge of all 4 steps) ── */
+/* ── Step 1 variants per contact level ── */
+
+export const stepEssentialsOpinionSchema = z.object({
+  first_name: z.string().min(1, 'Nombre requerido').max(100, 'Máximo 100 caracteres'),
+  last_name: z.string().min(1, 'Apellido requerido').max(100, 'Máximo 100 caracteres'),
+  document_type: z.enum(documentTypes).optional(),
+  document_number: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),
+  phone: z.string().max(15, 'Máximo 15 caracteres').optional().or(z.literal('')),
+  status: z.enum(contactStatuses),
+  email: z.string().email('Email inválido').max(254, 'Máximo 254 caracteres').optional().or(z.literal('')),
+  phone_alternate: z.string().max(15, 'Máximo 15 caracteres').optional(),
+})
+
+export const stepEssentialsAnonimoSchema = z.object({
+  status: z.enum(contactStatuses).optional().default('unknown'),
+})
+
+/* ── Schema factories per contact level ── */
+
+export function getStepEssentialsSchema(level: ContactLevel) {
+  switch (level) {
+    case 'completo':  return stepEssentialsSchema
+    case 'opinion':   return stepEssentialsOpinionSchema
+    case 'anonimo':   return stepEssentialsAnonimoSchema
+  }
+}
+
+export function getContactFormSchema(level: ContactLevel) {
+  const extras = {
+    contact_level: z.enum(contactLevels).optional(),
+    tags: z.string().max(500, 'Máximo 500 caracteres').optional(),
+    notes: z.string().max(2000, 'Máximo 2000 caracteres').optional(),
+  }
+
+  switch (level) {
+    case 'completo':
+      return stepEssentialsSchema
+        .merge(stepLocationSchema)
+        .merge(stepPoliticalSchema)
+        .merge(stepAdditionalSchema)
+        .extend(extras)
+    case 'opinion':
+      return stepEssentialsOpinionSchema
+        .merge(stepLocationSchema)
+        .merge(stepPoliticalSchema)
+        .merge(stepAdditionalSchema)
+        .extend(extras)
+    case 'anonimo':
+      return stepEssentialsAnonimoSchema
+        .merge(stepLocationSchema)
+        .merge(stepPoliticalSchema)
+        .extend(extras)
+  }
+}
+
+/* ── Full contact form (merge of all 4 steps — backward compat, level=completo) ── */
 
 export const contactFormSchema = stepEssentialsSchema
   .merge(stepLocationSchema)
   .merge(stepPoliticalSchema)
   .merge(stepAdditionalSchema)
   .extend({
+    contact_level: z.enum(contactLevels).optional(),
     tags: z.string().max(500, 'Máximo 500 caracteres').optional(),
     notes: z.string().max(2000, 'Máximo 2000 caracteres').optional(),
   })

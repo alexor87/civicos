@@ -12,9 +12,9 @@ export async function deleteContact(id: string) {
     .from('profiles').select('campaign_ids').eq('id', user.id).single()
 
   const { data: contact } = await supabase
-    .from('contacts').select('campaign_id').eq('id', id).single()
+    .from('contacts').select('campaign_id').eq('id', id).is('deleted_at', null).single()
   if (!contact || !profile?.campaign_ids?.includes(contact.campaign_id)) redirect('/dashboard/contacts')
 
-  await supabase.from('contacts').delete().eq('id', id)
+  await supabase.from('contacts').update({ deleted_at: new Date().toISOString() }).eq('id', id)
   redirect('/dashboard/contacts')
 }

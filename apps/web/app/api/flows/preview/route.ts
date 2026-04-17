@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
       .select('id, full_name, neighborhood_name, municipality_name')
       .eq('campaign_id', profile.campaign_id)
       .not('full_name', 'is', null)
+      .is('deleted_at', null)
       .limit(10)
 
     if (skipId) {

@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
     supabase.from('campaigns').select('name, election_date').eq('id', campaign_id).single(),
     supabase.from('ai_suggestions').select('priority, title, description').eq('campaign_id', campaign_id).in('status', ['active', 'pending_approval']).order('created_at', { ascending: false }).limit(5),
     supabase.from('agent_runs').select('agent_id, status, trigger').eq('campaign_id', campaign_id).order('created_at', { ascending: false }).limit(3),
-    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign_id),
-    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign_id).eq('status', 'supporter'),
+    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign_id).is('deleted_at', null),
+    supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign_id).eq('status', 'supporter').is('deleted_at', null),
     supabase.from('canvass_visits').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign_id).gte('created_at', new Date(Date.now() - 86_400_000).toISOString()),
   ])
 

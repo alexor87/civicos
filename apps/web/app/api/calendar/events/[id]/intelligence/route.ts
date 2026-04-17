@@ -37,6 +37,7 @@ export async function GET(
       .from('contacts')
       .select('id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status')
       .in('id', linkedContactIds)
+      .is('deleted_at', null)
     linkedContacts = lc ?? []
   }
 
@@ -45,6 +46,7 @@ export async function GET(
     .from('contacts')
     .select('id, sympathy_level, intention_vote')
     .eq('campaign_id', event.campaign_id)
+    .is('deleted_at', null)
 
   if (event.municipality_name) {
     contactQuery = contactQuery.ilike('municipality', `%${event.municipality_name}%`)
@@ -160,6 +162,7 @@ export async function POST(
       .from('contacts')
       .select('id, first_name, last_name, sympathy_level, intention_vote, municipality, phone, email, status, notes')
       .in('id', briefingContactIds)
+      .is('deleted_at', null)
     briefingLinkedContacts = blc ?? []
   }
 
@@ -168,6 +171,7 @@ export async function POST(
     .from('contacts')
     .select('id, sympathy_level, intention_vote, neighborhood')
     .eq('campaign_id', event.campaign_id)
+    .is('deleted_at', null)
   if (event.municipality_name) {
     contactQuery = contactQuery.ilike('municipality', `%${event.municipality_name}%`)
   }

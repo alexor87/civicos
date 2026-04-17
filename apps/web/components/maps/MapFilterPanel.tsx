@@ -14,15 +14,16 @@ export interface ContactPoint {
   campaign_role: string | null
   electoral_priority: string | null
   capture_source: string | null
+  contact_level: string | null
   visit_id?: string | null
   // Cluster fields (from server-side clustering)
   point_count?: number
   is_cluster?: boolean
 }
 
-export type ColorMode = 'visit_result' | 'status' | 'vote_intention' | 'electoral_priority' | 'campaign_role' | 'capture_source'
+export type ColorMode = 'visit_result' | 'status' | 'vote_intention' | 'electoral_priority' | 'campaign_role' | 'capture_source' | 'contact_level'
 
-export type FilterKey = 'status' | 'vote_intention' | 'campaign_role' | 'electoral_priority' | 'capture_source'
+export type FilterKey = 'status' | 'vote_intention' | 'campaign_role' | 'electoral_priority' | 'capture_source' | 'contact_level'
 
 // ─── Color palettes ──────────────────────────────────────────────────────────
 
@@ -89,6 +90,17 @@ export const SOURCE_LABELS: Record<string, string> = {
   evento:     'Evento',
 }
 
+export const LEVEL_COLORS: Record<string, string> = {
+  completo: '#22c55e',
+  opinion:  '#3b82f6',
+  anonimo:  '#94a3b8',
+}
+export const LEVEL_LABELS: Record<string, string> = {
+  completo: 'Completo',
+  opinion:  'Opinión',
+  anonimo:  'Anónimo',
+}
+
 export const RESULT_COLORS: Record<string, string> = {
   positive:        '#22c55e',
   contacted:       '#22c55e',
@@ -124,6 +136,7 @@ export const DIMENSIONS: Dimension[] = [
   { key: 'campaign_role',      label: 'Rol en campaña',     field: 'campaign_role',      colors: ROLE_COLORS,     labels: ROLE_LABELS     },
   { key: 'electoral_priority', label: 'Prioridad electoral',field: 'electoral_priority', colors: PRIORITY_COLORS, labels: PRIORITY_LABELS },
   { key: 'capture_source',     label: 'Fuente de captura',  field: 'capture_source',     colors: SOURCE_COLORS,   labels: SOURCE_LABELS   },
+  { key: 'contact_level',      label: 'Nivel de contacto',  field: 'contact_level',      colors: LEVEL_COLORS,    labels: LEVEL_LABELS    },
 ]
 
 // ─── Props ────────────────────────────────────────────────────────────────────

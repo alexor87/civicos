@@ -9,6 +9,7 @@ export interface ClusteredPoint {
   contact_id: string | null
   dominant_status: string | null
   dominant_result: string | null
+  contact_level: string | null
 }
 
 export async function GET(request: NextRequest) {

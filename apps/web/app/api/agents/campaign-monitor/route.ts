@@ -90,8 +90,8 @@ export async function POST(req: NextRequest) {
         { count: visitsPrev24h },
         { count: totalVisits },
       ] = await Promise.all([
-        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign.id),
-        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign.id).eq('status', 'supporter'),
+        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign.id).is('deleted_at', null),
+        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign.id).eq('status', 'supporter').is('deleted_at', null),
         supabase.from('canvass_visits').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign.id).gte('created_at', cutoff24h),
         supabase.from('canvass_visits').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign.id).gte('created_at', cutoffPrev24h).lt('created_at', cutoff24h),
         supabase.from('canvass_visits').select('id', { count: 'exact', head: true }).eq('campaign_id', campaign.id),

@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Mail, Phone, MapPin, Tag, FileText, Calendar, IdCard, Users, Landmark, Zap, Trash2 } from 'lucide-react'
+import { Mail, Phone, MapPin, Tag, FileText, Calendar, IdCard, Users, Landmark, Zap, Trash2, CheckCircle, MessageCircle, EyeOff, ArrowUpCircle } from 'lucide-react'
 import { useTransition } from 'react'
 import { deleteContact } from '@/app/dashboard/contacts/actions'
 import type { Database } from '@/lib/types/database'
@@ -53,6 +53,12 @@ const SOURCE_LABELS: Record<string, string> = {
   formulario_web: 'Formulario web', importado: 'Base importada', whatsapp: 'WhatsApp', otro: 'Otro',
 }
 
+const LEVEL_BANNER = {
+  completo: { label: 'Contacto completo', icon: CheckCircle, className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  opinion: { label: 'Voto de opinión', icon: MessageCircle, className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  anonimo: { label: 'Contacto anónimo', icon: EyeOff, className: 'bg-slate-100 text-slate-600 border-slate-200' },
+} as const
+
 interface Props {
   contact: Contact
   visits: VisitWithVolunteer[]
@@ -62,22 +68,48 @@ export function ContactProfile({ contact, visits }: Props) {
   const [isPending, startTransition] = useTransition()
   const status = statusConfig[contact.status] ?? statusConfig.unknown
   const meta = (contact.metadata as Record<string, string | null | undefined>) ?? {}
+  const contactLevel = ((contact as Record<string, unknown>).contact_level as string) ?? 'completo'
+  const isAnonimo = contactLevel === 'anonimo'
+  const displayName = ((contact as Record<string, unknown>).display_name as string)
+    ?? (`${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim() || 'Contacto anónimo')
 
   function handleDelete() {
-    if (!window.confirm(`¿Eliminar a ${contact.first_name} ${contact.last_name}? Esta acción no se puede deshacer.`)) return
+    if (!window.confirm(`¿Eliminar a ${displayName}? El contacto será archivado.`)) return
     startTransition(() => deleteContact(contact.id))
   }
 
   const locationParts = [contact.department, contact.municipality ?? contact.city, contact.commune ?? contact.district].filter(Boolean)
   const votingInfo = [contact.voting_place, contact.voting_table ? `Mesa ${contact.voting_table}` : null].filter(Boolean)
 
+  const banner = LEVEL_BANNER[contactLevel as keyof typeof LEVEL_BANNER] ?? LEVEL_BANNER.completo
+  const BannerIcon = banner.icon
+
   return (
     <div className="p-6 space-y-6">
+      {/* Level banner */}
+      {contactLevel !== 'completo' && (
+        <div className={`flex items-center justify-between rounded-lg border px-4 py-2.5 ${banner.className}`}>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <BannerIcon className="h-4 w-4" />
+            {banner.label}
+          </div>
+          {contactLevel !== 'completo' && (
+            <a
+              href={`/dashboard/contacts/${contact.id}/edit`}
+              className="flex items-center gap-1 text-xs font-medium hover:underline"
+            >
+              <ArrowUpCircle className="h-3.5 w-3.5" />
+              Completar datos
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {contact.first_name} {contact.last_name}
+            {displayName}
           </h1>
           {(contact.document_type || contact.document_number) && (
             <p className="text-slate-500 text-sm mt-0.5">
@@ -111,6 +143,7 @@ export function ContactProfile({ contact, visits }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Contact info card */}
         <div className="lg:col-span-1 space-y-4">
+          {!isAnonimo && (
           <div className="border rounded-lg bg-white p-5 space-y-4">
             <h2 className="font-semibold text-slate-800 text-sm uppercase tracking-wide">Contacto</h2>
             <div className="space-y-2.5 text-sm">
@@ -144,6 +177,7 @@ export function ContactProfile({ contact, visits }: Props) {
               )}
             </div>
           </div>
+          )}
 
           {/* Ubicación electoral */}
           {(locationParts.length > 0 || votingInfo.length > 0) && (
@@ -214,7 +248,7 @@ export function ContactProfile({ contact, visits }: Props) {
           )}
 
           {/* Fuente */}
-          {(meta.contact_source || meta.referred_by || meta.territorial_manager) && (
+          {!isAnonimo && (meta.contact_source || meta.referred_by || meta.territorial_manager) && (
             <div className="border rounded-lg bg-white p-5 space-y-2">
               <h2 className="font-semibold text-slate-800 text-sm uppercase tracking-wide">Origen</h2>
               <div className="space-y-1.5 text-sm text-slate-600">

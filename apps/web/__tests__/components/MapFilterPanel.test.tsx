@@ -12,9 +12,9 @@ vi.mock('@/components/ui/popover', () => ({
 }))
 
 const SAMPLE_POINTS: ContactPoint[] = [
-  { id: '1', lat: 6.1, lng: -75.3, last_result: 'positive',  status: 'supporter',  vote_intention: 'si',      campaign_role: 'voluntario', electoral_priority: 'alta',  capture_source: 'canvassing' },
-  { id: '2', lat: 6.2, lng: -75.4, last_result: 'negative',  status: 'opponent',   vote_intention: 'no',      campaign_role: 'donante',    electoral_priority: 'baja',  capture_source: 'web'       },
-  { id: '3', lat: 6.3, lng: -75.2, last_result: 'undecided', status: 'undecided',  vote_intention: 'indeciso',campaign_role: null,         electoral_priority: 'media', capture_source: 'whatsapp'  },
+  { id: '1', lat: 6.1, lng: -75.3, last_result: 'positive',  status: 'supporter',  vote_intention: 'si',      campaign_role: 'voluntario', electoral_priority: 'alta',  capture_source: 'canvassing', contact_level: 'completo' },
+  { id: '2', lat: 6.2, lng: -75.4, last_result: 'negative',  status: 'opponent',   vote_intention: 'no',      campaign_role: 'donante',    electoral_priority: 'baja',  capture_source: 'web',        contact_level: 'opinion'  },
+  { id: '3', lat: 6.3, lng: -75.2, last_result: 'undecided', status: 'undecided',  vote_intention: 'indeciso',campaign_role: null,         electoral_priority: 'media', capture_source: 'whatsapp',   contact_level: 'anonimo'  },
 ]
 
 function makeProps(overrides?: Partial<Parameters<typeof MapFilterPanel>[0]>) {

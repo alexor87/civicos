@@ -21,6 +21,7 @@ export async function GET(
     .select('id, first_name, last_name, email, phone, address, city, status, tags, document_number, department, municipality')
     .eq('id', id)
     .eq('campaign_id', campaignId)
+    .is('deleted_at', null)
     .single()
 
   if (contactError || !contact) {

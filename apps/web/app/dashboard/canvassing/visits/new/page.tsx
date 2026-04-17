@@ -105,6 +105,7 @@ export default async function NewVisitPage() {
       .from('contacts')
       .select('id, first_name, last_name, document_number')
       .eq('campaign_id', campaignId)
+      .is('deleted_at', null)
       .order('last_name'),
     supabase
       .from('territories')

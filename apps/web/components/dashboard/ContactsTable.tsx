@@ -19,7 +19,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, SlidersHorizontal, Plus, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
+import { Search, SlidersHorizontal, Plus, ChevronLeft, ChevronRight, Users, CheckCircle, MessageCircle, EyeOff, MoreHorizontal, Eye, Pencil, Trash2 } from 'lucide-react'
 import { useCallback, useTransition, useState } from 'react'
 import type { Database } from '@/lib/types/database'
 import { ContactQuickProfile } from './ContactQuickProfile'
@@ -33,6 +51,28 @@ const sympathyConfig = {
   opponent: { label: 'BAJO', className: 'bg-red-50 text-red-700 border-red-200' },
   unknown: { label: 'BAJO', className: 'bg-slate-100 text-slate-500 border-slate-200' },
 } as const
+
+const levelConfig = {
+  completo: { icon: CheckCircle, className: 'text-emerald-500', label: 'Completo' },
+  opinion: { icon: MessageCircle, className: 'text-blue-500', label: 'Opinión' },
+  anonimo: { icon: EyeOff, className: 'text-slate-400', label: 'Anónimo' },
+} as const
+
+function getContactLevel(contact: Contact): string {
+  return ((contact as Record<string, unknown>).contact_level as string) ?? 'completo'
+}
+
+function getDisplayName(contact: Contact): { name: string; initials: string } {
+  const level = getContactLevel(contact)
+  if (level === 'anonimo') {
+    const displayName = (contact as Record<string, unknown>).display_name as string
+    return { name: displayName ?? 'Anónimo', initials: 'AN' }
+  }
+  return {
+    name: `${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim() || '—',
+    initials: `${(contact.first_name ?? '')[0] ?? ''}${(contact.last_name ?? '')[0] ?? ''}`.toUpperCase(),
+  }
+}
 
 function getInitials(first: string, last: string) {
   return `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase()
@@ -79,12 +119,13 @@ interface Props {
   hasPrev: boolean
   searchQuery?: string
   statusFilter?: string
+  levelFilter?: string
   campaignId?: string
 }
 
 export function ContactsTable({
   contacts, estimatedTotal, pageSize, nextCursor, prevCursor,
-  hasMore, hasPrev, searchQuery, statusFilter, campaignId,
+  hasMore, hasPrev, searchQuery, statusFilter, levelFilter, campaignId,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -92,6 +133,29 @@ export function ContactsTable({
   const [isPending, startTransition] = useTransition()
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [showEntryModal, setShowEntryModal] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/contacts/${deleteTarget.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error === 'Sin permisos' ? 'No tienes permisos para eliminar contactos' : 'Error al eliminar contacto')
+        return
+      }
+      const display = getDisplayName(deleteTarget)
+      toast.success(`${display.name} eliminado`)
+      router.refresh()
+    } catch {
+      toast.error('Error al eliminar contacto')
+    } finally {
+      setIsDeleting(false)
+      setDeleteTarget(null)
+    }
+  }, [deleteTarget, router])
 
   const updateQuery = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParamsHook.toString())
@@ -142,6 +206,18 @@ export function ContactsTable({
               </SelectContent>
             </Select>
 
+            <Select value={levelFilter ?? 'all'} onValueChange={(v) => updateQuery('level', v === 'all' ? '' : v)}>
+              <SelectTrigger className="h-9 w-40 bg-white">
+                <SelectValue placeholder="Nivel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los niveles</SelectItem>
+                <SelectItem value="completo">Completo</SelectItem>
+                <SelectItem value="opinion">Opinión</SelectItem>
+                <SelectItem value="anonimo">Anónimo</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Button variant="outline" size="sm" className="h-9 gap-1.5 text-slate-600">
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Filtros
@@ -163,12 +239,13 @@ export function ContactsTable({
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Dirección</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Zona</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Simpatía</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {contacts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={5}>
                     <div className="flex flex-col items-center gap-3 py-16 text-center">
                       <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center">
                         <Users className="h-6 w-6 text-slate-400" />
@@ -187,9 +264,11 @@ export function ContactsTable({
               ) : (
                 contacts.map(contact => {
                   const sympathy = sympathyConfig[contact.status] ?? sympathyConfig.unknown
-                  const initials = getInitials(contact.first_name, contact.last_name)
+                  const level = getContactLevel(contact)
+                  const display = getDisplayName(contact)
                   const avatarCls = avatarColor(contact.id)
                   const isSelected = selectedContact?.id === contact.id
+                  const LevelIcon = levelConfig[level as keyof typeof levelConfig]?.icon
 
                   return (
                     <TableRow
@@ -201,12 +280,17 @@ export function ContactsTable({
                       <TableCell className="pl-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${avatarCls}`}>
-                            {initials}
+                            {display.initials}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-900 leading-tight">
-                              {contact.first_name} {contact.last_name}
-                            </p>
+                            <div className="flex items-center gap-1.5">
+                              {LevelIcon && level !== 'completo' && (
+                                <LevelIcon className={`h-3.5 w-3.5 flex-shrink-0 ${levelConfig[level as keyof typeof levelConfig]?.className}`} />
+                              )}
+                              <p className="text-sm font-medium text-slate-900 leading-tight">
+                                {display.name}
+                              </p>
+                            </div>
                             <p className="text-xs text-slate-400 truncate">{contact.email ?? '—'}</p>
                           </div>
                         </div>
@@ -241,6 +325,40 @@ export function ContactsTable({
                             </Badge>
                           )}
                         </div>
+                      </TableCell>
+
+                      {/* ACCIONES */}
+                      <TableCell className="py-3 pr-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4 text-slate-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/contacts/${contact.id}`) }}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver perfil
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/contacts/${contact.id}/edit`) }}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(contact) }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   )
@@ -292,6 +410,28 @@ export function ContactsTable({
         onOpenChange={setShowEntryModal}
         campaignId={campaignId ?? ''}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar contacto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && `El contacto ${getDisplayName(deleteTarget).name} será archivado. Podrás restaurarlo más adelante.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

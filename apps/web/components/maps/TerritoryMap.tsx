@@ -10,6 +10,7 @@ import {
   ROLE_COLORS, ROLE_LABELS,
   SOURCE_COLORS, SOURCE_LABELS,
   RESULT_COLORS, RESULT_LABELS_PANEL,
+  LEVEL_COLORS, LEVEL_LABELS,
 } from './MapFilterPanel'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -68,6 +69,8 @@ function getPointColor(point: ContactPoint, mode: ColorMode = 'visit_result'): s
       return ROLE_COLORS[point.campaign_role ?? ''] ?? '#94a3b8'
     case 'capture_source':
       return SOURCE_COLORS[point.capture_source ?? ''] ?? '#94a3b8'
+    case 'contact_level':
+      return LEVEL_COLORS[point.contact_level ?? ''] ?? '#94a3b8'
     default: {
       const r = point.last_result
       if (!r) return '#94a3b8'
@@ -88,6 +91,8 @@ function getPointTooltip(point: ContactPoint, mode: ColorMode = 'visit_result'):
       return ROLE_LABELS[point.campaign_role ?? ''] ?? 'Sin datos'
     case 'capture_source':
       return SOURCE_LABELS[point.capture_source ?? ''] ?? 'Sin datos'
+    case 'contact_level':
+      return LEVEL_LABELS[point.contact_level ?? ''] ?? 'Sin datos'
     default:
       return point.last_result ? (RESULT_LABELS_PANEL[point.last_result] ?? point.last_result) : 'Sin visita'
   }
@@ -352,13 +357,14 @@ export function TerritoryMap({
           // Individual point marker
           const color   = getPointColor(pt, colorMode)
           const tooltip = getPointTooltip(pt, colorMode)
+          const isAnonimo = pt.contact_level === 'anonimo'
           const marker = L.circleMarker([pt.lat, pt.lng], {
-            radius:      6,
+            radius:      isAnonimo ? 4 : 6,
             fillColor:   color,
             color:       '#ffffff',
             weight:      1.5,
             opacity:     1,
-            fillOpacity: 0.85,
+            fillOpacity: isAnonimo ? 0.5 : 0.85,
           })
           .bindTooltip(tooltip, { permanent: false, direction: 'top', className: 'territory-tooltip' })
           if (onPointClick) {

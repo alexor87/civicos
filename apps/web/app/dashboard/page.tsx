@@ -51,6 +51,7 @@ export default async function DashboardPage() {
     .from('contacts')
     .select('created_at')
     .eq('campaign_id', campaignId ?? '')
+    .is('deleted_at', null)
     .gte('created_at', new Date(Date.now() - 56 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: true })
     .limit(500)

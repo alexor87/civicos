@@ -42,8 +42,10 @@ describe('GET /api/contacts/check-duplicate', () => {
       select: () => ({
         eq: () => ({
           eq: () => ({
-            limit: () => ({
-              single: () => Promise.resolve({ data: null }),
+            is: () => ({
+              limit: () => ({
+                single: () => Promise.resolve({ data: null }),
+              }),
             }),
           }),
         }),
@@ -61,9 +63,11 @@ describe('GET /api/contacts/check-duplicate', () => {
       select: () => ({
         eq: () => ({
           eq: () => ({
-            limit: () => ({
-              single: () => Promise.resolve({
-                data: { id: 'existing-id', first_name: 'Juan', last_name: 'Pérez' },
+            is: () => ({
+              limit: () => ({
+                single: () => Promise.resolve({
+                  data: { id: 'existing-id', first_name: 'Juan', last_name: 'Pérez' },
+                }),
               }),
             }),
           }),
@@ -87,9 +91,11 @@ describe('GET /api/contacts/check-duplicate', () => {
       select: () => ({
         eq: () => ({
           eq: () => ({
-            limit: () => ({
-              neq: mockNeq,
-              single: () => Promise.resolve({ data: null }),
+            is: () => ({
+              limit: () => ({
+                neq: mockNeq,
+                single: () => Promise.resolve({ data: null }),
+              }),
             }),
           }),
         }),

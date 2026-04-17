@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
     .select('id')
     .eq('campaign_id', campaign.id)
     .eq('phone', from)
+    .is('deleted_at', null)
     .single()
 
   // Log inbound message

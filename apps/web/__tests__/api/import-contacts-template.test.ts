@@ -78,7 +78,7 @@ describe('GET /api/import/contacts/template', () => {
 
     const ws = wb.Sheets['Plantilla']
     const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 }) as string[][]
-    expect(rows[0]).toHaveLength(33)
+    expect(rows[0]).toHaveLength(34)
   })
 
   it('la fila de encabezados contiene los campos obligatorios', async () => {

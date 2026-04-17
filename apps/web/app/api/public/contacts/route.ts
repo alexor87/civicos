@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     .from('contacts')
     .select('id, first_name, last_name, email, phone, status, tags, created_at', { count: 'exact' })
     .eq('campaign_id', ctx.campaignId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(from, to)
 

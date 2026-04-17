@@ -153,6 +153,7 @@ export async function sendWhatsAppCampaign(campaignId: string) {
       .from('contacts')
       .select('id, phone, first_name, last_name')
       .eq('campaign_id', activeCampaignId)
+      .is('deleted_at', null)
       .not('phone', 'is', null)
     contacts = (data ?? []) as typeof contacts
   }

@@ -3,9 +3,13 @@ import {
   quickAddSchema,
   contactFormSchema,
   stepEssentialsSchema,
+  stepEssentialsOpinionSchema,
+  stepEssentialsAnonimoSchema,
   stepLocationSchema,
   stepPoliticalSchema,
   stepAdditionalSchema,
+  getStepEssentialsSchema,
+  getContactFormSchema,
 } from '@/lib/schemas/contact-form'
 
 describe('quickAddSchema', () => {
@@ -264,6 +268,120 @@ describe('contactFormSchema (full)', () => {
 
   it('accepts mobilizes_count as NaN (preprocess)', () => {
     const result = stepAdditionalSchema.safeParse({ mobilizes_count: NaN })
+    expect(result.success).toBe(true)
+  })
+})
+
+describe('stepEssentialsOpinionSchema', () => {
+  it('accepts data with only first_name and last_name', () => {
+    const result = stepEssentialsOpinionSchema.safeParse({
+      first_name: 'Juan',
+      last_name: 'Pérez',
+      status: 'unknown',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('requires first_name', () => {
+    const result = stepEssentialsOpinionSchema.safeParse({
+      first_name: '',
+      last_name: 'Pérez',
+      status: 'unknown',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('requires last_name', () => {
+    const result = stepEssentialsOpinionSchema.safeParse({
+      first_name: 'Juan',
+      last_name: '',
+      status: 'unknown',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts optional phone, email, document_number', () => {
+    const result = stepEssentialsOpinionSchema.safeParse({
+      first_name: 'Juan',
+      last_name: 'Pérez',
+      status: 'supporter',
+      phone: '',
+      email: '',
+      document_number: '',
+    })
+    expect(result.success).toBe(true)
+  })
+})
+
+describe('stepEssentialsAnonimoSchema', () => {
+  it('accepts empty payload', () => {
+    const result = stepEssentialsAnonimoSchema.safeParse({})
+    expect(result.success).toBe(true)
+  })
+
+  it('defaults status to unknown', () => {
+    const result = stepEssentialsAnonimoSchema.safeParse({})
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.status).toBe('unknown')
+    }
+  })
+})
+
+describe('getStepEssentialsSchema factory', () => {
+  it('returns stepEssentialsSchema for completo', () => {
+    const schema = getStepEssentialsSchema('completo')
+    expect(schema).toBe(stepEssentialsSchema)
+  })
+
+  it('returns stepEssentialsOpinionSchema for opinion', () => {
+    const schema = getStepEssentialsSchema('opinion')
+    expect(schema).toBe(stepEssentialsOpinionSchema)
+  })
+
+  it('returns stepEssentialsAnonimoSchema for anonimo', () => {
+    const schema = getStepEssentialsSchema('anonimo')
+    expect(schema).toBe(stepEssentialsAnonimoSchema)
+  })
+})
+
+describe('getContactFormSchema factory', () => {
+  it('completo schema requires document_number', () => {
+    const schema = getContactFormSchema('completo')
+    const result = schema.safeParse({
+      first_name: 'Juan',
+      last_name: 'Pérez',
+      document_type: 'CC',
+      phone: '3001234567',
+      status: 'supporter',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('opinion schema accepts without document_number', () => {
+    const schema = getContactFormSchema('opinion')
+    const result = schema.safeParse({
+      first_name: 'Juan',
+      last_name: 'Pérez',
+      status: 'supporter',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('anonimo schema accepts minimal data', () => {
+    const schema = getContactFormSchema('anonimo')
+    const result = schema.safeParse({})
+    expect(result.success).toBe(true)
+  })
+
+  it('anonimo schema accepts political data', () => {
+    const schema = getContactFormSchema('anonimo')
+    const result = schema.safeParse({
+      political_affinity: 4,
+      political_orientation: 'centro',
+      vote_intention: 'si',
+      department: 'Antioquia',
+    })
     expect(result.success).toBe(true)
   })
 })

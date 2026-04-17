@@ -60,6 +60,11 @@ vi.mock('@/lib/supabase/server', () => ({
         return {
           select: vi.fn(() => ({
             eq:     vi.fn(() => ({
+              is:     vi.fn(() => ({
+                not:    vi.fn(mockContactsSelect),
+                single: mockContactSingle,
+                order:  vi.fn(mockContactsSelect),
+              })),
               single: mockContactSingle,
               not:    vi.fn(mockContactsSelect),
               order:  vi.fn(mockContactsSelect),

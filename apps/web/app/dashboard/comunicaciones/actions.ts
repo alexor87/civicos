@@ -138,6 +138,7 @@ export async function sendCampaign(campaignId: string) {
       .from('contacts')
       .select('id, email, first_name, last_name')
       .eq('campaign_id', activeCampaignId)
+      .is('deleted_at', null)
       .not('email', 'is', null)
     contacts = (data ?? []) as typeof contacts
   }

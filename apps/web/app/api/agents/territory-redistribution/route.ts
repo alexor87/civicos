@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
           supabase.from('canvass_visits').select('territory_id')
             .eq('campaign_id', campaign.id).in('territory_id', territoryIds),
           supabase.from('contacts').select('district')
-            .eq('campaign_id', campaign.id).in('district', territoryNames),
+            .eq('campaign_id', campaign.id).is('deleted_at', null).in('district', territoryNames),
         ])
 
         const visitCountMap = new Map<string, number>()

@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
       const { count: inactiveContacts } = await supabase
         .from('contacts').select('id', { count: 'exact', head: true })
         .eq('campaign_id', campaign.id)
+        .is('deleted_at', null)
         .lt('last_contacted_at', cutoff30d)
 
       const { data: draftEmail } = await supabase

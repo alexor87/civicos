@@ -46,6 +46,7 @@ export async function GET(
     .from('contacts')
     .select('*')
     .eq('id', id)
+    .is('deleted_at', null)
     .single()
 
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })

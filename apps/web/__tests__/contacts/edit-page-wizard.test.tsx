@@ -56,27 +56,29 @@ mockFrom.mockImplementation((table: string) => {
     return {
       select: () => ({
         eq: () => ({
-          single: () => Promise.resolve({
-            data: {
-              id: 'contact-1',
-              first_name: 'Ana',
-              last_name: 'Gómez',
-              phone: '3001234567',
-              email: 'ana@test.com',
-              status: 'supporter',
-              document_type: 'CC',
-              document_number: '1234567890',
-              city: 'Medellín',
-              district: 'El Poblado',
-              address: 'Calle 10',
-              tags: ['VIP', 'líder'],
-              notes: 'Nota de prueba',
-              metadata: {
-                political_affinity: 4,
-                vote_intention: 'yes',
-                campaign_role: 'coordinador',
+          is: () => ({
+            single: () => Promise.resolve({
+              data: {
+                id: 'contact-1',
+                first_name: 'Ana',
+                last_name: 'Gómez',
+                phone: '3001234567',
+                email: 'ana@test.com',
+                status: 'supporter',
+                document_type: 'CC',
+                document_number: '1234567890',
+                city: 'Medellín',
+                district: 'El Poblado',
+                address: 'Calle 10',
+                tags: ['VIP', 'líder'],
+                notes: 'Nota de prueba',
+                metadata: {
+                  political_affinity: 4,
+                  vote_intention: 'yes',
+                  campaign_role: 'coordinador',
+                },
               },
-            },
+            }),
           }),
         }),
       }),

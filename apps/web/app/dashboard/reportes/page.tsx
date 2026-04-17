@@ -30,12 +30,14 @@ export default async function ReportesPage() {
     // KPI: total contacts
     supabase.from('contacts')
       .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId),
+      .eq('campaign_id', campaignId)
+      .is('deleted_at', null),
 
     // KPI: supporters
     supabase.from('contacts')
       .select('id', { count: 'exact', head: true })
       .eq('campaign_id', campaignId)
+      .is('deleted_at', null)
       .eq('status', 'supporter'),
 
     // KPI: total visits
@@ -53,7 +55,8 @@ export default async function ReportesPage() {
     // Contact status distribution
     supabase.from('contacts')
       .select('status')
-      .eq('campaign_id', campaignId),
+      .eq('campaign_id', campaignId)
+      .is('deleted_at', null),
 
     // Email campaigns reach
     supabase.from('email_campaigns')
@@ -84,6 +87,7 @@ export default async function ReportesPage() {
     supabase.from('contacts')
       .select('department')
       .eq('campaign_id', campaignId)
+      .is('deleted_at', null)
       .not('department', 'is', null),
     supabase.from('canvass_visits')
       .select('contacts(department)')
