@@ -138,7 +138,6 @@ export function getContactFormSchema(level: ContactLevel) {
       return stepEssentialsOpinionSchema
         .merge(stepLocationSchema)
         .merge(stepPoliticalSchema)
-        .merge(stepAdditionalSchema)
         .extend(extras)
     case 'anonimo':
       return stepEssentialsAnonimoSchema
