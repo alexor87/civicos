@@ -53,6 +53,18 @@ export function MunicipalitySelector({
       .catch(() => {})
   }, [])
 
+  const sortedDepts = useMemo(
+    () => Object.entries(DEPARTMENTS).sort(([, a], [, b]) => a.localeCompare(b)),
+    []
+  )
+
+  const municipalities = useMemo(() => {
+    if (!department || !geoData.length) return []
+    return geoData
+      .filter((g) => g.departamento_codigo === department)
+      .sort((a, b) => a.municipio_nombre.localeCompare(b.municipio_nombre))
+  }, [department, geoData])
+
   // Auto-set fixed department on mount
   useEffect(() => {
     if (fixedDepartmentCode && !department) {
@@ -69,18 +81,6 @@ export function MunicipalitySelector({
       if (match) onMunicipalityChange(match.municipio_nombre)
     }
   }, [fixedMunicipalityName, municipalities])
-
-  const sortedDepts = useMemo(
-    () => Object.entries(DEPARTMENTS).sort(([, a], [, b]) => a.localeCompare(b)),
-    []
-  )
-
-  const municipalities = useMemo(() => {
-    if (!department || !geoData.length) return []
-    return geoData
-      .filter((g) => g.departamento_codigo === department)
-      .sort((a, b) => a.municipio_nombre.localeCompare(b.municipio_nombre))
-  }, [department, geoData])
 
   const handleDeptChange = (code: string) => {
     onDepartmentChange(code)
