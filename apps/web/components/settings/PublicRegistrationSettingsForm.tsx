@@ -54,7 +54,6 @@ export function PublicRegistrationSettingsForm({
 }: {
   initial: FormData
   campaignName: string
-  isNew: boolean
 }) {
   const [form, setForm] = useState<FormData>(initial)
   const [saving, setSaving] = useState(false)
@@ -104,12 +103,9 @@ export function PublicRegistrationSettingsForm({
       updated_at: new Date().toISOString(),
     }
 
-    const { error } = isNew
-      ? await supabase.from('public_registration_config').insert(payload)
-      : await supabase
-          .from('public_registration_config')
-          .update(payload)
-          .eq('campaign_id', form.campaign_id)
+    const { error } = await supabase
+      .from('public_registration_config')
+      .upsert(payload, { onConflict: 'campaign_id' })
 
     setSaving(false)
 

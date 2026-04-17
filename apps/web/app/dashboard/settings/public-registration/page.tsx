@@ -34,7 +34,7 @@ export default async function PublicRegistrationSettingsPage() {
     .from('public_registration_config')
     .select('*')
     .eq('campaign_id', campaignId)
-    .single()
+    .maybeSingle()
 
   const initial = {
     campaign_id: campaignId,
@@ -71,7 +71,6 @@ export default async function PublicRegistrationSettingsPage() {
       <PublicRegistrationSettingsForm
         initial={initial}
         campaignName={campaign?.name || ''}
-        isNew={!config}
       />
     </div>
   )
