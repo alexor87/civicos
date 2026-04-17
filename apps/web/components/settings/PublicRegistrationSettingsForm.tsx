@@ -150,7 +150,7 @@ export function PublicRegistrationSettingsForm({
   // Geo data for department/municipality selectors
   const [geoData, setGeoData] = useState<GeoEntry[]>([])
   useEffect(() => {
-    fetch('/geo/colombia.json')
+    fetch('/geo/municipios.json')
       .then((res) => res.json())
       .then(setGeoData)
       .catch(() => {})

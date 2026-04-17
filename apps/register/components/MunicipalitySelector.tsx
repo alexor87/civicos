@@ -47,7 +47,7 @@ export function MunicipalitySelector({
   const [geoData, setGeoData] = useState<GeoData[]>([])
 
   useEffect(() => {
-    fetch('/geo/colombia.json')
+    fetch('/geo/municipios.json')
       .then((res) => res.json())
       .then(setGeoData)
       .catch(() => {})
