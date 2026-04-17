@@ -11,6 +11,7 @@ const TABS = [
   { href: '/dashboard/settings/geo-data',     label: 'Base Geográfica',   permission: 'settings.geo' },
   { href: '/dashboard/settings/api',          label: 'API',               permission: 'settings.api' },
   { href: '/dashboard/settings/brand',        label: 'Marca e Identidad', permission: 'settings.brand' },
+  { href: '/dashboard/settings/public-registration', label: 'Página Pública', permission: 'settings.campaign' },
 ]
 
 export function SettingsTabs() {
