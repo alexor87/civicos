@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Globe, Eye, Users, Shield, Bell, Palette } from 'lucide-react'
+import { Globe, Eye, Users, Shield, Bell, Palette, MapPin } from 'lucide-react'
 
 interface FormData {
   campaign_id: string
@@ -27,6 +27,29 @@ interface FormData {
   authorization_text: string
   privacy_policy_url: string
   notify_new_registration: boolean
+  geo_department_code: string
+  geo_department_name: string
+  geo_municipality_name: string
+}
+
+interface GeoEntry {
+  municipio_codigo: string
+  municipio_nombre: string
+  departamento_codigo: string
+}
+
+const DEPARTMENTS: Record<string, string> = {
+  '05': 'Antioquia', '08': 'Atlántico', '11': 'Bogotá D.C.',
+  '13': 'Bolívar', '15': 'Boyacá', '17': 'Caldas',
+  '18': 'Caquetá', '19': 'Cauca', '20': 'Cesar',
+  '23': 'Córdoba', '25': 'Cundinamarca', '27': 'Chocó',
+  '41': 'Huila', '44': 'La Guajira', '47': 'Magdalena',
+  '50': 'Meta', '52': 'Nariño', '54': 'Norte de Santander',
+  '63': 'Quindío', '66': 'Risaralda', '68': 'Santander',
+  '70': 'Sucre', '73': 'Tolima', '76': 'Valle del Cauca',
+  '81': 'Arauca', '85': 'Casanare', '86': 'Putumayo',
+  '88': 'Archipiélago de San Andrés', '91': 'Amazonas',
+  '94': 'Guainía', '95': 'Guaviare', '97': 'Vaupés', '99': 'Vichada',
 }
 
 function slugify(text: string): string {
@@ -100,6 +123,9 @@ export function PublicRegistrationSettingsForm({
       authorization_text: form.authorization_text || null,
       privacy_policy_url: form.privacy_policy_url || null,
       notify_new_registration: form.notify_new_registration,
+      geo_department_code: form.geo_department_code || null,
+      geo_department_name: form.geo_department_name || null,
+      geo_municipality_name: form.geo_municipality_name || null,
       updated_at: new Date().toISOString(),
     }
 
@@ -119,6 +145,34 @@ export function PublicRegistrationSettingsForm({
     }
 
     toast.success('Configuración guardada')
+  }
+
+  // Geo data for department/municipality selectors
+  const [geoData, setGeoData] = useState<GeoEntry[]>([])
+  useEffect(() => {
+    fetch('/geo/colombia.json')
+      .then((res) => res.json())
+      .then(setGeoData)
+      .catch(() => {})
+  }, [])
+
+  const sortedDepts = useMemo(
+    () => Object.entries(DEPARTMENTS).sort(([, a], [, b]) => a.localeCompare(b)),
+    []
+  )
+
+  const geoMunicipalities = useMemo(() => {
+    if (!form.geo_department_code || !geoData.length) return []
+    return geoData
+      .filter((g) => g.departamento_codigo === form.geo_department_code)
+      .sort((a, b) => a.municipio_nombre.localeCompare(b.municipio_nombre))
+  }, [form.geo_department_code, geoData])
+
+  const handleGeoDeptChange = (code: string) => {
+    const name = DEPARTMENTS[code] || ''
+    update('geo_department_code', code)
+    update('geo_department_name', name)
+    update('geo_municipality_name', '')
   }
 
   const embedUrl = toEmbedUrl(form.video_url || '')
@@ -275,6 +329,47 @@ export function PublicRegistrationSettingsForm({
             onChange={(v) => update('show_district', v)}
           />
         </div>
+      </Section>
+
+      {/* ── Alcance Geográfico ─────────────────────────────────────────── */}
+      <Section icon={<MapPin className="w-5 h-5" />} title="Alcance Geográfico">
+        <p className="text-xs text-slate-500 mb-3">
+          Restringe el formulario a tu zona geográfica. Si no seleccionas nada, el ciudadano podrá elegir cualquier departamento y municipio.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Departamento">
+            <select
+              value={form.geo_department_code}
+              onChange={(e) => handleGeoDeptChange(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white outline-none focus:border-[#2262ec] focus:ring-2 focus:ring-[#2262ec]/20"
+            >
+              <option value="">Todos los departamentos</option>
+              {sortedDepts.map(([code, name]) => (
+                <option key={code} value={code}>{name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Municipio">
+            <select
+              value={form.geo_municipality_name}
+              onChange={(e) => update('geo_municipality_name', e.target.value)}
+              disabled={!form.geo_department_code}
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white outline-none focus:border-[#2262ec] focus:ring-2 focus:ring-[#2262ec]/20 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <option value="">Todos los municipios</option>
+              {geoMunicipalities.map((m) => (
+                <option key={m.municipio_codigo} value={m.municipio_nombre}>{m.municipio_nombre}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        {form.geo_department_code && (
+          <p className="text-xs text-slate-500 mt-3">
+            {form.geo_municipality_name
+              ? `El formulario mostrará solo ${form.geo_municipality_name}, ${form.geo_department_name} (campos bloqueados).`
+              : `El formulario mostrará solo municipios de ${form.geo_department_name} (departamento bloqueado).`}
+          </p>
+        )}
       </Section>
 
       {/* ── Sistema de referidos ──────────────────────────────────────── */}

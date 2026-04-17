@@ -58,6 +58,9 @@ export default async function PublicRegistrationSettingsPage() {
     authorization_text: config?.authorization_text ?? '',
     privacy_policy_url: config?.privacy_policy_url ?? '',
     notify_new_registration: config?.notify_new_registration ?? false,
+    geo_department_code: config?.geo_department_code ?? '',
+    geo_department_name: config?.geo_department_name ?? '',
+    geo_municipality_name: config?.geo_municipality_name ?? '',
   }
 
   return (

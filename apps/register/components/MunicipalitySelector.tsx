@@ -29,6 +29,10 @@ interface MunicipalitySelectorProps {
   onDepartmentChange: (value: string) => void
   onMunicipalityChange: (value: string) => void
   errors?: { department?: string; municipality?: string }
+  /** If set, lock department to this DANE code */
+  fixedDepartmentCode?: string
+  /** If set, lock municipality to this name */
+  fixedMunicipalityName?: string
 }
 
 export function MunicipalitySelector({
@@ -37,6 +41,8 @@ export function MunicipalitySelector({
   onDepartmentChange,
   onMunicipalityChange,
   errors,
+  fixedDepartmentCode,
+  fixedMunicipalityName,
 }: MunicipalitySelectorProps) {
   const [geoData, setGeoData] = useState<GeoData[]>([])
 
@@ -46,6 +52,23 @@ export function MunicipalitySelector({
       .then(setGeoData)
       .catch(() => {})
   }, [])
+
+  // Auto-set fixed department on mount
+  useEffect(() => {
+    if (fixedDepartmentCode && !department) {
+      onDepartmentChange(fixedDepartmentCode)
+    }
+  }, [fixedDepartmentCode])
+
+  // Auto-set fixed municipality once municipalities load
+  useEffect(() => {
+    if (fixedMunicipalityName && municipalities.length > 0 && !municipality) {
+      const match = municipalities.find(
+        (m) => m.municipio_nombre.toLowerCase() === fixedMunicipalityName.toLowerCase()
+      )
+      if (match) onMunicipalityChange(match.municipio_nombre)
+    }
+  }, [fixedMunicipalityName, municipalities])
 
   const sortedDepts = useMemo(
     () => Object.entries(DEPARTMENTS).sort(([, a], [, b]) => a.localeCompare(b)),
@@ -73,7 +96,8 @@ export function MunicipalitySelector({
         <select
           value={department}
           onChange={(e) => handleDeptChange(e.target.value)}
-          className={`w-full px-3 py-2.5 text-sm border rounded-lg bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${
+          disabled={!!fixedDepartmentCode}
+          className={`w-full px-3 py-2.5 text-sm border rounded-lg bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 disabled:text-slate-500 ${
             errors?.department ? 'border-red-400' : 'border-slate-300'
           }`}
         >
@@ -95,8 +119,8 @@ export function MunicipalitySelector({
         <select
           value={municipality}
           onChange={(e) => onMunicipalityChange(e.target.value)}
-          disabled={!department}
-          className={`w-full px-3 py-2.5 text-sm border rounded-lg bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 disabled:text-slate-400 ${
+          disabled={!department || !!fixedMunicipalityName}
+          className={`w-full px-3 py-2.5 text-sm border rounded-lg bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 disabled:text-slate-500 ${
             errors?.municipality ? 'border-red-400' : 'border-slate-300'
           }`}
         >

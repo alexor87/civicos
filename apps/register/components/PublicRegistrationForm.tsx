@@ -18,6 +18,9 @@ interface RegistrationConfig {
   authorization_text: string | null
   privacy_policy_url: string | null
   referral_enabled: boolean
+  geo_department_code: string | null
+  geo_department_name: string | null
+  geo_municipality_name: string | null
 }
 
 const AGE_GROUPS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
@@ -48,7 +51,7 @@ export function PublicRegistrationForm({ config }: { config: RegistrationConfig 
   const [email, setEmail] = useState('')
   const [docType, setDocType] = useState('')
   const [docNumber, setDocNumber] = useState('')
-  const [department, setDepartment] = useState('')
+  const [department, setDepartment] = useState(config.geo_department_code || '')
   const [municipality, setMunicipality] = useState('')
   const [district, setDistrict] = useState('')
   const [gender, setGender] = useState('')
@@ -251,6 +254,8 @@ export function PublicRegistrationForm({ config }: { config: RegistrationConfig 
         onDepartmentChange={setDepartment}
         onMunicipalityChange={setMunicipality}
         errors={{ department: errors.department, municipality: errors.municipality }}
+        fixedDepartmentCode={config.geo_department_code || undefined}
+        fixedMunicipalityName={config.geo_municipality_name || undefined}
       />
 
       {/* District (optional) */}
