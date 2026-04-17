@@ -171,8 +171,18 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
-    console.error('[contacts] DB error:', error)
-    return NextResponse.json({ error: 'Error interno. Inténtalo de nuevo.' }, { status: 500 })
+    console.error('[contacts] DB error:', JSON.stringify(error))
+    console.error('[contacts] insertObj:', JSON.stringify(insertObj))
+    if (error.code === '23505') {
+      return NextResponse.json(
+        { error: 'duplicate', message: 'Ya existe un contacto con estos datos' },
+        { status: 409 }
+      )
+    }
+    return NextResponse.json(
+      { error: error.message || 'Error interno', code: error.code },
+      { status: 500 }
+    )
   }
 
   // Update PostGIS geo column if coordinates are available
