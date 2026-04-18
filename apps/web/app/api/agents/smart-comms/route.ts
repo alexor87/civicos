@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   let suggestionsCreated = 0
 
   for (const campaign of campaigns) {
-    const { data: runData } = await supabase
+    const { data: runData } = await adminSupabase
       .from('agent_runs')
       .insert({
         tenant_id: campaign.tenant_id,
@@ -155,14 +155,14 @@ Genera hasta 3 sugerencias. Responde SOLO con array JSON:
 
       steps.push({ step: 'generate', count: suggestions.length, completed_at: new Date().toISOString() })
 
-      const { data: existing } = await supabase
+      const { data: existing } = await adminSupabase
         .from('ai_suggestions').select('type')
         .eq('campaign_id', campaign.id).in('status', ['active', 'pending_approval'])
       const existingTypes = new Set((existing ?? []).map((r: { type: string }) => r.type))
 
       for (const sug of suggestions) {
         if (existingTypes.has(sug.type)) continue
-        const { error } = await supabase.from('ai_suggestions').insert({
+        const { error } = await adminSupabase.from('ai_suggestions').insert({
           tenant_id: campaign.tenant_id, campaign_id: campaign.id,
           type: sug.type, module: sug.module, priority: sug.priority,
           title: sug.title, description: sug.description,
@@ -173,7 +173,7 @@ Genera hasta 3 sugerencias. Responde SOLO con array JSON:
         if (!error) suggestionsCreated++
       }
 
-      await supabase.from('agent_runs').update({
+      await adminSupabase.from('agent_runs').update({
         status: 'completed', steps,
         result: { suggestions_created: suggestionsCreated },
         completed_at: new Date().toISOString(),
@@ -181,7 +181,7 @@ Genera hasta 3 sugerencias. Responde SOLO con array JSON:
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
-      await supabase.from('agent_runs').update({
+      await adminSupabase.from('agent_runs').update({
         status: 'failed', steps, error: msg, completed_at: new Date().toISOString(),
       }).eq('id', runId)
     }

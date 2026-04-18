@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       ? Math.ceil((new Date(campaign.election_date).getTime() - now.getTime()) / 86_400_000)
       : null
 
-    const { data: runData } = await supabase
+    const { data: runData } = await adminSupabase
       .from('agent_runs')
       .insert({
         tenant_id: campaign.tenant_id, campaign_id: campaign.id,
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       const thresholds = resolveThresholds((campaign as Record<string, unknown>).config)
       const lowCoverage = territoryMetrics.filter(t => t.coverage_pct < thresholds.coverage_low_pct && t.contacts_in_zone > 0)
       if (lowCoverage.length === 0) {
-        await supabase.from('agent_runs').update({
+        await adminSupabase.from('agent_runs').update({
           status: 'completed', steps,
           result: { proposals: 0, reason: 'Coverage adequate' }, completed_at: new Date().toISOString(),
         }).eq('id', runId)
@@ -186,11 +186,11 @@ Genera UNA propuesta en JSON:
 
       steps.push({ step: 'generate_proposal', completed_at: new Date().toISOString() })
 
-      const { data: existing } = await supabase.from('ai_suggestions').select('id')
+      const { data: existing } = await adminSupabase.from('ai_suggestions').select('id')
         .eq('campaign_id', campaign.id).eq('type', 'territory_redistribution').in('status', ['active', 'pending_approval'])
 
       if (!existing?.length) {
-        await supabase.from('ai_suggestions').insert({
+        await adminSupabase.from('ai_suggestions').insert({
           tenant_id: campaign.tenant_id, campaign_id: campaign.id,
           type: 'territory_redistribution', module: 'canvassing',
           priority: proposal.priority as 'critical' | 'high' | 'medium' | 'low',
@@ -202,7 +202,7 @@ Genera UNA propuesta en JSON:
         proposalsCreated++
       }
 
-      await supabase.from('agent_runs').update({
+      await adminSupabase.from('agent_runs').update({
         status: 'completed', steps,
         result: { proposal, low_coverage_count: lowCoverage.length },
         completed_at: new Date().toISOString(),
@@ -210,7 +210,7 @@ Genera UNA propuesta en JSON:
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
-      await supabase.from('agent_runs').update({ status: 'failed', steps, error: msg, completed_at: new Date().toISOString() }).eq('id', runId)
+      await adminSupabase.from('agent_runs').update({ status: 'failed', steps, error: msg, completed_at: new Date().toISOString() }).eq('id', runId)
     }
   }
 

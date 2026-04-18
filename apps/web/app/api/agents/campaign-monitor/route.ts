@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     const thresholds = resolveThresholds((campaign as Record<string, unknown>).config)
 
-    const { data: runData } = await supabase
+    const { data: runData } = await adminSupabase
       .from('agent_runs')
       .insert({
         tenant_id: campaign.tenant_id, campaign_id: campaign.id,
@@ -160,11 +160,11 @@ Responde SOLO con JSON:
 
       // Deduplicate by date — only one report per campaign per day
       const reportType = `daily_report_${today}`
-      const { data: existing } = await supabase.from('ai_suggestions').select('id')
+      const { data: existing } = await adminSupabase.from('ai_suggestions').select('id')
         .eq('campaign_id', campaign.id).eq('type', reportType).in('status', ['active', 'pending_approval'])
 
       if (!existing?.length) {
-        await supabase.from('ai_suggestions').insert({
+        await adminSupabase.from('ai_suggestions').insert({
           tenant_id: campaign.tenant_id, campaign_id: campaign.id,
           type: reportType, module: 'monitoring',
           priority: priority as 'critical' | 'high' | 'medium' | 'low',
@@ -179,7 +179,7 @@ Responde SOLO con JSON:
         reportsCreated++
       }
 
-      await supabase.from('agent_runs').update({
+      await adminSupabase.from('agent_runs').update({
         status: 'completed', steps,
         result: { alert_level: alertLevel, alerts_count: alerts.length },
         completed_at: new Date().toISOString(),
@@ -187,7 +187,7 @@ Responde SOLO con JSON:
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
-      await supabase.from('agent_runs').update({ status: 'failed', steps, error: msg, completed_at: new Date().toISOString() }).eq('id', runId)
+      await adminSupabase.from('agent_runs').update({ status: 'failed', steps, error: msg, completed_at: new Date().toISOString() }).eq('id', runId)
     }
   }
 
