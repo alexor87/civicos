@@ -26,6 +26,8 @@ export default async function ReportesPage() {
     { data: smsReach },
     { data: activeVolunteerRows },
     { data: allVisitRows },
+    { data: campaignStatsRow },
+    { data: referralRankingRows },
   ] = await Promise.all([
     // KPI: total contacts
     supabase.from('contacts')
@@ -80,6 +82,18 @@ export default async function ReportesPage() {
     supabase.from('canvass_visits')
       .select('volunteer_id, territory_id, territories(name)')
       .eq('campaign_id', campaignId),
+
+    // Referral stats from campaign_stats
+    supabase.from('campaign_stats')
+      .select('registrations_public, registrations_referred')
+      .eq('campaign_id', campaignId)
+      .maybeSingle(),
+
+    // Referral ranking (top 10)
+    supabase.rpc('get_referral_ranking', {
+      p_campaign_id: campaignId,
+      p_limit: 10,
+    }),
   ])
 
   // ── Geo zone stats (contacts + visits per department) ────────────────────────
@@ -238,6 +252,9 @@ export default async function ReportesPage() {
           territoryCoverage={territoryCoverage}
           volunteerRanking={volunteerRanking}
           geoZoneStats={geoZoneStats}
+          registrationsPublic={(campaignStatsRow as Record<string, number> | null)?.registrations_public ?? 0}
+          registrationsReferred={(campaignStatsRow as Record<string, number> | null)?.registrations_referred ?? 0}
+          referralRanking={(referralRankingRows as { referrer_code: string; referrer_name: string | null; total_referred: number }[] | null) ?? []}
         />
 
       </div>

@@ -1,11 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { ContactProfile } from '@/components/dashboard/ContactProfile'
+import type { ReferredByInfo, ReferrerStats } from '@/components/dashboard/ContactProfile'
 import { PromoteToMemberButton } from '@/components/dashboard/contacts/PromoteToMemberButton'
 import { GDPRActions } from '@/components/dashboard/contacts/GDPRActions'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ChevronLeft, Pencil } from 'lucide-react'
 import { notFound, redirect } from 'next/navigation'
+import { normalizePhone } from '@/lib/normalize-phone'
 
 export default async function ContactProfilePage({
   params,
@@ -54,6 +56,51 @@ export default async function ContactProfilePage({
     volunteerName: (v.profiles as { full_name: string } | null)?.full_name ?? 'Voluntario',
   }))
 
+  // ── Referral data ───────────────────────────────────────────────────────────
+  const normalizedPhone = contact.phone ? normalizePhone(contact.phone) : null
+
+  const [referredByResult, referrerStatsResult] = await Promise.all([
+    // Who referred this contact?
+    supabase
+      .from('referral_events')
+      .select('referrer_code, referrer_name, created_at')
+      .eq('referred_contact_id', id)
+      .limit(1)
+      .maybeSingle(),
+
+    // Has this contact referred others?
+    normalizedPhone
+      ? supabase.rpc('get_referrer_stats', {
+          p_campaign_id: campaignId,
+          p_referrer_code: normalizedPhone,
+        })
+      : Promise.resolve({ data: null }),
+  ])
+
+  let referredByInfo: ReferredByInfo | null = null
+  if (referredByResult.data) {
+    const r = referredByResult.data as { referrer_code: string; referrer_name: string | null; created_at: string }
+    referredByInfo = {
+      referrer_name: r.referrer_name,
+      referrer_phone: r.referrer_code,
+      created_at: r.created_at,
+    }
+  }
+
+  let referrerStats: ReferrerStats | null = null
+  if (referrerStatsResult.data) {
+    const s = referrerStatsResult.data as {
+      total_referred: number
+      level: number
+      level_name: string | null
+      ranking_position: number | null
+      recent_referrals: { name: string; phone: string; created_at: string }[]
+    }
+    if (s.total_referred > 0) {
+      referrerStats = s
+    }
+  }
+
   return (
     <div>
       <div className="px-6 pt-6 flex items-center justify-between">
@@ -78,7 +125,7 @@ export default async function ContactProfilePage({
           </Link>
         </div>
       </div>
-      <ContactProfile contact={contact} visits={visits} />
+      <ContactProfile contact={contact} visits={visits} referredByInfo={referredByInfo} referrerStats={referrerStats} />
 
       {/* GDPR actions — only for managers/admins */}
       {['super_admin', 'campaign_manager'].includes(profile?.role ?? '') && (

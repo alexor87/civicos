@@ -102,4 +102,82 @@ describe('ContactProfile', () => {
     const dashes = screen.getAllByText('—')
     expect(dashes.length).toBeGreaterThan(0)
   })
+
+  // ── Referral info ──────────────────────────────────────────────────────────
+
+  it('muestra "Referido via link" cuando referredByInfo está presente', () => {
+    render(
+      <ContactProfile
+        contact={makeContact()}
+        visits={[]}
+        referredByInfo={{
+          referrer_name: 'Pedro Gómez',
+          referrer_phone: '573001112222',
+          created_at: '2024-03-15T10:00:00Z',
+        }}
+      />
+    )
+    expect(screen.getByText(/referido via link/i)).toBeInTheDocument()
+    expect(screen.getByText('Pedro Gómez')).toBeInTheDocument()
+  })
+
+  it('muestra teléfono del referidor si no hay nombre', () => {
+    render(
+      <ContactProfile
+        contact={makeContact()}
+        visits={[]}
+        referredByInfo={{
+          referrer_name: null,
+          referrer_phone: '573001112222',
+          created_at: '2024-03-15T10:00:00Z',
+        }}
+      />
+    )
+    expect(screen.getByText('573001112222')).toBeInTheDocument()
+  })
+
+  it('muestra tarjeta de Referidos con métricas cuando referrerStats presente', () => {
+    render(
+      <ContactProfile
+        contact={makeContact()}
+        visits={[]}
+        referrerStats={{
+          total_referred: 12,
+          level: 2,
+          level_name: 'Promotor',
+          ranking_position: 3,
+          recent_referrals: [
+            { name: 'Ana López', phone: '573009998888', created_at: '2024-03-20T10:00:00Z' },
+          ],
+        }}
+      />
+    )
+    expect(screen.getByText('Referidos')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText('Promotor')).toBeInTheDocument()
+    expect(screen.getByText('#3')).toBeInTheDocument()
+    expect(screen.getByText('Ana López')).toBeInTheDocument()
+  })
+
+  it('no muestra tarjeta de Referidos cuando total_referred es 0', () => {
+    render(
+      <ContactProfile
+        contact={makeContact()}
+        visits={[]}
+        referrerStats={{
+          total_referred: 0,
+          level: 0,
+          level_name: null,
+          ranking_position: null,
+          recent_referrals: [],
+        }}
+      />
+    )
+    expect(screen.queryByText('Referidos')).not.toBeInTheDocument()
+  })
+
+  it('no crashea sin props de referidos (null/undefined)', () => {
+    render(<ContactProfile contact={makeContact()} visits={[]} referredByInfo={null} referrerStats={null} />)
+    expect(screen.getByText('María López')).toBeInTheDocument()
+  })
 })

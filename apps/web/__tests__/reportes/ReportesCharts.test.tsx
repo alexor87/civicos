@@ -132,4 +132,45 @@ describe('ReportesCharts', () => {
     render(<ReportesCharts {...BASE_PROPS} volunteerRanking={[]} />)
     expect(screen.getByText('Sin actividad de voluntarios aún')).toBeInTheDocument()
   })
+
+  // ── Referral KPIs ────────────────────────────────────────────────────────
+
+  it('muestra KPIs de referidos cuando hay registros', () => {
+    render(<ReportesCharts {...BASE_PROPS} registrationsPublic={150} registrationsReferred={45} />)
+    expect(screen.getByText('150')).toBeInTheDocument()
+    expect(screen.getByText('Registros directos')).toBeInTheDocument()
+    expect(screen.getByText('Registros por referido')).toBeInTheDocument()
+  })
+
+  it('no muestra KPIs de referidos cuando ambos son 0', () => {
+    render(<ReportesCharts {...BASE_PROPS} registrationsPublic={0} registrationsReferred={0} />)
+    expect(screen.queryByText('Registros directos')).not.toBeInTheDocument()
+  })
+
+  it('muestra leaderboard de captadores', () => {
+    render(
+      <ReportesCharts
+        {...BASE_PROPS}
+        referralRanking={[
+          { referrer_code: '573001112222', referrer_name: 'Pedro Gómez', total_referred: 15 },
+          { referrer_code: '573003334444', referrer_name: null, total_referred: 8 },
+        ]}
+      />
+    )
+    expect(screen.getByText('Top Captadores')).toBeInTheDocument()
+    expect(screen.getByText('Pedro Gómez')).toBeInTheDocument()
+    expect(screen.getByText('573003334444')).toBeInTheDocument()
+    expect(screen.getByText('15')).toBeInTheDocument()
+  })
+
+  it('no muestra leaderboard sin datos de referidos', () => {
+    render(<ReportesCharts {...BASE_PROPS} referralRanking={[]} />)
+    expect(screen.queryByText('Top Captadores')).not.toBeInTheDocument()
+  })
+
+  it('no crashea sin props de referidos', () => {
+    render(<ReportesCharts {...BASE_PROPS} />)
+    expect(screen.queryByText('Top Captadores')).not.toBeInTheDocument()
+    expect(screen.queryByText('Registros directos')).not.toBeInTheDocument()
+  })
 })

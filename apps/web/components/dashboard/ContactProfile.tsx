@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Mail, Phone, MapPin, Tag, FileText, Calendar, IdCard, Users, Landmark, Zap, Trash2, CheckCircle, MessageCircle, EyeOff, ArrowUpCircle } from 'lucide-react'
+import { Mail, Phone, MapPin, Tag, FileText, Calendar, IdCard, Users, Landmark, Zap, Trash2, CheckCircle, MessageCircle, EyeOff, ArrowUpCircle, Share2, Trophy } from 'lucide-react'
 import { useTransition } from 'react'
 import { deleteContact } from '@/app/dashboard/contacts/actions'
 import type { Database } from '@/lib/types/database'
@@ -59,12 +59,28 @@ const LEVEL_BANNER = {
   anonimo: { label: 'Contacto anónimo', icon: EyeOff, className: 'bg-slate-100 text-slate-600 border-slate-200' },
 } as const
 
+export interface ReferredByInfo {
+  referrer_name: string | null
+  referrer_phone: string | null
+  created_at: string
+}
+
+export interface ReferrerStats {
+  total_referred: number
+  level: number
+  level_name: string | null
+  ranking_position: number | null
+  recent_referrals: { name: string; phone: string; created_at: string }[]
+}
+
 interface Props {
   contact: Contact
   visits: VisitWithVolunteer[]
+  referredByInfo?: ReferredByInfo | null
+  referrerStats?: ReferrerStats | null
 }
 
-export function ContactProfile({ contact, visits }: Props) {
+export function ContactProfile({ contact, visits, referredByInfo, referrerStats }: Props) {
   const [isPending, startTransition] = useTransition()
   const status = statusConfig[contact.status] ?? statusConfig.unknown
   const meta = (contact.metadata as Record<string, string | null | undefined>) ?? {}
@@ -248,16 +264,61 @@ export function ContactProfile({ contact, visits }: Props) {
           )}
 
           {/* Fuente */}
-          {!isAnonimo && (meta.contact_source || meta.referred_by || meta.territorial_manager) && (
+          {!isAnonimo && (meta.contact_source || meta.referred_by || meta.territorial_manager || referredByInfo) && (
             <div className="border rounded-lg bg-white p-5 space-y-2">
               <h2 className="font-semibold text-slate-800 text-sm uppercase tracking-wide">Origen</h2>
               <div className="space-y-1.5 text-sm text-slate-600">
                 {meta.contact_source && (
                   <div>{SOURCE_LABELS[meta.contact_source as string] ?? String(meta.contact_source)}{meta.source_detail ? ` — ${meta.source_detail}` : ''}</div>
                 )}
+                {referredByInfo && (
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Share2 className="h-3.5 w-3.5 text-indigo-400" />
+                    Referido via link: <span className="text-slate-700 font-medium">{referredByInfo.referrer_name ?? referredByInfo.referrer_phone ?? 'Desconocido'}</span>
+                    <span className="text-xs text-slate-400">({new Date(referredByInfo.created_at).toLocaleDateString('es-ES', { timeZone: 'UTC' })})</span>
+                  </div>
+                )}
                 {meta.referred_by && <div className="text-slate-500">Referido por: <span className="text-slate-700">{String(meta.referred_by)}</span></div>}
                 {meta.territorial_manager && <div className="text-slate-500">Responsable: <span className="text-slate-700">{String(meta.territorial_manager)}</span></div>}
               </div>
+            </div>
+          )}
+
+          {/* Referidos */}
+          {referrerStats && referrerStats.total_referred > 0 && (
+            <div className="border rounded-lg bg-white p-5 space-y-3">
+              <h2 className="font-semibold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-1.5">
+                <Share2 className="h-3.5 w-3.5" /> Referidos
+              </h2>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-indigo-50 rounded-lg py-2">
+                  <p className="text-lg font-bold text-indigo-600">{referrerStats.total_referred}</p>
+                  <p className="text-[10px] text-slate-500">Total</p>
+                </div>
+                <div className="bg-amber-50 rounded-lg py-2">
+                  <p className="text-lg font-bold text-amber-600">{referrerStats.level_name ?? `Nivel ${referrerStats.level}`}</p>
+                  <p className="text-[10px] text-slate-500">Nivel</p>
+                </div>
+                {referrerStats.ranking_position != null && (
+                  <div className="bg-emerald-50 rounded-lg py-2">
+                    <p className="text-lg font-bold text-emerald-600 flex items-center justify-center gap-0.5">
+                      <Trophy className="h-3.5 w-3.5" /> #{referrerStats.ranking_position}
+                    </p>
+                    <p className="text-[10px] text-slate-500">Ranking</p>
+                  </div>
+                )}
+              </div>
+              {referrerStats.recent_referrals.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <p className="text-xs font-medium text-slate-500">Últimos referidos</p>
+                  {referrerStats.recent_referrals.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-700 truncate">{r.name || r.phone}</span>
+                      <span className="text-xs text-slate-400 shrink-0 ml-2">{new Date(r.created_at).toLocaleDateString('es-ES', { timeZone: 'UTC' })}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { TrendingUp, Users, UserCheck, Send, MapPin, Trophy, Globe } from 'lucide-react'
+import { TrendingUp, Users, UserCheck, Send, MapPin, Trophy, Globe, Share2, UserPlus } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -17,6 +17,9 @@ export interface ReportesChartsProps {
   territoryCoverage:     { name: string; visitas: number }[]
   volunteerRanking:      { id: string; name: string; visitas: number }[]
   geoZoneStats?:         { name: string; contactos: number; visitas: number }[]
+  registrationsPublic?:  number
+  registrationsReferred?: number
+  referralRanking?:      { referrer_code: string; referrer_name: string | null; total_referred: number }[]
 }
 
 // ── Color palette ──────────────────────────────────────────────────────────────
@@ -230,6 +233,7 @@ export function ReportesCharts({
   coverageRate, supportRate, activeVolunteers, communicationsReach,
   totalContacts, totalVisits,
   visitsByDay, visitResults, contactIntentions, territoryCoverage, volunteerRanking, geoZoneStats,
+  registrationsPublic, registrationsReferred, referralRanking,
 }: ReportesChartsProps) {
 
   const visitColors     = [PALETTE[1], PALETTE[3], PALETTE[2], PALETTE[4], PALETTE[5]]
@@ -267,6 +271,26 @@ export function ReportesCharts({
           iconBg="bg-orange-500/10" iconColor="text-orange-500" valueColor="text-[#1b1f23]"
         />
       </div>
+
+      {/* ── Referral KPIs ─────────────────────────────────────────────────── */}
+      {((registrationsPublic ?? 0) > 0 || (registrationsReferred ?? 0) > 0) && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="Registros directos"
+            value={String(registrationsPublic ?? 0)}
+            sub="vía link público"
+            Icon={UserPlus}
+            iconBg="bg-[#2960ec]/10" iconColor="text-[#2960ec]" valueColor="text-[#1b1f23]"
+          />
+          <KpiCard
+            label="Registros por referido"
+            value={String(registrationsReferred ?? 0)}
+            sub="traídos por otros contactos"
+            Icon={Share2}
+            iconBg="bg-indigo-500/10" iconColor="text-indigo-500" valueColor="text-indigo-600"
+          />
+        </div>
+      )}
 
       {/* ── Actividad canvassing ───────────────────────────────────────────── */}
       <div className="bg-white border border-[#dcdee6] rounded-md overflow-hidden">
@@ -377,6 +401,27 @@ export function ReportesCharts({
           </div>
         </div>
       </div>
+
+      {/* ── Leaderboard de captadores ───────────────────────────────────── */}
+      {referralRanking && referralRanking.length > 0 && (
+        <div className="bg-white border border-[#dcdee6] rounded-md overflow-hidden">
+          <SectionHeader Icon={Share2} title="Top Captadores" sub="Ranking por contactos referidos" />
+          <div className="divide-y divide-[#dcdee6]">
+            {referralRanking.map((r, i) => (
+              <div key={r.referrer_code} className="flex items-center gap-3 px-5 py-3">
+                <span className={`text-xs font-bold w-5 tabular-nums ${
+                  i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-[#6a737d]'
+                }`}>{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-[#1b1f23] truncate">{r.referrer_name ?? r.referrer_code}</p>
+                </div>
+                <span className="text-sm font-semibold text-indigo-600 tabular-nums">{r.total_referred}</span>
+                <span className="text-xs text-[#6a737d]">referidos</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   )
