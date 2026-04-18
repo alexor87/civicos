@@ -13,6 +13,7 @@ interface ReferralConfig {
   primary_color: string
   level_names: string[]
   level_thresholds: number[]
+  whatsapp_share_message?: string | null
 }
 
 interface ReferrerStats {
@@ -182,6 +183,7 @@ export function ReferralPanel({ config, slug }: { config: ReferralConfig; slug: 
               referralLink={referralLink}
               slug={slug}
               primaryColor={config.primary_color}
+              message={config.whatsapp_share_message}
             />
           </div>
         </div>

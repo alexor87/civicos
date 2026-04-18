@@ -55,6 +55,7 @@ export default async function PublicRegistrationSettingsPage() {
     referral_enabled: config?.referral_enabled ?? true,
     level_names: config?.level_names ?? ['Simpatizante', 'Activista', 'Defensor', 'Líder', 'Embajador'],
     level_thresholds: config?.level_thresholds ?? [0, 5, 15, 30, 50],
+    whatsapp_share_message: config?.whatsapp_share_message ?? '¡Únete a nuestra causa! Regístrate aquí: {link}',
     authorization_text: config?.authorization_text ?? '',
     privacy_policy_url: config?.privacy_policy_url ?? '',
     notify_new_registration: config?.notify_new_registration ?? false,

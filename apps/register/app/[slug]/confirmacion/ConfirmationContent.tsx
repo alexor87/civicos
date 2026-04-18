@@ -10,6 +10,7 @@ interface ConfirmationContentProps {
     primary_color: string
     referral_enabled: boolean
     title: string | null
+    whatsapp_share_message?: string | null
   }
   referralLink: string
   slug: string
@@ -109,6 +110,7 @@ export function ConfirmationContent({
               referralLink={referralLink}
               slug={slug}
               primaryColor={config.primary_color}
+              message={config.whatsapp_share_message}
             />
           </div>
 

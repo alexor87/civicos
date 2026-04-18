@@ -7,9 +7,10 @@ interface ShareButtonProps {
   referralLink: string
   slug: string
   primaryColor?: string
+  message?: string | null
 }
 
-export function ShareButton({ referralLink, slug, primaryColor = '#2262ec' }: ShareButtonProps) {
+export function ShareButton({ referralLink, slug, primaryColor = '#2262ec', message }: ShareButtonProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -18,9 +19,10 @@ export function ShareButton({ referralLink, slug, primaryColor = '#2262ec' }: Sh
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const whatsappMessage = encodeURIComponent(
-    `¡Únete a nuestra causa! Regístrate aquí: ${referralLink}`
-  )
+  const messageText = message
+    ? message.replace(/\{link\}/g, referralLink)
+    : `¡Únete a nuestra causa! Regístrate aquí: ${referralLink}`
+  const whatsappMessage = encodeURIComponent(messageText)
   const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`
 
   return (

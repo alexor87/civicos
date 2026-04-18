@@ -24,6 +24,7 @@ interface FormData {
   referral_enabled: boolean
   level_names: string[]
   level_thresholds: number[]
+  whatsapp_share_message: string
   authorization_text: string
   privacy_policy_url: string
   notify_new_registration: boolean
@@ -120,6 +121,7 @@ export function PublicRegistrationSettingsForm({
       referral_enabled: form.referral_enabled,
       level_names: form.level_names,
       level_thresholds: form.level_thresholds,
+      whatsapp_share_message: form.whatsapp_share_message || null,
       authorization_text: form.authorization_text || null,
       privacy_policy_url: form.privacy_policy_url || null,
       notify_new_registration: form.notify_new_registration,
@@ -382,7 +384,18 @@ export function PublicRegistrationSettingsForm({
         />
 
         {form.referral_enabled && (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-4">
+            <Field label="Mensaje de WhatsApp al compartir">
+              <textarea
+                value={form.whatsapp_share_message}
+                onChange={(e) => update('whatsapp_share_message', e.target.value)}
+                rows={3}
+                placeholder="¡Únete a nuestra causa! Regístrate aquí: {link}"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#2262ec] focus:ring-2 focus:ring-[#2262ec]/20 resize-none"
+              />
+              <p className="text-xs text-slate-400 mt-1">Usa <code className="bg-slate-100 px-1 rounded">{'{link}'}</code> donde quieras que aparezca el enlace de registro</p>
+            </Field>
+
             <p className="text-sm font-medium text-slate-700">Niveles de gamificación</p>
             {form.level_names.map((name, i) => (
               <div key={i} className="flex items-center gap-3">
