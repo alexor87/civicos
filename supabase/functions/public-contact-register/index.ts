@@ -115,38 +115,72 @@ Deno.serve(async (req: Request) => {
 
     const contactLevel = body.document_number ? 'completo' : 'opinion'
 
-    // ── 9. Dedup: check existing contact by phone ─────────────────────────
-    const { data: existing } = await supabase
+    // ── 9. Dedup: check existing contact by phone OR document_number ────
+    let existingContact = null
+
+    // First: search by phone
+    const { data: byPhone } = await supabase
       .from('contacts')
-      .select('id, first_name, last_name, phone')
+      .select('*')
       .eq('campaign_id', body.campaign_id)
       .eq('phone', normalizedPhone)
       .is('deleted_at', null)
       .limit(1)
       .maybeSingle()
 
-    let contactId: string
+    existingContact = byPhone
 
-    if (existing) {
+    // If not found by phone, try document_number
+    if (!existingContact && body.document_number) {
+      const { data: byDoc } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('campaign_id', body.campaign_id)
+        .eq('document_number', body.document_number)
+        .is('deleted_at', null)
+        .limit(1)
+        .maybeSingle()
+
+      existingContact = byDoc
+    }
+
+    let contactId: string
+    let isExisting = false
+
+    if (existingContact) {
+      isExisting = true
+      // Merge: fill gaps in existing contact with new registration data
       const updates: Record<string, unknown> = {}
-      if (body.email && !existing.first_name) updates.email = body.email.toLowerCase()
-      if (body.document_number) {
+      if (body.email && !existingContact.email) updates.email = body.email.toLowerCase()
+      if (normalizedPhone && !existingContact.phone) updates.phone = normalizedPhone
+      if (body.document_number && !existingContact.document_number) {
         updates.document_type = body.document_type || null
         updates.document_number = body.document_number
         updates.contact_level = 'completo'
       }
-      if (body.department) updates.department = body.department
-      if (body.municipality) updates.municipality = body.municipality
-      if (body.district) updates.district = body.district
-      if (body.gender) updates.metadata = { gender: body.gender }
+      if (body.department && !existingContact.department) updates.department = body.department
+      if (body.municipality && !existingContact.municipality) {
+        updates.municipality = body.municipality
+        if (!existingContact.city) updates.city = body.municipality
+      }
+      if (body.district && !existingContact.district) updates.district = body.district
+
+      // Metadata merge: fill gaps
+      const existingMeta = (existingContact.metadata || {}) as Record<string, unknown>
+      const newMeta = { ...existingMeta }
+      if (body.gender && !existingMeta.gender) newMeta.gender = body.gender
+      if (body.age_group && !existingMeta.age_group) newMeta.age_group = body.age_group
+      if (Object.keys(newMeta).length > Object.keys(existingMeta).length) {
+        updates.metadata = newMeta
+      }
 
       if (Object.keys(updates).length > 0) {
         await supabase
           .from('contacts')
           .update(updates)
-          .eq('id', existing.id)
+          .eq('id', existingContact.id)
       }
-      contactId = existing.id
+      contactId = existingContact.id
     } else {
       // ── 10. Insert new contact ──────────────────────────────────────────
       const metadata: Record<string, unknown> = {}
@@ -205,17 +239,21 @@ Deno.serve(async (req: Request) => {
           }
         })
 
-      await supabase.rpc('increment_campaign_stat', {
-        p_campaign_id: body.campaign_id,
-        p_field: 'registrations_referred',
-      })
+      if (!isExisting) {
+        await supabase.rpc('increment_campaign_stat', {
+          p_campaign_id: body.campaign_id,
+          p_field: 'registrations_referred',
+        })
+      }
     }
 
-    // ── 12. Increment public registration counter ────────────────────────
-    await supabase.rpc('increment_campaign_stat', {
-      p_campaign_id: body.campaign_id,
-      p_field: 'registrations_public',
-    })
+    // ── 12. Increment public registration counter (only for new contacts) ──
+    if (!isExisting) {
+      await supabase.rpc('increment_campaign_stat', {
+        p_campaign_id: body.campaign_id,
+        p_field: 'registrations_public',
+      })
+    }
 
     // ── 13. Record rate limit entry ──────────────────────────────────────
     await supabase
@@ -231,7 +269,7 @@ Deno.serve(async (req: Request) => {
       success: true,
       contact_id: contactId,
       referral_code: normalizedPhone,
-      is_existing: !!existing,
+      is_existing: isExisting,
     })
   } catch (err) {
     console.error('[public-register] Unhandled error:', err)
