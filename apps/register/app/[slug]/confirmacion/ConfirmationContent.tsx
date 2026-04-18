@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { CheckCircle, Users, Sparkles } from 'lucide-react'
+import { CheckCircle, Users } from 'lucide-react'
 import Link from 'next/link'
 import { ShareButton } from '@/components/ShareButton'
 
@@ -10,7 +10,6 @@ interface ConfirmationContentProps {
     primary_color: string
     referral_enabled: boolean
     title: string | null
-    registration_count?: number
   }
   referralLink: string
   slug: string
@@ -51,30 +50,6 @@ function Confetti({ primaryColor }: { primaryColor: string }) {
   )
 }
 
-function AnimatedNumber({ target }: { target: number }) {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    if (target <= 0) return
-    const duration = 1200
-    const steps = 30
-    const increment = target / steps
-    let current = 0
-    const timer = setInterval(() => {
-      current += increment
-      if (current >= target) {
-        setCount(target)
-        clearInterval(timer)
-      } else {
-        setCount(Math.floor(current))
-      }
-    }, duration / steps)
-    return () => clearInterval(timer)
-  }, [target])
-
-  return <span className="tabular-nums">{count.toLocaleString('es-CO')}</span>
-}
-
 export function ConfirmationContent({
   config,
   referralLink,
@@ -83,7 +58,6 @@ export function ConfirmationContent({
   code,
 }: ConfirmationContentProps) {
   const [showConfetti, setShowConfetti] = useState(false)
-  const registrationCount = config.registration_count ?? 0
 
   useEffect(() => {
     if (!isExisting) {
@@ -115,43 +89,11 @@ export function ConfirmationContent({
         {isExisting ? '¡Ya eras parte!' : '¡Bienvenido/a al movimiento!'}
       </h1>
 
-      {/* Person number */}
-      {registrationCount > 0 && !isExisting && (
-        <div className="animate-fade-in-up-delay-1">
-          <p className="text-lg text-slate-600 mb-1">
-            Eres la persona{' '}
-            <span className="font-bold" style={{ color: config.primary_color }}>
-              #<AnimatedNumber target={registrationCount} />
-            </span>
-            {' '}en unirse
-          </p>
-        </div>
-      )}
-
       <p className="text-slate-500 mb-6 animate-fade-in-up-delay-1">
         {isExisting
           ? 'Ya eres parte del equipo. Comparte tu enlace para sumar más personas.'
           : 'Gracias por unirte. Tu apoyo hace la diferencia.'}
       </p>
-
-      {/* Impact multiplier */}
-      {registrationCount > 0 && !isExisting && (
-        <div
-          className="rounded-xl p-4 mb-6 animate-fade-in-up-delay-2"
-          style={{ backgroundColor: `${config.primary_color}08` }}
-        >
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Sparkles className="w-4 h-4" style={{ color: config.primary_color }} />
-            <span className="text-sm font-semibold" style={{ color: config.primary_color }}>
-              Efecto multiplicador
-            </span>
-          </div>
-          <p className="text-sm text-slate-600">
-            Si cada uno de nosotros invita a 3 personas, seremos{' '}
-            <span className="font-bold">{(registrationCount * 3).toLocaleString('es-CO')}</span>
-          </p>
-        </div>
-      )}
 
       {/* Referral section */}
       {config.referral_enabled && code && (

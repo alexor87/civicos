@@ -135,7 +135,7 @@ export function PublicRegistrationForm({ config }: { config: RegistrationConfig 
           setError('Demasiados registros. Intenta más tarde.')
           return
         }
-        setError(data.debug ? `${data.error}: ${data.debug}` : (data.error || 'Error al registrarse. Intente de nuevo.'))
+        setError(data.error || 'Error al registrarse. Intente de nuevo.')
         return
       }
 

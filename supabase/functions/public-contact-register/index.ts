@@ -208,14 +208,14 @@ Deno.serve(async (req: Request) => {
       await supabase.rpc('increment_campaign_stat', {
         p_campaign_id: body.campaign_id,
         p_field: 'registrations_referred',
-      }).catch(() => {})
+      })
     }
 
     // ── 12. Increment public registration counter ────────────────────────
     await supabase.rpc('increment_campaign_stat', {
       p_campaign_id: body.campaign_id,
       p_field: 'registrations_public',
-    }).catch(() => {})
+    })
 
     // ── 13. Record rate limit entry ──────────────────────────────────────
     await supabase
