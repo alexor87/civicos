@@ -253,7 +253,7 @@ export function ContactFormWizard({ campaignId, initialData, contactId, initialL
 
     switch (stepDef.label) {
       case 'Datos básicos':
-        return <StepEssentials campaignId={campaignId} contactLevel={contactLevel} />
+        return <StepEssentials campaignId={campaignId} contactLevel={contactLevel} contactId={contactId} />
       case 'Ubicación':
         return <StepLocation contactLevel={contactLevel} />
       case 'Perfil político':

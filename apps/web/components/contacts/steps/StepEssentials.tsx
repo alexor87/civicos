@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -12,18 +15,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { StatusBigButtons } from '@/components/contacts/selectors/StatusBigButtons'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Merge, Loader2 } from 'lucide-react'
 import type { ContactForm, ContactLevel } from '@/lib/schemas/contact-form'
 
 interface Props {
   campaignId: string
   contactLevel?: ContactLevel
+  contactId?: string
 }
 
-export function StepEssentials({ campaignId, contactLevel = 'completo' }: Props) {
+export function StepEssentials({ campaignId, contactLevel = 'completo', contactId }: Props) {
+  const router = useRouter()
   const { register, setValue, watch, formState: { errors } } = useFormContext<ContactForm>()
   const [showExtra, setShowExtra] = useState(false)
-  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
+  const [duplicateContact, setDuplicateContact] = useState<{ id: string; name: string } | null>(null)
+  const [merging, setMerging] = useState(false)
 
   const isOpinion = contactLevel === 'opinion'
   const status = watch('status')
@@ -32,15 +38,51 @@ export function StepEssentials({ campaignId, contactLevel = 'completo' }: Props)
   const checkDuplicate = async (docNumber: string) => {
     if (!docNumber || !campaignId) return
     try {
-      const res = await fetch(`/api/contacts/check-duplicate?document_number=${encodeURIComponent(docNumber)}&campaign_id=${encodeURIComponent(campaignId)}`)
+      const params = new URLSearchParams({
+        document_number: docNumber,
+        campaign_id: campaignId,
+      })
+      if (contactId) params.set('exclude_id', contactId)
+
+      const res = await fetch(`/api/contacts/check-duplicate?${params}`)
       const data = await res.json()
       if (data.duplicate) {
-        setDuplicateWarning(`Ya existe: ${data.contact.first_name} ${data.contact.last_name}`)
+        setDuplicateContact({
+          id: data.contact.id,
+          name: `${data.contact.first_name} ${data.contact.last_name}`,
+        })
       } else {
-        setDuplicateWarning(null)
+        setDuplicateContact(null)
       }
     } catch {
       // Silently ignore
+    }
+  }
+
+  const handleMerge = async () => {
+    if (!duplicateContact || !contactId) return
+    setMerging(true)
+    try {
+      const res = await fetch('/api/contacts/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceId: contactId,
+          targetId: duplicateContact.id,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data.mergedId) {
+        toast.success('Contactos fusionados correctamente')
+        router.push(`/dashboard/contacts/${data.mergedId}`)
+        router.refresh()
+      } else {
+        toast.error('Error al fusionar los contactos')
+      }
+    } catch {
+      toast.error('Error de conexión')
+    } finally {
+      setMerging(false)
     }
   }
 
@@ -98,8 +140,29 @@ export function StepEssentials({ campaignId, contactLevel = 'completo' }: Props)
             }}
           />
           {errors.document_number && <p className="text-xs text-red-500">{errors.document_number.message}</p>}
-          {duplicateWarning && (
-            <p className="text-xs text-amber-600 font-medium">{duplicateWarning}</p>
+          {duplicateContact && (
+            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm text-amber-800">
+                Ya existe <span className="font-semibold">{duplicateContact.name}</span> con esta cédula.
+              </p>
+              {contactId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100"
+                  onClick={handleMerge}
+                  disabled={merging}
+                >
+                  {merging ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Merge className="h-3.5 w-3.5" />
+                  )}
+                  Fusionar contactos
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
