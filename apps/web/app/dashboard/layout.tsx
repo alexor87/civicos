@@ -146,6 +146,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             avatarUrl={profile.avatar_url}
             campaigns={allCampaigns}
             activeCampaignId={activeCampaignId}
+            userId={user.id}
+            notificationsEnabled={profile.preferences?.notifications?.enabled !== false}
           />
           <main className="flex-1 overflow-auto bg-background relative">
             <DemoCoachMarks tenantId={profile.tenant_id} />

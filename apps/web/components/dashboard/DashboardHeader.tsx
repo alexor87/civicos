@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Bell, Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut, Settings, Menu } from 'lucide-react'
+import { Search, Building2, User, MapPin, Plus, ChevronDown, Check, LogOut, Settings, Menu } from 'lucide-react'
+import { NotificationCenter } from '@/components/dashboard/NotificationCenter'
 import { useSidebar } from '@/components/dashboard/SidebarContext'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -53,9 +54,11 @@ interface Props {
   avatarUrl?: string | null
   campaigns?: { id: string; name: string }[]
   activeCampaignId?: string
+  userId?: string
+  notificationsEnabled?: boolean
 }
 
-export function DashboardHeader({ campaignName, userFullName, userInitials, userRole, avatarUrl, campaigns = [], activeCampaignId }: Props) {
+export function DashboardHeader({ campaignName, userFullName, userInitials, userRole, avatarUrl, campaigns = [], activeCampaignId, userId, notificationsEnabled = true }: Props) {
   const pathname  = usePathname()
   const router    = useRouter()
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -296,10 +299,9 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
         )}
 
         <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-3 md:pl-6">
-          <button className="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
-          </button>
+          {userId && (
+            <NotificationCenter userId={userId} notificationsEnabled={notificationsEnabled} />
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-3 md:ml-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
