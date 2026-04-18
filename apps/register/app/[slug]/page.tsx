@@ -46,7 +46,6 @@ export default async function RegistrationPage({ params }: PageProps) {
               title={config.title}
               welcomeText={config.welcome_text}
               primaryColor={config.primary_color}
-              registrationCount={config.registration_count ?? 0}
             />
 
             <PublicRegistrationForm config={config} />
