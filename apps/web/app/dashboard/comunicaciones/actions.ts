@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
+import { buildResendFrom } from '@/lib/email/build-resend-from'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
@@ -160,9 +161,7 @@ export async function sendCampaign(campaignId: string) {
   }
 
   const resend = new Resend(resendApiKey)
-  const fromAddress = integrationConfig?.resend_domain
-    ? `noreply@${integrationConfig.resend_domain}`
-    : (process.env.EMAIL_FROM ?? 'noreply@scrutix.app')
+  const fromAddress = buildResendFrom(integrationConfig ?? {}, process.env.EMAIL_FROM)
 
   let sent = 0
   let failed = 0
@@ -237,9 +236,7 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
   }
 
   const resend = new Resend(resendApiKey)
-  const fromAddress = integrationConfig?.resend_domain
-    ? `noreply@${integrationConfig.resend_domain}`
-    : (process.env.EMAIL_FROM ?? 'noreply@scrutix.app')
+  const fromAddress = buildResendFrom(integrationConfig ?? {}, process.env.EMAIL_FROM)
 
   try {
     await resend.emails.send({

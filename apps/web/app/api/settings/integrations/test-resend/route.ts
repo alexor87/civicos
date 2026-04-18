@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
+import { buildResendFrom } from '@/lib/email/build-resend-from'
 
 export async function POST() {
   const supabase = await createClient()
@@ -44,7 +45,7 @@ export async function POST() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `test@${config.resend_domain}`,
+        from: buildResendFrom(config),
         to: user.email,
         subject: 'Scrutix — Prueba de conexión',
         text: 'Esta es una prueba de conexión exitosa con Resend desde Scrutix.',

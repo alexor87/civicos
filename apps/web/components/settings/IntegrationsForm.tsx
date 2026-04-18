@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Mail, MessageSquare, Brain, ChevronDown, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Circle, Trash2 } from 'lucide-react'
+import { Mail, MessageSquare, Brain, ChevronDown, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Circle, Trash2, Globe, ExternalLink } from 'lucide-react'
 
 interface IntegrationConfig {
   id:                     string
@@ -17,6 +17,8 @@ interface IntegrationConfig {
   resend_api_key:         string | null
   resend_api_key_hint:    string | null
   resend_domain:          string | null
+  resend_from_name:       string | null
+  resend_from_email:      string | null
   twilio_sid:             string | null
   twilio_token:           string | null
   twilio_token_hint:      string | null
@@ -310,12 +312,15 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
   const config = integrationConfig
 
   // Resend state
-  const [resendApiKey,  setResendApiKey]  = useState('')
-  const [resendDomain,  setResendDomain]  = useState(config?.resend_domain  ?? '')
-  const [showResendKey, setShowResendKey] = useState(false)
-  const [savingResend,  setSavingResend]  = useState(false)
-  const [testingResend, setTestingResend] = useState(false)
-  const [resendOpen,    setResendOpen]    = useState(false)
+  const [resendApiKey,    setResendApiKey]    = useState('')
+  const [resendDomain,    setResendDomain]    = useState(config?.resend_domain    ?? '')
+  const [resendFromName,  setResendFromName]  = useState(config?.resend_from_name  ?? '')
+  const [resendFromEmail, setResendFromEmail] = useState(config?.resend_from_email ?? '')
+  const [showResendKey,   setShowResendKey]   = useState(false)
+  const [savingResend,    setSavingResend]    = useState(false)
+  const [testingResend,   setTestingResend]   = useState(false)
+  const [resendOpen,      setResendOpen]      = useState(false)
+  const [domainError,     setDomainError]     = useState('')
 
   // Twilio state
   const [twilioSid,     setTwilioSid]     = useState(config?.twilio_sid     ?? '')
@@ -349,11 +354,55 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
     ? 'connected'
     : (whatsappFrom.trim() ? 'unverified' : 'unconfigured')
 
+  // ── Domain / email validation ───────────────────────────────────────────
+  const isFullEmail = resendDomain.includes('@')
+
+  const validateDomainOrEmail = (value: string): boolean => {
+    if (!value.trim()) { setDomainError(''); return true }
+    if (value.includes('@')) {
+      // Validate as email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(value.trim())) {
+        setDomainError('Email inválido. Ej: tu@email.com')
+        return false
+      }
+      setDomainError('')
+      return true
+    }
+    // Support international domain names (IDN) — allow Unicode letters
+    const domainRegex = /^[\p{L}\p{N}][\p{L}\p{N}-]*[\p{L}\p{N}]?(\.\p{L}{2,})+$/u
+    if (!domainRegex.test(value.trim())) {
+      setDomainError('Dominio inválido. Ej: tucampaña.com')
+      return false
+    }
+    setDomainError('')
+    return true
+  }
+
+  const handleDomainChange = (value: string) => {
+    setResendDomain(value)
+    if (value.trim()) validateDomainOrEmail(value)
+    else setDomainError('')
+  }
+
+  // ── Email preview ─────────────────────────────────────────────────────
+  const emailPreview = resendDomain.trim()
+    ? isFullEmail
+      ? resendDomain.trim()
+      : `${resendFromEmail.trim() || 'contacto'}@${resendDomain.trim()}`
+    : null
+  const fromPreview = resendFromName.trim() && emailPreview
+    ? `${resendFromName.trim()} <${emailPreview}>`
+    : emailPreview
+
   // ── Save handlers ──────────────────────────────────────────────────────
   const saveResend = async () => {
+    if (resendDomain.trim() && !validateDomainOrEmail(resendDomain)) return
     setSavingResend(true)
     const payload: Record<string, unknown> = {
-      resend_domain: resendDomain || null,
+      resend_domain:     resendDomain     || null,
+      resend_from_name:  resendFromName   || null,
+      resend_from_email: resendFromEmail  || null,
     }
     if (resendApiKey) {
       payload.resend_api_key = resendApiKey
@@ -469,7 +518,7 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
               <Mail className="h-5 w-5 text-slate-500" />
               <div>
                 <p className="text-sm font-semibold text-slate-900">Email — Resend</p>
-                {resendDomain && <p className="text-xs text-slate-500 mt-0.5">Dominio: {resendDomain}</p>}
+                {fromPreview && <p className="text-xs text-slate-500 mt-0.5">{fromPreview}</p>}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -479,13 +528,42 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
           </div>
         </CardHeader>
         {resendOpen && (
-          <CardContent className="border-t border-slate-100 pt-4 space-y-4">
+          <CardContent className="border-t border-slate-100 pt-4 space-y-5">
+            {/* Step-by-step guide */}
+            <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 space-y-2">
+              <p className="text-xs font-semibold text-blue-900">Configuración en 3 pasos:</p>
+              <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+                <li>
+                  Crea una cuenta en{' '}
+                  <a href="https://resend.com/signup" target="_blank" rel="noreferrer" className="font-medium underline inline-flex items-center gap-0.5">
+                    resend.com<ExternalLink className="h-3 w-3" />
+                  </a>
+                </li>
+                <li>
+                  Agrega y verifica tu dominio en{' '}
+                  <a href="https://resend.com/domains" target="_blank" rel="noreferrer" className="font-medium underline inline-flex items-center gap-0.5">
+                    Domains<ExternalLink className="h-3 w-3" />
+                  </a>
+                  {' '}(requiere acceso a DNS)
+                </li>
+                <li>
+                  Copia tu API key desde{' '}
+                  <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer" className="font-medium underline inline-flex items-center gap-0.5">
+                    API Keys<ExternalLink className="h-3 w-3" />
+                  </a>
+                  {' '}y pégala abajo
+                </li>
+              </ol>
+            </div>
+
             {config?.resend_api_key_hint && (
               <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
-                <span>API Key: <code className="font-mono">{config.resend_api_key_hint}</code></span>
+                <span>API Key guardada: <code className="font-mono">{config.resend_api_key_hint}</code></span>
                 <CheckCircle className="h-3 w-3 text-emerald-500" />
               </div>
             )}
+
+            {/* API Key */}
             <div className="space-y-1.5">
               <Label htmlFor="resend_api_key">API Key</Label>
               <div className="relative">
@@ -507,26 +585,82 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Tu API key se encripta antes de guardarla. Encuéntrala en{' '}
-                <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                  resend.com/api-keys
-                </a>
+                Tu API key se encripta antes de guardarla.
               </p>
             </div>
+
+            {/* Domain or Email */}
             <div className="space-y-1.5">
-              <Label htmlFor="resend_domain">Dominio verificado</Label>
+              <Label htmlFor="resend_domain">Dominio o email verificado</Label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  id="resend_domain"
+                  value={resendDomain}
+                  onChange={e => handleDomainChange(e.target.value)}
+                  placeholder="tucampaña.com o tu@email.com"
+                  className={`pl-9 ${domainError ? 'border-red-300 focus-visible:ring-red-200' : ''}`}
+                />
+              </div>
+              {domainError ? (
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />{domainError}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {isFullEmail
+                    ? 'Email verificado en Resend (cuenta gratuita).'
+                    : 'El dominio que verificaste en Resend. Ej: tucampaña.com'}
+                </p>
+              )}
+            </div>
+
+            {/* From Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="resend_from_name">Nombre del remitente</Label>
               <Input
-                id="resend_domain"
-                value={resendDomain}
-                onChange={e => setResendDomain(e.target.value)}
-                placeholder="Ej: campaña.com"
+                id="resend_from_name"
+                value={resendFromName}
+                onChange={e => setResendFromName(e.target.value)}
+                placeholder="Ej: Campaña Juan Esteban"
               />
               <p className="text-xs text-muted-foreground">
-                El dominio desde el que se envían los emails.
+                El nombre que verán los destinatarios en su bandeja de entrada.
               </p>
             </div>
+
+            {/* From Email prefix — only shown for custom domains */}
+            {!isFullEmail && (
+            <div className="space-y-1.5">
+              <Label htmlFor="resend_from_email">Email de envío</Label>
+              <div className="flex items-center gap-0">
+                <Input
+                  id="resend_from_email"
+                  value={resendFromEmail}
+                  onChange={e => setResendFromEmail(e.target.value.replace(/[@\s]/g, ''))}
+                  placeholder="contacto"
+                  className="rounded-r-none border-r-0"
+                />
+                <div className="flex items-center px-3 h-9 bg-slate-100 border border-slate-200 rounded-r-md text-sm text-slate-500 whitespace-nowrap">
+                  @{resendDomain.trim() || 'tudominio.com'}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                La dirección desde la que se envían los emails. Ej: contacto, info, noreply.
+              </p>
+            </div>
+            )}
+
+            {/* Email preview */}
+            {fromPreview && (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+                <p className="text-xs font-medium text-slate-500 mb-1">Vista previa del remitente:</p>
+                <p className="text-sm text-slate-900 font-mono">{fromPreview}</p>
+              </div>
+            )}
+
             <div className="flex gap-2">
-              <Button size="sm" onClick={saveResend} disabled={savingResend}>
+              <Button size="sm" onClick={saveResend} disabled={savingResend || !!domainError}>
                 {savingResend && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {savingResend ? 'Guardando…' : 'Guardar'}
               </Button>
