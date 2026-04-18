@@ -43,40 +43,92 @@ function setupAuth(role: string) {
   mockUserSupabase.from = vi.fn().mockReturnValue(profileChain)
 }
 
-// Setup admin mock for upsert-based import (no pre-loading of existing contacts)
-function setupAdmin(insertedCount?: number) {
-  mockAdminSupabase.from = vi.fn().mockImplementation(() => {
+// Setup admin mock for the new pre-check + insert approach
+// existingContacts: contacts already in DB (matched by document_number)
+// insertFails: whether insert should fail with 23505
+function setupAdmin(opts?: {
+  existingContacts?: Record<string, unknown>[]
+  insertResult?: unknown[]
+  insertError?: { code: string; message: string } | null
+}) {
+  const { existingContacts = [], insertResult, insertError } = opts ?? {}
+
+  mockAdminSupabase.from = vi.fn().mockImplementation((table: string) => {
+    if (table !== 'contacts') return {}
+
     const chain: Record<string, unknown> = {}
+
+    // For select queries (pre-check by document_number)
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
-    chain.upsert = vi.fn().mockImplementation((batch: unknown[]) => {
-      // Simulate: insertedCount rows actually inserted, rest were duplicates
-      const actualInserted = insertedCount !== undefined
-        ? batch.slice(0, insertedCount)
-        : batch
-      return {
-        select: vi.fn().mockResolvedValue({ data: actualInserted.map(() => ({ id: 'new-id' })), error: null }),
-      }
+    chain.is = vi.fn().mockReturnValue(chain)
+    chain.in = vi.fn().mockResolvedValue({ data: existingContacts })
+    chain.or = vi.fn().mockReturnValue(chain)
+    chain.limit = vi.fn().mockReturnValue(chain)
+    chain.single = vi.fn().mockResolvedValue({ data: null })
+
+    // For insert (new contacts)
+    chain.insert = vi.fn().mockImplementation((batch: unknown[]) => ({
+      select: vi.fn().mockResolvedValue({
+        data: insertError ? null : (insertResult ?? batch.map(() => ({ id: 'new-id' }))),
+        error: insertError ?? null,
+      }),
+    }))
+
+    // For update (merge)
+    chain.update = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
     })
+
     return chain
   })
 }
 
-function setupAdminCapture(): { getInserted: () => unknown[] } {
+// Capture what gets inserted
+function setupAdminCapture(): {
+  getInserted: () => unknown[]
+  getMergeUpdates: () => unknown[]
+} {
   let insertedBatch: unknown[] = []
-  mockAdminSupabase.from = vi.fn().mockImplementation(() => {
+  const mergeUpdates: unknown[] = []
+
+  mockAdminSupabase.from = vi.fn().mockImplementation((table: string) => {
+    if (table !== 'contacts') return {}
+
     const chain: Record<string, unknown> = {}
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
-    chain.upsert = vi.fn().mockImplementation((batch: unknown[]) => {
+    chain.is = vi.fn().mockReturnValue(chain)
+    chain.in = vi.fn().mockResolvedValue({ data: [] }) // no existing contacts
+
+    chain.insert = vi.fn().mockImplementation((batch: unknown[]) => {
       insertedBatch = batch
       return {
-        select: vi.fn().mockResolvedValue({ data: batch.map(() => ({ id: 'new-id' })), error: null }),
+        select: vi.fn().mockResolvedValue({
+          data: batch.map(() => ({ id: 'new-id' })),
+          error: null,
+        }),
       }
     })
+
+    chain.update = vi.fn().mockImplementation((data: unknown) => {
+      mergeUpdates.push(data)
+      return {
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      }
+    })
+
     return chain
   })
-  return { getInserted: () => insertedBatch }
+
+  return {
+    getInserted: () => insertedBatch,
+    getMergeUpdates: () => mergeUpdates,
+  }
 }
 
 describe('POST /api/import/contacts', () => {
@@ -132,32 +184,121 @@ describe('POST /api/import/contacts', () => {
     expect(json.imported).toBe(0)
   })
 
-  // ── Deduplication (now handled by DB via ON CONFLICT DO NOTHING) ──────
+  // ── Deduplication via pre-check + merge ────────────────────────────────
 
-  it('reports skipped count when DB deduplicates via ON CONFLICT', async () => {
+  it('merges when imported contact has same document_number as existing', async () => {
     setupAuth('campaign_manager')
-    // Simulate: 2 rows sent, only 1 actually inserted (1 was a duplicate)
-    setupAdmin(1)
+
+    const existingContact = {
+      id: 'existing-1',
+      first_name: 'Juan',
+      last_name: 'García',
+      phone: '3101234567',
+      email: null,
+      document_number: '123456',
+      contact_level: 'opinion',
+      tags: ['tag1'],
+      metadata: {},
+      notes: null,
+    }
+
+    // Mock: first from('contacts') call = select for pre-check, returns existing
+    // subsequent calls = insert for new contacts
+    let callCount = 0
+    mockAdminSupabase.from = vi.fn().mockImplementation(() => {
+      callCount++
+      const chain: Record<string, unknown> = {}
+      chain.select = vi.fn().mockReturnValue(chain)
+      chain.eq = vi.fn().mockReturnValue(chain)
+      chain.is = vi.fn().mockReturnValue(chain)
+      chain.in = vi.fn().mockResolvedValue({ data: [existingContact] })
+      chain.update = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      })
+      chain.insert = vi.fn().mockImplementation((batch: unknown[]) => ({
+        select: vi.fn().mockResolvedValue({
+          data: batch.map(() => ({ id: 'new-id' })),
+          error: null,
+        }),
+      }))
+      return chain
+    })
+
     const rows = [
-      { first_name: 'Juan', last_name: 'García', email: 'juan@example.com' },
-      { first_name: 'María', last_name: 'López', email: 'dup@example.com' },
+      {
+        first_name: 'Juan', last_name: 'García',
+        document_number: '123456',
+        email: 'juan@test.com',
+        contact_level: 'completo',
+      },
     ]
-    const res = await POST(makeRequest({ rows }))
+    const res = await POST(makeRequest({ rows, preMapped: true }))
     const json = await res.json()
-    expect(json.imported).toBe(1)
-    expect(json.skipped).toBe(1)
+
+    expect(json.merged).toBe(1)
+    expect(json.imported).toBe(0)
+    expect(json.skipped).toBe(0)
   })
 
-  it('uses upsert with ignoreDuplicates instead of loading all contacts into memory', async () => {
+  it('inserts new contacts without document_number normally', async () => {
     setupAuth('campaign_manager')
     setupAdmin()
+
     const rows = [
-      { first_name: 'Ana', last_name: 'Pérez', email: 'ana@example.com' },
+      { first_name: 'Ana', last_name: 'Pérez', email: 'ana@test.com' },
     ]
-    await POST(makeRequest({ rows }))
-    // Verify upsert was called (not insert)
-    const fromCall = mockAdminSupabase.from.mock.results[0]?.value
-    expect(fromCall.upsert).toHaveBeenCalled()
+    const res = await POST(makeRequest({ rows, preMapped: true }))
+    const json = await res.json()
+    expect(json.imported).toBe(1)
+    expect(json.merged).toBe(0)
+  })
+
+  it('reports skippedDetails when insert fails due to phone/email collision', async () => {
+    setupAuth('campaign_manager')
+
+    const blocker = {
+      id: 'blocker-1',
+      first_name: 'María',
+      last_name: 'López',
+      phone: '3109999999',
+      email: null,
+    }
+
+    let callCount = 0
+    mockAdminSupabase.from = vi.fn().mockImplementation(() => {
+      callCount++
+      const chain: Record<string, unknown> = {}
+      chain.select = vi.fn().mockReturnValue(chain)
+      chain.eq = vi.fn().mockReturnValue(chain)
+      chain.is = vi.fn().mockReturnValue(chain)
+      chain.in = vi.fn().mockResolvedValue({ data: [] }) // no doc duplicates
+      chain.or = vi.fn().mockReturnValue(chain)
+      chain.limit = vi.fn().mockReturnValue(chain)
+      chain.single = vi.fn().mockResolvedValue({ data: blocker })
+
+      // First insert (batch) fails with 23505
+      chain.insert = vi.fn().mockImplementation((batch: unknown[]) => ({
+        select: vi.fn().mockResolvedValue({
+          data: null,
+          error: { code: '23505', message: 'duplicate key' },
+        }),
+      }))
+
+      return chain
+    })
+
+    const rows = [
+      { first_name: 'Carlos', last_name: 'Gómez', phone: '3109999999' },
+    ]
+    const res = await POST(makeRequest({ rows, preMapped: true }))
+    const json = await res.json()
+
+    expect(json.skipped).toBe(1)
+    expect(json.skippedDetails).toHaveLength(1)
+    expect(json.skippedDetails[0].name).toBe('Carlos Gómez')
+    expect(json.skippedDetails[0].reason).toContain('María López')
   })
 
   // ── Status normalization ───────────────────────────────────────────────
@@ -357,5 +498,18 @@ describe('POST /api/import/contacts', () => {
     expect(inserted.first_name).toBe('Ana')
     expect(inserted.district).toBe('Centro')
     expect(inserted.voting_place).toBe('Coliseo')
+  })
+
+  // ── Response format ────────────────────────────────────────────────────
+
+  it('returns merged count and skippedDetails in response', async () => {
+    setupAuth('campaign_manager')
+    setupAdmin()
+    const rows = [{ first_name: 'Ana', last_name: 'Pérez' }]
+    const res = await POST(makeRequest({ rows }))
+    const json = await res.json()
+    expect(json).toHaveProperty('merged')
+    expect(json).toHaveProperty('skippedDetails')
+    expect(Array.isArray(json.skippedDetails)).toBe(true)
   })
 })

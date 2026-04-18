@@ -116,9 +116,18 @@ function autoMap(headers: string[]): Record<string, string | null> {
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+interface SkippedDetail {
+  row: number
+  name: string
+  reason: string
+  blockingContact?: string
+}
+
 interface ImportResult {
   imported: number
+  merged: number
   skipped: number
+  skippedDetails: SkippedDetail[]
   errors: string[]
 }
 
@@ -485,10 +494,37 @@ export default function ImportContactsPage() {
               <div>
                 <p className="text-sm font-medium">Importación completada</p>
                 <p className="text-sm mt-1">
-                  {result.imported} contactos importados · {result.skipped} omitidos (duplicados)
+                  {result.imported} contactos importados
+                  {result.merged > 0 && ` · ${result.merged} fusionados`}
+                  {result.skipped > 0 && ` · ${result.skipped} omitidos`}
                 </p>
               </div>
             </div>
+            {result.skippedDetails?.length > 0 && (
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs font-medium text-amber-700 mb-2">
+                  Contactos omitidos ({result.skippedDetails.length}):
+                </p>
+                <div className="border rounded overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-amber-100/50">
+                        <th className="text-left px-3 py-1.5 font-medium text-amber-800">Contacto</th>
+                        <th className="text-left px-3 py-1.5 font-medium text-amber-800">Razón</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.skippedDetails.slice(0, 20).map((d, i) => (
+                        <tr key={i} className="border-t border-amber-200">
+                          <td className="px-3 py-1.5 text-amber-900">{d.name}</td>
+                          <td className="px-3 py-1.5 text-amber-700">{d.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             {result.errors.length > 0 && (
               <div className="p-3 bg-orange-50 rounded-lg">
                 <p className="text-xs font-medium text-orange-700 mb-1">Errores ({result.errors.length}):</p>

@@ -62,6 +62,74 @@ const HEADER_ALIASES: Record<string, string> = {
   etiquetas: 'tags', tags: 'tags',
 }
 
+// ── Merge logic (shared with /api/contacts/merge) ───────────────────────────
+
+const LEVEL_ORDER: Record<string, number> = { anonimo: 0, opinion: 1, completo: 2 }
+
+const MERGE_FIELDS = [
+  'first_name', 'last_name', 'phone', 'email',
+  'document_type', 'document_number',
+  'address', 'department', 'municipality', 'commune',
+  'district', 'city',
+  'voting_place', 'voting_table',
+  'birth_date', 'gender',
+  'location_lat', 'location_lng', 'geocoding_status',
+] as const
+
+interface SkippedDetail {
+  row: number
+  name: string
+  reason: string
+  blockingContact?: string
+}
+
+function buildMergeUpdate(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): Record<string, unknown> {
+  const updateObj: Record<string, unknown> = {}
+
+  for (const field of MERGE_FIELDS) {
+    const targetVal = target[field]
+    const sourceVal = source[field]
+    if (!targetVal && sourceVal) {
+      updateObj[field] = sourceVal
+    }
+  }
+
+  // contact_level: keep the higher one
+  const targetLevel = LEVEL_ORDER[target.contact_level as string] ?? 0
+  const sourceLevel = LEVEL_ORDER[source.contact_level as string] ?? 0
+  if (sourceLevel > targetLevel) {
+    updateObj.contact_level = source.contact_level
+  }
+
+  // tags: union without duplicates
+  const targetTags: string[] = (target.tags as string[]) ?? []
+  const sourceTags: string[] = (source.tags as string[]) ?? []
+  const mergedTags = [...new Set([...targetTags, ...sourceTags])]
+  if (mergedTags.length > targetTags.length) {
+    updateObj.tags = mergedTags
+  }
+
+  // metadata: deep merge (source as base, target overwrites)
+  const sourceMetadata = (source.metadata ?? {}) as Record<string, unknown>
+  const targetMetadata = (target.metadata ?? {}) as Record<string, unknown>
+  const mergedMetadata = { ...sourceMetadata, ...targetMetadata }
+  if (Object.keys(mergedMetadata).length > Object.keys(targetMetadata).length) {
+    updateObj.metadata = mergedMetadata
+  }
+
+  // notes: concatenate if both have content
+  if (source.notes && target.notes && source.notes !== target.notes) {
+    updateObj.notes = `${target.notes}\n---\n${source.notes}`
+  } else if (source.notes && !target.notes) {
+    updateObj.notes = source.notes
+  }
+
+  return updateObj
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 type NormalizedRow = Record<string, string | undefined>
@@ -239,37 +307,127 @@ export async function POST(request: NextRequest) {
     contactsToInsert.push(contact)
   }
 
-  // Batch insert with ON CONFLICT DO NOTHING (dedup handled by DB unique indexes)
+  // Pre-check for duplicates by document_number, then insert or merge
   const allInserted: { id: string; address?: string; municipality?: string; department?: string }[] = []
+  let mergedCount = 0
+  const skippedDetails: SkippedDetail[] = []
 
-  for (let i = 0; i < contactsToInsert.length; i += BATCH_SIZE) {
-    const batch = contactsToInsert.slice(i, i + BATCH_SIZE)
-    const batchSize = batch.length
+  // 1. Batch-load existing contacts by document_number for this campaign
+  const docNumbers = contactsToInsert
+    .map(c => c.document_number as string)
+    .filter(Boolean)
+
+  const existingByDoc = new Map<string, Record<string, unknown>>()
+  if (docNumbers.length > 0) {
+    // Query in chunks of 500 to avoid URL length limits
+    for (let i = 0; i < docNumbers.length; i += 500) {
+      const chunk = docNumbers.slice(i, i + 500)
+      const { data: existing } = await adminSupabase
+        .from('contacts')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .is('deleted_at', null)
+        .in('document_number', chunk)
+
+      if (existing) {
+        for (const c of existing) {
+          existingByDoc.set(c.document_number as string, c)
+        }
+      }
+    }
+  }
+
+  // 2. Process each contact: merge if duplicate doc, insert if new
+  const toInsert: Record<string, unknown>[] = []
+  const toInsertIndexes: number[] = [] // track original row index for error reporting
+
+  for (let idx = 0; idx < contactsToInsert.length; idx++) {
+    const contact = contactsToInsert[idx]
+    const docNum = contact.document_number as string | null
+
+    if (docNum && existingByDoc.has(docNum)) {
+      // Merge: existing contact wins, import data fills gaps
+      const existing = existingByDoc.get(docNum)!
+      const mergeUpdate = buildMergeUpdate(existing, contact)
+
+      if (Object.keys(mergeUpdate).length > 0) {
+        const { error: mergeErr } = await adminSupabase
+          .from('contacts')
+          .update(mergeUpdate)
+          .eq('id', existing.id as string)
+          .eq('campaign_id', campaignId)
+
+        if (mergeErr) {
+          errors.push(`Fila ${idx + 2}: error al fusionar con ${existing.first_name} ${existing.last_name}`)
+          continue
+        }
+      }
+      mergedCount++
+      continue
+    }
+
+    toInsert.push(contact)
+    toInsertIndexes.push(idx)
+  }
+
+  // 3. Batch insert new contacts
+  for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
+    const batch = toInsert.slice(i, i + BATCH_SIZE)
+    const batchIndexes = toInsertIndexes.slice(i, i + BATCH_SIZE)
 
     const { data: insertedData, error } = await adminSupabase
       .from('contacts')
-      .upsert(batch, {
-        onConflict: 'campaign_id,document_number',
-        ignoreDuplicates: true,
-      })
+      .insert(batch)
       .select('id, address, municipality, department')
 
     if (error) {
-      // Handle unique constraint violations on email/phone
-      // These come as PostgreSQL error code 23505
       if (error.code === '23505') {
-        // Fallback: insert one by one to identify which rows are duplicates
-        for (const row of batch) {
+        // Insert one by one to identify which rows conflict
+        for (let j = 0; j < batch.length; j++) {
+          const row = batch[j]
+          const rowIdx = batchIndexes[j]
           const { data: singleInsert, error: singleErr } = await adminSupabase
             .from('contacts')
-            .upsert([row], {
-              onConflict: 'campaign_id,document_number',
-              ignoreDuplicates: true,
-            })
+            .insert([row])
             .select('id, address, municipality, department')
 
           if (singleErr) {
             skippedCount++
+            const rowName = `${row.first_name} ${row.last_name}`
+            // Try to find what's blocking
+            let reason = 'Dato duplicado'
+            let blockingName: string | undefined
+            const phone = row.phone as string | null
+            const email = row.email as string | null
+
+            if (phone || email) {
+              const orParts: string[] = []
+              if (phone) orParts.push(`phone.eq.${phone}`)
+              if (email) orParts.push(`email.eq.${email}`)
+              const { data: blocker } = await adminSupabase
+                .from('contacts')
+                .select('id, first_name, last_name, phone, email')
+                .eq('campaign_id', campaignId)
+                .is('deleted_at', null)
+                .or(orParts.join(','))
+                .limit(1)
+                .single()
+
+              if (blocker) {
+                blockingName = `${blocker.first_name} ${blocker.last_name}`
+                if (phone && blocker.phone === phone) {
+                  reason = `Mismo teléfono que ${blockingName}`
+                } else if (email && blocker.email === email) {
+                  reason = `Mismo correo que ${blockingName}`
+                }
+              }
+            }
+            skippedDetails.push({
+              row: rowIdx + 2,
+              name: rowName,
+              reason,
+              blockingContact: blockingName,
+            })
           } else if (singleInsert?.length) {
             importedCount++
             allInserted.push(...singleInsert)
@@ -281,9 +439,7 @@ export async function POST(request: NextRequest) {
         errors.push(`Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`)
       }
     } else {
-      const insertedCount = insertedData?.length ?? 0
-      importedCount += insertedCount
-      skippedCount += batchSize - insertedCount
+      importedCount += insertedData?.length ?? 0
       if (insertedData) allInserted.push(...insertedData)
     }
   }
@@ -296,7 +452,9 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     imported: importedCount,
+    merged: mergedCount,
     skipped: skippedCount,
+    skippedDetails: skippedDetails.slice(0, 50),
     errors: errors.slice(0, 20),
   })
 }
