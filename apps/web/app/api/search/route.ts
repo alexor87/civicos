@@ -20,16 +20,23 @@ export async function GET(request: Request) {
   const campaignId = profile?.campaign_ids?.[0]
   if (!campaignId) return NextResponse.json({ contacts: [], territories: [] })
 
-  const like = `%${q}%`
+  let contactsQuery = supabase
+    .from('contacts')
+    .select('id, first_name, last_name, email, phone, document_number, city')
+    .eq('campaign_id', campaignId)
+    .is('deleted_at', null)
+
+  if (q.length <= 2) {
+    const like = `${q}%`
+    contactsQuery = contactsQuery.or(
+      `first_name.ilike.${like},last_name.ilike.${like},document_number.ilike.${like},phone.ilike.%${q}%`
+    )
+  } else {
+    contactsQuery = contactsQuery.textSearch('search_vec', `'${q.replace(/'/g, "''")}'`, { type: 'websearch', config: 'spanish' })
+  }
 
   const [contactsRes, territoriesRes] = await Promise.all([
-    supabase
-      .from('contacts')
-      .select('id, first_name, last_name, email, phone')
-      .eq('campaign_id', campaignId)
-      .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
-      .is('deleted_at', null)
-      .limit(5),
+    contactsQuery.limit(5),
     supabase
       .from('territories')
       .select('id, name')

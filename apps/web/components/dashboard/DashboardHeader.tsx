@@ -203,8 +203,10 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
                         <p className="text-sm font-medium text-[#1b1f23] truncate">
                           {c.first_name} {c.last_name}
                         </p>
-                        {(c.email || c.phone) && (
-                          <p className="text-xs text-[#6a737d] truncate">{c.email ?? c.phone}</p>
+                        {(c.email || c.phone || c.document_number || c.city) && (
+                          <p className="text-xs text-[#6a737d] truncate">
+                            {c.email ?? c.phone ?? (c.document_number ? `Doc: ${c.document_number}` : c.city)}
+                          </p>
                         )}
                       </div>
                     </button>
