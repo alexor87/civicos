@@ -465,7 +465,7 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
       const res = await fetch('/api/settings/integrations/test-resend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ campaign_id: campaignId }),
       })
       if (res.ok) toast.success('Conexión con Resend verificada')
       else {

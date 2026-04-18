@@ -4,10 +4,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
 import { buildResendFrom } from '@/lib/email/build-resend-from'
 
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const body = await request.json().catch(() => ({}))
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -16,7 +18,7 @@ export async function POST() {
     .single()
 
   const tenantId = profile?.tenant_id
-  const campaignId = profile?.campaign_ids?.[0] ?? null
+  const campaignId = body.campaign_id ?? profile?.campaign_ids?.[0] ?? null
   if (!tenantId) return NextResponse.json({ error: 'Sin tenant' }, { status: 400 })
 
   const adminSupabase = createAdminClient()
