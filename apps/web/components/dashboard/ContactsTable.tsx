@@ -230,6 +230,33 @@ export function ContactsTable({
           </Button>
         </div>
 
+        {/* Top Pagination */}
+        {(hasPrev || hasMore) && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500">
+              Mostrando {contacts.length} contactos de {estimatedTotal.toLocaleString()}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline" size="sm"
+                disabled={!hasPrev || isPending}
+                onClick={() => prevCursor && navigateCursor(prevCursor, 'prev')}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Anterior
+              </Button>
+              <Button
+                variant="outline" size="sm"
+                disabled={!hasMore || isPending}
+                onClick={() => nextCursor && navigateCursor(nextCursor, 'next')}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
           <Table>
