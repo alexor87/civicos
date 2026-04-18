@@ -7,6 +7,7 @@ const mockOr     = vi.fn()
 const mockIlike  = vi.fn()
 const mockIs     = vi.fn()
 const mockLimit  = vi.fn()
+const mockTextSearch = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => ({
@@ -14,12 +15,13 @@ vi.mock('@/lib/supabase/server', () => ({
       getUser: vi.fn(() => ({ data: { user: { id: 'user-1' } } })),
     },
     from: vi.fn((table: string) => {
-      const chain = {
+      const chain: Record<string, any> = {
         select: mockSelect.mockReturnThis(),
         eq:     mockEq.mockReturnThis(),
         or:     mockOr.mockReturnThis(),
         ilike:  mockIlike.mockReturnThis(),
         is:     mockIs.mockReturnThis(),
+        textSearch: mockTextSearch.mockReturnThis(),
         limit:  mockLimit,
       }
       if (table === 'profiles') {

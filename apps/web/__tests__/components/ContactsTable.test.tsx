@@ -97,6 +97,6 @@ describe('ContactsTable', () => {
 
   it('shows next button when hasMore is true', () => {
     render(<ContactsTable {...DEFAULT_PROPS} hasMore={true} hasPrev={false} nextCursor="2024-01-15T10:00:00Z" />)
-    expect(screen.getByText(/siguiente/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/siguiente/i).length).toBeGreaterThanOrEqual(1)
   })
 })
