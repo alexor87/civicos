@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Brain, TrendingUp, Users, MapPin, UserCircle, Smile, Download, Zap, Clock } from 'lucide-react'
 import { RealtimeKPIs } from '@/components/dashboard/RealtimeKPIs'
+import { ActivateAgentsButton } from '@/components/dashboard/ActivateAgentsButton'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -149,8 +150,7 @@ export default async function DashboardPage() {
         </section>
       ) : (
         <section>
-          <a
-            href="/dashboard/ai"
+          <div
             className="group flex items-center gap-5 bg-white dark:bg-slate-900 border-2 border-dashed border-primary/30 rounded-xl p-6 hover:border-primary hover:bg-primary/5 transition-all"
           >
             <div className="w-16 h-16 rounded-xl flex-shrink-0 bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
@@ -162,11 +162,8 @@ export default async function DashboardPage() {
                 Genera el primer análisis inteligente de tu campaña. Los reportes se actualizan automáticamente cada día.
               </p>
             </div>
-            <div className="shrink-0 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold group-hover:shadow-lg group-hover:shadow-primary/30 transition-all flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Activar agentes
-            </div>
-          </a>
+            <ActivateAgentsButton />
+          </div>
         </section>
       )}
 
