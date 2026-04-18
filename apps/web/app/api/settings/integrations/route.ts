@@ -27,7 +27,7 @@ export async function PATCH(request: Request) {
   const adminSupabase = createAdminClient()
 
   // Plain-text fields
-  const plainFields = ['resend_domain', 'twilio_sid', 'twilio_from', 'twilio_whatsapp_from'] as const
+  const plainFields = ['resend_domain', 'resend_from_name', 'resend_from_email', 'twilio_sid', 'twilio_from', 'twilio_whatsapp_from'] as const
   const updates: Record<string, unknown> = {}
 
   for (const key of plainFields) {
@@ -36,24 +36,26 @@ export async function PATCH(request: Request) {
 
   // Encrypt sensitive fields via DB function
   if ('resend_api_key' in body && body.resend_api_key) {
-    const { data: encrypted } = await adminSupabase.rpc('encrypt_integration_key', { raw: body.resend_api_key })
-    if (encrypted) {
-      updates.resend_api_key = encrypted
-      const key = body.resend_api_key as string
-      updates.resend_api_key_hint = key.length > 4 ? `${key.slice(0, 4)}...${key.slice(-4)}` : '****'
+    const { data: encrypted, error: encryptErr } = await adminSupabase.rpc('encrypt_integration_key', { raw: body.resend_api_key })
+    if (!encrypted) {
+      return NextResponse.json({ error: `No se pudo encriptar la API key de Resend. ${encryptErr?.message ?? 'Contacta al administrador.'}` }, { status: 500 })
     }
+    updates.resend_api_key = encrypted
+    const key = body.resend_api_key as string
+    updates.resend_api_key_hint = key.length > 4 ? `${key.slice(0, 4)}...${key.slice(-4)}` : '****'
   } else if ('resend_api_key' in body) {
     updates.resend_api_key = null
     updates.resend_api_key_hint = null
   }
 
   if ('twilio_token' in body && body.twilio_token) {
-    const { data: encrypted } = await adminSupabase.rpc('encrypt_integration_key', { raw: body.twilio_token })
-    if (encrypted) {
-      updates.twilio_token = encrypted
-      const token = body.twilio_token as string
-      updates.twilio_token_hint = token.length > 4 ? `${token.slice(0, 4)}...${token.slice(-4)}` : '****'
+    const { data: encrypted, error: encryptErr } = await adminSupabase.rpc('encrypt_integration_key', { raw: body.twilio_token })
+    if (!encrypted) {
+      return NextResponse.json({ error: `No se pudo encriptar el token de Twilio. ${encryptErr?.message ?? 'Contacta al administrador.'}` }, { status: 500 })
     }
+    updates.twilio_token = encrypted
+    const token = body.twilio_token as string
+    updates.twilio_token_hint = token.length > 4 ? `${token.slice(0, 4)}...${token.slice(-4)}` : '****'
   } else if ('twilio_token' in body) {
     updates.twilio_token = null
     updates.twilio_token_hint = null
