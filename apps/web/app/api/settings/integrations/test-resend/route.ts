@@ -28,11 +28,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No hay dominio configurado en Resend' }, { status: 400 })
   }
 
-  // Decrypt API key, fallback to env var
-  let apiKey = process.env.RESEND_API_KEY ?? ''
+  // Decrypt API key — only fall back to env var if user has no saved key
+  let apiKey = ''
   if (config.resend_api_key) {
     const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: config.resend_api_key })
-    if (decrypted) apiKey = decrypted
+    if (decrypted) {
+      apiKey = decrypted
+    } else {
+      return NextResponse.json({ error: 'No se pudo desencriptar tu API key. Intenta guardarla de nuevo.' }, { status: 400 })
+    }
+  } else {
+    apiKey = process.env.RESEND_API_KEY ?? ''
   }
 
   if (!apiKey) {

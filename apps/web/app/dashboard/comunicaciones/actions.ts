@@ -153,11 +153,13 @@ export async function sendCampaign(campaignId: string) {
   // Get Resend API key from tenant integrations
   const adminSupabase = createAdminClient()
   const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
-  let resendApiKey = process.env.RESEND_API_KEY ?? ''
+  let resendApiKey = ''
   if (integrationConfig?.resend_api_key) {
     const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.resend_api_key })
     if (decrypted) resendApiKey = decrypted
-    else resendApiKey = integrationConfig.resend_api_key
+    else throw new Error('No se pudo desencriptar la API key de Resend')
+  } else {
+    resendApiKey = process.env.RESEND_API_KEY ?? ''
   }
 
   const resend = new Resend(resendApiKey)
@@ -228,11 +230,13 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
   const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
   const adminSupabase = createAdminClient()
   const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
-  let resendApiKey = process.env.RESEND_API_KEY ?? ''
+  let resendApiKey = ''
   if (integrationConfig?.resend_api_key) {
     const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.resend_api_key })
     if (decrypted) resendApiKey = decrypted
-    else resendApiKey = integrationConfig.resend_api_key
+    else throw new Error('No se pudo desencriptar la API key de Resend')
+  } else {
+    resendApiKey = process.env.RESEND_API_KEY ?? ''
   }
 
   const resend = new Resend(resendApiKey)
