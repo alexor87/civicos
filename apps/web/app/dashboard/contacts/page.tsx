@@ -88,7 +88,7 @@ export default async function ContactsPage({
   if (params.q) {
     const q = params.q.trim()
     if (q.length <= 2) {
-      query = query.or(`first_name.ilike.${q}%,last_name.ilike.${q}%`)
+      query = query.or(`first_name.ilike.${q}%,last_name.ilike.${q}%,document_number.ilike.${q}%,phone.ilike.%${q}%`)
     } else {
       query = query.textSearch('search_vec', `'${q.replace(/'/g, "''")}'`, { type: 'websearch', config: 'spanish' })
     }
