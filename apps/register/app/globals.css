@@ -26,3 +26,86 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* ── Animations ──────────────────────────────────────────── */
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes counter-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes check-draw {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-1 {
+  animation: fade-in-up 0.5s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-2 {
+  animation: fade-in-up 0.5s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-3 {
+  animation: fade-in-up 0.5s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-counter-pulse {
+  animation: counter-pulse 2s ease-in-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Confetti pieces */
+.confetti-piece {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.confetti-piece:nth-child(odd) { border-radius: 50%; }
+.confetti-piece:nth-child(even) { border-radius: 2px; }
+
+.confetti-active .confetti-piece {
+  animation: confetti-fall linear forwards;
+}

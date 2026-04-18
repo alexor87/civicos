@@ -26,9 +26,9 @@ export default async function ConfirmacionPage({ params, searchParams }: PagePro
   const referralLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://unete.scrutix.co'}/${slug}?ref=${code || ''}`
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <div className="max-w-lg mx-auto px-4 py-8 sm:py-12">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200/60 p-8 text-center">
           <ConfirmationContent
             config={config}
             referralLink={referralLink}

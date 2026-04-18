@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Shield } from 'lucide-react'
 import { PhoneInput } from './PhoneInput'
 import { MunicipalitySelector } from './MunicipalitySelector'
 
@@ -35,6 +36,16 @@ const DOC_TYPES = [
   { value: 'PA', label: 'Pasaporte' },
 ]
 
+const inputClass = (hasError: boolean) =>
+  `w-full px-4 py-3 text-sm border rounded-xl bg-white outline-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${
+    hasError ? 'border-red-400 animate-shake' : 'border-slate-200 hover:border-slate-300'
+  }`
+
+const selectClass = (hasError: boolean) =>
+  `w-full px-4 py-3 text-sm border rounded-xl bg-white outline-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${
+    hasError ? 'border-red-400 animate-shake' : 'border-slate-200 hover:border-slate-300'
+  }`
+
 export function PublicRegistrationForm({ config }: { config: RegistrationConfig }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -44,7 +55,6 @@ export function PublicRegistrationForm({ config }: { config: RegistrationConfig 
   const [error, setError] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Form state
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
@@ -58,6 +68,8 @@ export function PublicRegistrationForm({ config }: { config: RegistrationConfig 
   const [ageGroup, setAgeGroup] = useState('')
   const [authorized, setAuthorized] = useState(false)
   const [honeypot, setHoneypot] = useState('')
+
+  const hasExtraFields = config.show_document || config.show_gender || config.show_age_group
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
@@ -127,7 +139,6 @@ export function PublicRegistrationForm({ config }: { config: RegistrationConfig 
         return
       }
 
-      // Success — redirect to confirmation
       const params = new URLSearchParams({ code: data.referral_code })
       if (data.is_existing) params.set('existing', '1')
       router.push(`/${config.slug}/confirmacion?${params.toString()}`)
@@ -141,217 +152,128 @@ export function PublicRegistrationForm({ config }: { config: RegistrationConfig 
   const defaultAuthText = `Autorizo el tratamiento de mis datos personales de acuerdo con la Ley 1581 de 2012, con la finalidad de ser contactado(a) para actividades relacionadas con esta campaña política.`
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Honeypot — hidden from users */}
+    <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+      {/* Honeypot */}
       <div className="absolute -left-[9999px]" aria-hidden="true">
-        <input
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
-          value={honeypot}
-          onChange={(e) => setHoneypot(e.target.value)}
+        <input type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+      </div>
+
+      {/* ── Section: Personal info ───────────────────────── */}
+      <div className="space-y-3 animate-fade-in-up-delay-2">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tus datos</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputClass(!!errors.firstName)} placeholder="Nombres *" />
+            {errors.firstName && <p className="text-xs text-red-500 mt-1 ml-1">{errors.firstName}</p>}
+          </div>
+          <div>
+            <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputClass(!!errors.lastName)} placeholder="Apellidos *" />
+            {errors.lastName && <p className="text-xs text-red-500 mt-1 ml-1">{errors.lastName}</p>}
+          </div>
+        </div>
+
+        <PhoneInput value={phone} onChange={setPhone} error={errors.phone} required />
+
+        {config.show_email && (
+          <div>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass(!!errors.email)} placeholder="Correo electrónico" />
+            {errors.email && <p className="text-xs text-red-500 mt-1 ml-1">{errors.email}</p>}
+          </div>
+        )}
+      </div>
+
+      {/* ── Section: Location ────────────────────────────── */}
+      <div className="space-y-3 animate-fade-in-up-delay-3">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">¿De dónde eres?</p>
+        <MunicipalitySelector
+          department={department}
+          municipality={municipality}
+          onDepartmentChange={setDepartment}
+          onMunicipalityChange={setMunicipality}
+          errors={{ department: errors.department, municipality: errors.municipality }}
+          fixedDepartmentCode={config.geo_department_code || undefined}
+          fixedMunicipalityName={config.geo_municipality_name || undefined}
         />
+        {config.show_district && (
+          <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} className={inputClass(false)} placeholder="Barrio o sector" />
+        )}
       </div>
 
-      {/* Names */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Nombres <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className={`w-full px-3 py-2.5 text-sm border rounded-lg outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${
-              errors.firstName ? 'border-red-400' : 'border-slate-300'
-            }`}
-            placeholder="Tu nombre"
-          />
-          {errors.firstName && <p className="text-sm text-red-500 mt-1">{errors.firstName}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Apellidos <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className={`w-full px-3 py-2.5 text-sm border rounded-lg outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${
-              errors.lastName ? 'border-red-400' : 'border-slate-300'
-            }`}
-            placeholder="Tu apellido"
-          />
-          {errors.lastName && <p className="text-sm text-red-500 mt-1">{errors.lastName}</p>}
-        </div>
-      </div>
-
-      {/* Phone */}
-      <PhoneInput
-        value={phone}
-        onChange={setPhone}
-        error={errors.phone}
-        required
-      />
-
-      {/* Document (optional) */}
-      {config.show_document && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Tipo de identificación
-            </label>
-            <select
-              value={docType}
-              onChange={(e) => setDocType(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">Seleccione...</option>
-              {DOC_TYPES.map((dt) => (
-                <option key={dt.value} value={dt.value}>{dt.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Número de identificación
-            </label>
-            <input
-              type="text"
-              value={docNumber}
-              onChange={(e) => setDocNumber(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Número de documento"
-            />
+      {/* ── Section: Extra info ──────────────────────────── */}
+      {hasExtraFields && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Un poco más sobre ti</p>
+          {config.show_document && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select value={docType} onChange={(e) => setDocType(e.target.value)} className={selectClass(false)}>
+                <option value="">Tipo de identificación</option>
+                {DOC_TYPES.map((dt) => (<option key={dt.value} value={dt.value}>{dt.label}</option>))}
+              </select>
+              <input type="text" value={docNumber} onChange={(e) => setDocNumber(e.target.value)} className={inputClass(false)} placeholder="Número de documento" />
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {config.show_gender && (
+              <select value={gender} onChange={(e) => setGender(e.target.value)} className={selectClass(false)}>
+                <option value="">Género</option>
+                {GENDERS.map((g) => (<option key={g.value} value={g.value}>{g.label}</option>))}
+              </select>
+            )}
+            {config.show_age_group && (
+              <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className={selectClass(false)}>
+                <option value="">Grupo de edad</option>
+                {AGE_GROUPS.map((ag) => (<option key={ag} value={ag}>{ag} años</option>))}
+              </select>
+            )}
           </div>
         </div>
       )}
 
-      {/* Email (optional) */}
-      {config.show_email && (
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Correo electrónico
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={`w-full px-3 py-2.5 text-sm border rounded-lg outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${
-              errors.email ? 'border-red-400' : 'border-slate-300'
-            }`}
-            placeholder="correo@ejemplo.com"
-          />
-          {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
-        </div>
-      )}
-
-      {/* Department / Municipality */}
-      <MunicipalitySelector
-        department={department}
-        municipality={municipality}
-        onDepartmentChange={setDepartment}
-        onMunicipalityChange={setMunicipality}
-        errors={{ department: errors.department, municipality: errors.municipality }}
-        fixedDepartmentCode={config.geo_department_code || undefined}
-        fixedMunicipalityName={config.geo_municipality_name || undefined}
-      />
-
-      {/* District (optional) */}
-      {config.show_district && (
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Barrio / Sector
-          </label>
-          <input
-            type="text"
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-            placeholder="Nombre del barrio o sector"
-          />
-        </div>
-      )}
-
-      {/* Gender (optional) */}
-      {config.show_gender && (
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Género</label>
-          <select
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-          >
-            <option value="">Seleccione...</option>
-            {GENDERS.map((g) => (
-              <option key={g.value} value={g.value}>{g.label}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Age group (optional) */}
-      {config.show_age_group && (
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Grupo de edad</label>
-          <select
-            value={ageGroup}
-            onChange={(e) => setAgeGroup(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-          >
-            <option value="">Seleccione...</option>
-            {AGE_GROUPS.map((ag) => (
-              <option key={ag} value={ag}>{ag} años</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Data authorization */}
-      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={authorized}
-            onChange={(e) => setAuthorized(e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-sm text-slate-600 leading-relaxed">
+      {/* ── Authorization ────────────────────────────────── */}
+      <div className="space-y-2">
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <input type="checkbox" checked={authorized} onChange={(e) => setAuthorized(e.target.checked)} className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 shrink-0" />
+          <span className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-600 transition-colors">
             {config.authorization_text || defaultAuthText}
           </span>
         </label>
         {config.privacy_policy_url && (
-          <a
-            href={config.privacy_policy_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:underline mt-2 inline-block ml-7"
-          >
+          <a href={config.privacy_policy_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline ml-7">
             Ver política de privacidad
           </a>
         )}
-        {errors.authorized && (
-          <p className="text-sm text-red-500 mt-2 ml-7">{errors.authorized}</p>
-        )}
+        {errors.authorized && <p className="text-xs text-red-500 ml-7">{errors.authorized}</p>}
       </div>
 
-      {/* Error message */}
+      {/* ── Error ────────────────────────────────────────── */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 animate-shake">
           {error}
         </div>
       )}
 
-      {/* Submit */}
+      {/* ── Submit ───────────────────────────────────────── */}
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 rounded-lg text-white font-semibold text-sm transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
         style={{ backgroundColor: config.primary_color }}
       >
-        {loading ? 'Registrando...' : config.button_text}
+        {loading ? (
+          <span className="inline-flex items-center gap-2">
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Registrando...
+          </span>
+        ) : config.button_text}
       </button>
+
+      <p className="flex items-center justify-center gap-1.5 text-xs text-slate-400">
+        <Shield className="w-3 h-3" />
+        Tu información está protegida
+      </p>
 
       {referrerCode && (
         <p className="text-center text-xs text-slate-400">

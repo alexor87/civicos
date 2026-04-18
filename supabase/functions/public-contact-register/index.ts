@@ -235,8 +235,7 @@ Deno.serve(async (req: Request) => {
     })
   } catch (err) {
     console.error('[public-register] Unhandled error:', err)
-    const message = err instanceof Error ? err.message : String(err)
-    return jsonResponse({ error: 'Error interno del servidor', debug: message }, 500)
+    return jsonResponse({ error: 'Error interno del servidor' }, 500)
   }
 })
 

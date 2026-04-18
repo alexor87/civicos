@@ -35,9 +35,9 @@ export default async function RegistrationPage({ params }: PageProps) {
   if (!config) notFound()
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-lg mx-auto px-4 py-8 sm:py-12">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      <div className="max-w-lg mx-auto px-4 py-6 sm:py-10">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200/60 overflow-hidden">
           <div className="p-6">
             <CampaignHero
               logoUrl={config.logo_url}
@@ -46,6 +46,7 @@ export default async function RegistrationPage({ params }: PageProps) {
               title={config.title}
               welcomeText={config.welcome_text}
               primaryColor={config.primary_color}
+              registrationCount={config.registration_count ?? 0}
             />
 
             <PublicRegistrationForm config={config} />
