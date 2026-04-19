@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Inbox, Users, Save, Loader2 } from 'lucide-react'
+import { Inbox, Users, Save, Loader2, FlaskConical, X } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import {
@@ -33,21 +33,31 @@ import { BlockPalette } from './BlockPalette'
 import { BuilderCanvas, CANVAS_DROP_ID } from './BuilderCanvas'
 import { PropertiesPanel } from './PropertiesPanel'
 import { AIGeneratePanel } from './AIGeneratePanel'
+import { ContactPicker } from './ContactPicker'
 
 interface Segment {
   id: string
   name: string
 }
 
+interface SelectedContact {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+}
+
 interface Props {
   segments: Segment[]
   action: (formData: FormData) => Promise<unknown>
-  initialData?: ExtractedBlocks
+  initialData?: ExtractedBlocks & { recipientIds?: string[]; recipientContacts?: SelectedContact[] }
   submitLabel?: string
   isTemplate?: boolean
+  campaignId?: string
+  userEmail?: string
 }
 
-export function EmailBuilderEditor({ segments, action, initialData, submitLabel = 'Guardar borrador', isTemplate = false }: Props) {
+export function EmailBuilderEditor({ segments, action, initialData, submitLabel = 'Guardar borrador', isTemplate = false, campaignId = '', userEmail = '' }: Props) {
   const [blocks, setBlocks] = useState<EmailBlock[]>(
     initialData?.blocks ?? [createDefaultBlock('header'), createDefaultBlock('text')]
   )
@@ -60,10 +70,20 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
     senderName: initialData?.meta.senderName ?? '',
     accentColor: initialData?.meta.accentColor ?? '#2960ec',
   })
+  // Recipient mode: 'segment' (all or segment-based) or 'manual' (hand-picked contacts)
+  const [recipientMode, setRecipientMode] = useState<'segment' | 'manual'>(
+    initialData?.recipientIds?.length ? 'manual' : 'segment'
+  )
+  const [manualIds, setManualIds] = useState<string[]>(initialData?.recipientIds ?? [])
+  const [manualContacts, setManualContacts] = useState<SelectedContact[]>(initialData?.recipientContacts ?? [])
   const [recipientCount, setRecipientCount] = useState<number | null>(null)
   const [countLoading, setCountLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [isSaving, setIsSaving] = useState(false)
+  // Test email state
+  const [testOpen, setTestOpen] = useState(false)
+  const [testEmail, setTestEmail] = useState(userEmail)
+  const [testSending, setTestSending] = useState(false)
   // ── dnd-kit sensors ─────────────────────────────────────────────────────────
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -125,10 +145,15 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
     : null
 
   // ── Recipient count ──────────────────────────────────────────────────────────
-  const fetchCount = useCallback(async (segmentId: string) => {
+  const fetchCount = useCallback(async (segmentId: string, ids?: string[]) => {
     setCountLoading(true)
     try {
-      const params = segmentId ? `?segmentId=${segmentId}` : ''
+      let params = ''
+      if (ids && ids.length > 0) {
+        params = `?ids=${ids.join(',')}`
+      } else if (segmentId) {
+        params = `?segmentId=${segmentId}`
+      }
       const res = await fetch(`/api/contacts/count${params}`)
       const data = await res.json()
       setRecipientCount(data.count ?? null)
@@ -140,8 +165,13 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
   }, [])
 
   useEffect(() => {
-    fetchCount(meta.segmentId)
-  }, [meta.segmentId, fetchCount])
+    if (recipientMode === 'manual') {
+      if (manualIds.length > 0) fetchCount('', manualIds)
+      else setRecipientCount(0)
+    } else {
+      fetchCount(meta.segmentId)
+    }
+  }, [meta.segmentId, recipientMode, manualIds, fetchCount])
 
   const selectedBlock = selectedBlockId ? blocks.find(b => b.id === selectedBlockId) ?? null : null
 
@@ -163,6 +193,9 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
     setIsSaving(true)
     const formData = new FormData(e.currentTarget)
     formData.set('body_html', generateFromBlocks(blocks, meta))
+    if (recipientMode === 'manual' && manualIds.length > 0) {
+      formData.set('recipient_ids', JSON.stringify(manualIds))
+    }
 
     startTransition(async () => {
       try {
@@ -174,6 +207,37 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
         setIsSaving(false)
       }
     })
+  }
+
+  async function handleTestSend() {
+    if (!testEmail || !meta.subject.trim()) {
+      toast.error('Completa el asunto del email antes de enviar una prueba')
+      return
+    }
+    if (blocks.length === 0) {
+      toast.error('Añade al menos un bloque al correo')
+      return
+    }
+    setTestSending(true)
+    try {
+      const html = generateFromBlocks(blocks, meta)
+      const res = await fetch('/api/comunicaciones/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: meta.subject, body_html: html, to_email: testEmail }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        toast.success(`Email de prueba enviado a ${testEmail}`)
+        setTestOpen(false)
+      } else {
+        toast.error(data.error ?? 'Error al enviar email de prueba')
+      }
+    } catch {
+      toast.error('Error al enviar email de prueba')
+    } finally {
+      setTestSending(false)
+    }
   }
 
   const isLoading = isSaving || isPending
@@ -246,8 +310,16 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1 block">Destinatarios</Label>
                     <Select
-                      value={meta.segmentId || 'all'}
-                      onValueChange={v => setMeta(m => ({ ...m, segmentId: (v === 'all' ? '' : v) as string }))}
+                      value={recipientMode === 'manual' ? 'manual' : (meta.segmentId || 'all')}
+                      onValueChange={v => {
+                        if (v === 'manual') {
+                          setRecipientMode('manual')
+                          setMeta(m => ({ ...m, segmentId: '' }))
+                        } else {
+                          setRecipientMode('segment')
+                          setMeta(m => ({ ...m, segmentId: (v === 'all' ? '' : v) as string }))
+                        }
+                      }}
                     >
                       <SelectTrigger className="text-sm">
                         <SelectValue />
@@ -257,9 +329,21 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
                         {segments.map(s => (
                           <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))}
+                        <SelectItem value="manual">Selección manual</SelectItem>
                       </SelectContent>
                     </Select>
-                    <input type="hidden" name="segment_id" value={meta.segmentId} />
+                    <input type="hidden" name="segment_id" value={recipientMode === 'manual' ? '' : meta.segmentId} />
+
+                    {recipientMode === 'manual' && (
+                      <div className="mt-2">
+                        <ContactPicker
+                          campaignId={campaignId}
+                          selectedIds={manualIds}
+                          selectedContacts={manualContacts}
+                          onChange={(ids, contacts) => { setManualIds(ids); setManualContacts(contacts) }}
+                        />
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-1.5 mt-1.5">
                       {countLoading ? (
@@ -278,12 +362,56 @@ export function EmailBuilderEditor({ segments, action, initialData, submitLabel 
             </div>
           </div>
 
-          {/* Save button */}
-          <div className="p-4 border-t">
+          {/* Save + Test buttons */}
+          <div className="p-4 border-t space-y-2">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               {submitLabel}
             </Button>
+
+            {!isTemplate && (
+              testOpen ? (
+                <div className="flex items-center gap-1.5 bg-muted border rounded-md px-2 py-1.5">
+                  <Input
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={testEmail}
+                    onChange={e => setTestEmail(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleTestSend()
+                      }
+                    }}
+                    className="h-7 text-xs border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleTestSend}
+                    disabled={testSending || !testEmail}
+                    className="h-6 text-xs px-2 shrink-0"
+                  >
+                    {testSending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Enviar'}
+                  </Button>
+                  <button type="button" onClick={() => setTestOpen(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full text-muted-foreground"
+                  size="sm"
+                  onClick={() => setTestOpen(true)}
+                >
+                  <FlaskConical className="h-3.5 w-3.5 mr-1.5" />
+                  Enviar prueba
+                </Button>
+              )
+            )}
           </div>
         </div>
 

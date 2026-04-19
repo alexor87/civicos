@@ -30,6 +30,8 @@ export async function createCampaign(formData: FormData): Promise<void> {
   const body_html   = (formData.get('body_html') as string)?.trim()
   const segment_id  = (formData.get('segment_id') as string) || null
   const is_template = formData.get('is_template') === 'true'
+  const recipientIdsRaw = formData.get('recipient_ids') as string | null
+  const recipient_ids = recipientIdsRaw ? JSON.parse(recipientIdsRaw) as string[] : null
 
   if (!name || !subject || !body_html) return
 
@@ -42,7 +44,8 @@ export async function createCampaign(formData: FormData): Promise<void> {
       subject,
       body_html,
       body_text:       null,
-      segment_id:      is_template ? null : (segment_id || null),
+      segment_id:      is_template ? null : (recipient_ids ? null : (segment_id || null)),
+      recipient_ids:   is_template ? null : (recipient_ids || null),
       status:          'draft',
       recipient_count: 0,
       is_template,
@@ -79,12 +82,20 @@ export async function updateCampaign(campaignId: string, formData: FormData): Pr
   const subject   = (formData.get('subject') as string)?.trim()
   const body_html = (formData.get('body_html') as string)?.trim()
   const segment_id = (formData.get('segment_id') as string) || null
+  const recipientIdsRaw = formData.get('recipient_ids') as string | null
+  const recipient_ids = recipientIdsRaw ? JSON.parse(recipientIdsRaw) as string[] : null
 
   if (!name || !subject || !body_html) return
 
   const { error } = await supabase
     .from('email_campaigns')
-    .update({ name, subject, body_html, segment_id: segment_id || null })
+    .update({
+      name,
+      subject,
+      body_html,
+      segment_id: recipient_ids ? null : (segment_id || null),
+      recipient_ids: recipient_ids || null,
+    })
     .eq('id', campaignId)
     .eq('status', 'draft') // safety: only edit drafts
 
@@ -120,10 +131,19 @@ export async function sendCampaign(campaignId: string) {
 
   const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
 
-  // Get contacts — filtered by segment if applicable
+  // Get contacts — manual IDs > segment > all
   let contacts: { id: string; email: string | null; first_name: string; last_name: string }[] = []
 
-  if (emailCampaign.segment_id) {
+  if (emailCampaign.recipient_ids?.length) {
+    // Manual selection
+    const { data } = await supabase
+      .from('contacts')
+      .select('id, email, first_name, last_name')
+      .in('id', emailCampaign.recipient_ids)
+      .is('deleted_at', null)
+      .not('email', 'is', null)
+    contacts = (data ?? []) as typeof contacts
+  } else if (emailCampaign.segment_id) {
     const { data: segment } = await supabase
       .from('contact_segments')
       .select('filters')

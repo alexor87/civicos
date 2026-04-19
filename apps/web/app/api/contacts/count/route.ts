@@ -16,6 +16,21 @@ export async function GET(request: NextRequest) {
 
   const campaignId = profile?.campaign_ids?.[0] ?? ''
   const segmentId = request.nextUrl.searchParams.get('segmentId')
+  const manualIds = request.nextUrl.searchParams.get('ids')
+
+  // Manual selection: count by specific IDs
+  if (manualIds) {
+    const ids = manualIds.split(',').filter(Boolean)
+    if (ids.length === 0) return NextResponse.json({ count: 0 })
+    const { count } = await supabase
+      .from('contacts')
+      .select('*', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .in('id', ids)
+      .not('email', 'is', null)
+      .is('deleted_at', null)
+    return NextResponse.json({ count: count ?? 0 })
+  }
 
   if (!segmentId || segmentId === 'all') {
     // Count all contacts with email

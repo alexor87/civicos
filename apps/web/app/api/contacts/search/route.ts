@@ -31,11 +31,11 @@ export async function GET(request: Request) {
 
   const { data } = await supabase
     .from('contacts')
-    .select('id, first_name, last_name, phone')
+    .select('id, first_name, last_name, email, phone')
     .eq('campaign_id', campaignId)
-    .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm}`)
+    .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`)
     .is('deleted_at', null)
-    .limit(5)
+    .limit(20)
 
   return NextResponse.json({ results: data ?? [] })
 }

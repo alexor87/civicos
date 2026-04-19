@@ -70,9 +70,9 @@ describe('GET /api/contacts/search', () => {
   it('searches with ilike on first_name and last_name', async () => {
     const req = new Request('http://localhost/api/contacts/search?q=Ana&campaign_id=camp-1')
     await GET(req)
-    expect(mockSelect).toHaveBeenCalledWith('id, first_name, last_name, phone')
+    expect(mockSelect).toHaveBeenCalledWith('id, first_name, last_name, email, phone')
     expect(mockEq).toHaveBeenCalledWith('campaign_id', 'camp-1')
-    expect(mockOr).toHaveBeenCalledWith('first_name.ilike.%Ana%,last_name.ilike.%Ana%')
-    expect(mockLimit).toHaveBeenCalledWith(5)
+    expect(mockOr).toHaveBeenCalledWith('first_name.ilike.%Ana%,last_name.ilike.%Ana%,email.ilike.%Ana%')
+    expect(mockLimit).toHaveBeenCalledWith(20)
   })
 })

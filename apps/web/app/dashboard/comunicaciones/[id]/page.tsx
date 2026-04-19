@@ -44,7 +44,10 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   const isDraft = campaign.status === 'draft'
 
   let segmentName: string | null = null
-  if (campaign.segment_id) {
+  const hasManualRecipients = campaign.recipient_ids?.length > 0
+  if (hasManualRecipients) {
+    segmentName = `${campaign.recipient_ids.length} seleccionados`
+  } else if (campaign.segment_id) {
     const { data: seg } = await supabase
       .from('contact_segments')
       .select('name')

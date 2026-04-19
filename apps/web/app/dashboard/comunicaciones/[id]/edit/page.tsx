@@ -42,7 +42,7 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_ids, role')
+    .select('campaign_ids, role, email')
     .eq('id', user.id)
     .single()
 
@@ -72,6 +72,17 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
   initialData.meta.subject = campaign.subject
   initialData.meta.segmentId = campaign.segment_id ?? ''
 
+  // Load manual recipients if present
+  const recipientIds: string[] = campaign.recipient_ids ?? []
+  let recipientContacts: { id: string; first_name: string | null; last_name: string | null; email: string | null }[] = []
+  if (recipientIds.length > 0) {
+    const { data: contacts } = await supabase
+      .from('contacts')
+      .select('id, first_name, last_name, email')
+      .in('id', recipientIds)
+    recipientContacts = contacts ?? []
+  }
+
   const boundUpdate = updateCampaign.bind(null, id)
 
   return (
@@ -79,7 +90,9 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
       segments={segments ?? []}
       action={boundUpdate}
       submitLabel="Guardar cambios"
-      initialData={initialData}
+      initialData={{ ...initialData, recipientIds, recipientContacts }}
+      campaignId={campaignId}
+      userEmail={profile?.email ?? user.email ?? ''}
     />
   )
 }
