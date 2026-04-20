@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, Mail, Send, Trash2, FileText, AlertCircle, Users, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { deleteCampaign } from '../actions'
+import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
+import type { SegmentFilter } from '@/lib/types/database'
 import { SendCampaignButton } from '@/components/dashboard/SendCampaignButton'
 import { TestEmailButton } from '@/components/dashboard/TestEmailButton'
 import { EmailPreview } from '@/components/dashboard/EmailPreview'
@@ -56,6 +58,39 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     segmentName = seg?.name ?? null
   }
 
+  // For drafts, compute real recipient count (recipient_count is only set after sending)
+  let displayCount = campaign.recipient_count ?? 0
+  if (isDraft) {
+    const campaignId = profile?.campaign_ids?.[0] ?? ''
+    if (hasManualRecipients) {
+      const { count } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true })
+        .in('id', campaign.recipient_ids)
+        .not('email', 'is', null)
+        .is('deleted_at', null)
+      displayCount = count ?? 0
+    } else if (campaign.segment_id) {
+      const { data: segment } = await supabase
+        .from('contact_segments')
+        .select('filters')
+        .eq('id', campaign.segment_id)
+        .single()
+      if (segment?.filters) {
+        const result = await applyFilters(supabase, campaignId, segment.filters as SegmentFilter[])
+        displayCount = (result.data ?? []).filter((c: any) => c.email).length
+      }
+    } else {
+      const { count } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('campaign_id', campaignId)
+        .not('email', 'is', null)
+        .is('deleted_at', null)
+      displayCount = count ?? 0
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
@@ -95,7 +130,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
                 <TestEmailButton campaignId={id} defaultEmail={user.email ?? ''} />
               )}
               {canSend && isDraft && (
-                <SendCampaignButton campaignId={id} recipientCount={campaign.recipient_count} />
+                <SendCampaignButton campaignId={id} recipientCount={displayCount} />
               )}
             </div>
           </div>
@@ -109,7 +144,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
             </div>
             <div>
               <p className="text-xl font-bold tabular-nums text-[#1b1f23]">
-                {campaign.recipient_count.toLocaleString('es-ES')}
+                {displayCount.toLocaleString('es-ES')}
               </p>
               <p className="text-xs text-[#6a737d] mt-0.5">Destinatarios</p>
             </div>
