@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Mail, Send, Trash2, FileText, AlertCircle, Users, Pencil } from 'lucide-react'
+import { ChevronLeft, Mail, Send, Trash2, FileText, AlertCircle, Users, Pencil, Copy, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { deleteCampaign } from '../actions'
+import { deleteCampaign, duplicateCampaign } from '../actions'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 import { SendCampaignButton } from '@/components/dashboard/SendCampaignButton'
@@ -118,19 +118,37 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-wrap">
+              {!isDraft && (
+                <>
+                  <form action={duplicateCampaign.bind(null, id)}>
+                    <Button type="submit" variant="outline" size="sm" className="gap-1.5">
+                      <Copy className="h-4 w-4" />
+                      Duplicar
+                    </Button>
+                  </form>
+                  <Link href="/dashboard/comunicaciones/new">
+                    <Button size="sm" className="gap-1.5">
+                      <Plus className="h-4 w-4" />
+                      Nueva campaña
+                    </Button>
+                  </Link>
+                </>
+              )}
               {isDraft && (
-                <Link href={`/dashboard/comunicaciones/${id}/edit`}>
-                  <Button variant="outline" size="sm" className="text-[#6a737d] gap-1.5">
-                    <Pencil className="h-4 w-4" />
-                    Editar
-                  </Button>
-                </Link>
-              )}
-              {canSend && isDraft && (
-                <TestEmailButton campaignId={id} defaultEmail={user.email ?? ''} />
-              )}
-              {canSend && isDraft && (
-                <SendCampaignButton campaignId={id} recipientCount={displayCount} />
+                <>
+                  <Link href={`/dashboard/comunicaciones/${id}/edit`}>
+                    <Button variant="outline" size="sm" className="text-[#6a737d] gap-1.5">
+                      <Pencil className="h-4 w-4" />
+                      Editar
+                    </Button>
+                  </Link>
+                  {canSend && (
+                    <TestEmailButton campaignId={id} defaultEmail={user.email ?? ''} />
+                  )}
+                  {canSend && (
+                    <SendCampaignButton campaignId={id} recipientCount={displayCount} />
+                  )}
+                </>
               )}
             </div>
           </div>

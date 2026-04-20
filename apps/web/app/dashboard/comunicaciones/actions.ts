@@ -275,6 +275,53 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
   }
 }
 
+// ── duplicateCampaign ─────────────────────────────────────────────────────────
+
+export async function duplicateCampaign(sourceId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id, campaign_ids, role')
+    .eq('id', user.id)
+    .single()
+
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  if (!canManage) return
+
+  const { data: source } = await supabase
+    .from('email_campaigns')
+    .select('name, subject, body_html, segment_id, recipient_ids')
+    .eq('id', sourceId)
+    .single()
+
+  if (!source) return
+
+  const { data, error } = await supabase
+    .from('email_campaigns')
+    .insert({
+      tenant_id: profile?.tenant_id,
+      campaign_id: profile?.campaign_ids?.[0] ?? null,
+      name: `Copia de ${source.name}`,
+      subject: source.subject,
+      body_html: source.body_html,
+      body_text: null,
+      segment_id: source.segment_id,
+      recipient_ids: source.recipient_ids,
+      status: 'draft',
+      recipient_count: 0,
+      is_template: false,
+      created_by: user.id,
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) return
+  redirect(`/dashboard/comunicaciones/${data.id}/edit`)
+}
+
 // ── deleteCampaign ────────────────────────────────────────────────────────────
 
 export async function deleteCampaign(id: string) {
