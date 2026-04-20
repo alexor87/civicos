@@ -238,8 +238,9 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
             <div className="divide-y divide-[#dcdee6]">
               {campaigns.map((campaign) => {
                 const s    = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft
+                const isDraft = campaign.status === 'draft'
                 const href = isEmailTab
-                  ? `/dashboard/comunicaciones/${campaign.id}`
+                  ? `/dashboard/comunicaciones/${campaign.id}${isDraft ? '/edit' : ''}`
                   : isSmsTab
                   ? `/dashboard/comunicaciones/sms/${campaign.id}`
                   : `/dashboard/comunicaciones/whatsapp/${campaign.id}`
