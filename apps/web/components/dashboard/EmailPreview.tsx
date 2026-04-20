@@ -24,7 +24,7 @@ export function EmailPreview({ subject, bodyHtml }: EmailPreviewProps) {
       </div>
       {/* Email body — sanitized client-side to prevent XSS */}
       <div
-        className="bg-white"
+        className="bg-white border border-t-0 border-[#dcdee6] rounded-b-md px-6 py-5"
         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bodyHtml) }}
       />
     </div>
