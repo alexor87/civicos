@@ -35,6 +35,7 @@ export default async function IntegrationsSettingsPage() {
         <IntegrationsForm
           integrationConfig={config}
           campaignId={campaignId}
+          tenantId={tenantId ?? null}
         />
       ) : (
         <p className="text-sm text-[#6a737d]">Solo el Campaign Manager puede editar las integraciones.</p>

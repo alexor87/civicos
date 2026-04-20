@@ -61,6 +61,19 @@ export async function PATCH(request: Request) {
     updates.twilio_token_hint = null
   }
 
+  if ('resend_webhook_secret' in body && body.resend_webhook_secret) {
+    const { data: encrypted, error: encryptErr } = await adminSupabase.rpc('encrypt_integration_key', { raw: body.resend_webhook_secret })
+    if (!encrypted) {
+      return NextResponse.json({ error: `No se pudo encriptar el webhook secret. ${encryptErr?.message ?? 'Contacta al administrador.'}` }, { status: 500 })
+    }
+    updates.resend_webhook_secret = encrypted
+    const secret = body.resend_webhook_secret as string
+    updates.resend_webhook_secret_hint = secret.length > 4 ? `...${secret.slice(-4)}` : '****'
+  } else if ('resend_webhook_secret' in body) {
+    updates.resend_webhook_secret = null
+    updates.resend_webhook_secret_hint = null
+  }
+
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 })
   }

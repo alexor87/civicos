@@ -12,27 +12,50 @@ vi.mock('svix', () => {
 
 const mockRpc = vi.fn()
 let recipientData: any = null
+let integrationData: any = null
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: () => ({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockImplementation(() => Promise.resolve({ data: recipientData })),
+    from: (table: string) => {
+      if (table === 'tenant_integrations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                single: vi.fn().mockImplementation(() => Promise.resolve({ data: integrationData })),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'email_campaign_recipients') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockImplementation(() => Promise.resolve({ data: recipientData })),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null }),
+          }),
         }),
-      }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      }),
-    }),
+      }
+    },
     rpc: mockRpc,
   }),
 }))
 
-import { POST } from '@/app/api/webhooks/resend/route'
+import { POST } from '@/app/api/webhooks/resend/[tenantId]/route'
 
 function makeRequest() {
-  return new Request('http://localhost/api/webhooks/resend', {
+  return new Request('http://localhost/api/webhooks/resend/tenant-123', {
     method: 'POST',
     body: JSON.stringify({}),
     headers: {
@@ -44,12 +67,23 @@ function makeRequest() {
   })
 }
 
-describe('POST /api/webhooks/resend', () => {
+const defaultParams = Promise.resolve({ tenantId: 'tenant-123' })
+
+describe('POST /api/webhooks/resend/[tenantId]', () => {
   beforeEach(() => {
     mockVerify.mockReset()
     mockRpc.mockReset()
 
-    vi.stubEnv('RESEND_WEBHOOK_SECRET', 'whsec_test')
+    vi.stubEnv('RESEND_WEBHOOK_SECRET', 'whsec_fallback')
+
+    // Tenant has webhook secret configured
+    integrationData = { resend_webhook_secret: 'encrypted_secret' }
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === 'decrypt_integration_key') {
+        return Promise.resolve({ data: 'whsec_tenant_secret' })
+      }
+      return Promise.resolve({ error: null })
+    })
 
     mockVerify.mockReturnValue({
       type: 'email.delivered',
@@ -64,38 +98,51 @@ describe('POST /api/webhooks/resend', () => {
       clicked_at: null,
       bounced_at: null,
     }
-
-    mockRpc.mockResolvedValue({ error: null })
   })
 
-  it('returns 500 when webhook secret is not configured', async () => {
+  it('returns 500 when no secret is available', async () => {
     vi.stubEnv('RESEND_WEBHOOK_SECRET', '')
-    const res = await POST(makeRequest() as any)
+    integrationData = null
+    const res = await POST(makeRequest() as any, { params: defaultParams })
     expect(res.status).toBe(500)
+  })
+
+  it('falls back to env var when tenant has no secret', async () => {
+    integrationData = null
+    const res = await POST(makeRequest() as any, { params: defaultParams })
+    expect(res.status).toBe(200)
+  })
+
+  it('uses tenant secret from DB when available', async () => {
+    const res = await POST(makeRequest() as any, { params: defaultParams })
+    expect(res.status).toBe(200)
+    expect(mockRpc).toHaveBeenCalledWith('decrypt_integration_key', {
+      encrypted: 'encrypted_secret',
+    })
   })
 
   it('returns 401 when signature is invalid', async () => {
     mockVerify.mockImplementation(() => { throw new Error('bad sig') })
-    const res = await POST(makeRequest() as any)
+    const res = await POST(makeRequest() as any, { params: defaultParams })
     expect(res.status).toBe(401)
   })
 
   it('skips unknown event types', async () => {
     mockVerify.mockReturnValue({ type: 'email.unknown', data: { email_id: 'x' } })
-    const res = await POST(makeRequest() as any)
+    const res = await POST(makeRequest() as any, { params: defaultParams })
     const json = await res.json()
     expect(json).toEqual({ ok: true, skipped: true })
   })
 
   it('skips when recipient not found', async () => {
     recipientData = null
-    const res = await POST(makeRequest() as any)
+    const res = await POST(makeRequest() as any, { params: defaultParams })
     const json = await res.json()
     expect(json).toEqual({ ok: true, skipped: true })
   })
 
   it('processes delivered event and increments counter', async () => {
-    const res = await POST(makeRequest() as any)
+    const res = await POST(makeRequest() as any, { params: defaultParams })
     const json = await res.json()
     expect(json).toEqual({ ok: true })
     expect(mockRpc).toHaveBeenCalledWith('increment_email_campaign_counter', {
@@ -113,15 +160,15 @@ describe('POST /api/webhooks/resend', () => {
       clicked_at: null,
       bounced_at: null,
     }
-    const res = await POST(makeRequest() as any)
+    const res = await POST(makeRequest() as any, { params: defaultParams })
     const json = await res.json()
     expect(json).toEqual({ ok: true })
-    expect(mockRpc).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalledWith('increment_email_campaign_counter', expect.anything())
   })
 
   it('handles opened event correctly', async () => {
     mockVerify.mockReturnValue({ type: 'email.opened', data: { email_id: 'resend_123' } })
-    const res = await POST(makeRequest() as any)
+    const res = await POST(makeRequest() as any, { params: defaultParams })
     expect(res.status).toBe(200)
     expect(mockRpc).toHaveBeenCalledWith('increment_email_campaign_counter', {
       p_campaign_id: 'camp-1',

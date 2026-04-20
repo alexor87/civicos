@@ -24,11 +24,14 @@ interface IntegrationConfig {
   twilio_token_hint:      string | null
   twilio_from:            string | null
   twilio_whatsapp_from:   string | null
+  resend_webhook_secret:  string | null
+  resend_webhook_secret_hint: string | null
 }
 
 interface Props {
   integrationConfig: IntegrationConfig | null
   campaignId: string | null
+  tenantId: string | null
 }
 
 type IntegrationStatus = 'connected' | 'unconfigured' | 'unverified'
@@ -308,7 +311,7 @@ function AiConfigCard() {
 
 // ── Main Component ──────────────────────────────────────────────────────────
 
-export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
+export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Props) {
   const config = integrationConfig
 
   // Resend state
@@ -316,7 +319,9 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
   const [resendDomain,    setResendDomain]    = useState(config?.resend_domain    ?? '')
   const [resendFromName,  setResendFromName]  = useState(config?.resend_from_name  ?? '')
   const [resendFromEmail, setResendFromEmail] = useState(config?.resend_from_email ?? '')
+  const [resendWebhookSecret, setResendWebhookSecret] = useState('')
   const [showResendKey,   setShowResendKey]   = useState(false)
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false)
   const [savingResend,    setSavingResend]    = useState(false)
   const [testingResend,   setTestingResend]   = useState(false)
   const [resendOpen,      setResendOpen]      = useState(false)
@@ -407,6 +412,9 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
     if (resendApiKey) {
       payload.resend_api_key = resendApiKey
     }
+    if (resendWebhookSecret) {
+      payload.resend_webhook_secret = resendWebhookSecret
+    }
     if (campaignId) payload.campaign_id = campaignId
     const res = await fetch('/api/settings/integrations', {
       method: 'PATCH',
@@ -417,6 +425,7 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
     if (res.ok) {
       toast.success('Configuración de email guardada')
       if (resendApiKey) setResendApiKey('')
+      if (resendWebhookSecret) setResendWebhookSecret('')
     } else toast.error('Error al guardar configuración de email')
   }
 
@@ -658,6 +667,55 @@ export function IntegrationsForm({ integrationConfig, campaignId }: Props) {
                 <p className="text-sm text-slate-900 font-mono">{fromPreview}</p>
               </div>
             )}
+
+            {/* Webhook Secret */}
+            <div className="border-t border-slate-100 pt-5 space-y-4">
+              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Webhooks (métricas de email)</p>
+
+              {tenantId && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 space-y-1">
+                  <p className="text-xs font-medium text-slate-500">URL del webhook para Resend:</p>
+                  <code className="text-xs text-slate-900 break-all select-all">
+                    {typeof window !== 'undefined' ? window.location.origin : 'https://app.scrutix.co'}/api/webhooks/resend/{tenantId}
+                  </code>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pega esta URL en Resend → Webhooks → Add Endpoint. Selecciona los eventos: delivered, opened, clicked, bounced.
+                  </p>
+                </div>
+              )}
+
+              {config?.resend_webhook_secret_hint && (
+                <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+                  <span>Webhook Secret guardado: <code className="font-mono">{config.resend_webhook_secret_hint}</code></span>
+                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="resend_webhook_secret">Signing Secret</Label>
+                <div className="relative">
+                  <Input
+                    id="resend_webhook_secret"
+                    type={showWebhookSecret ? 'text' : 'password'}
+                    value={resendWebhookSecret}
+                    onChange={e => setResendWebhookSecret(e.target.value)}
+                    placeholder={config?.resend_webhook_secret_hint ? 'Dejar vacío para mantener el actual' : 'whsec_...'}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                    aria-label={showWebhookSecret ? 'Ocultar secret' : 'Mostrar secret'}
+                  >
+                    {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Se encuentra en Resend → Webhooks → tu endpoint → Signing Secret.
+                </p>
+              </div>
+            </div>
 
             <div className="flex gap-2">
               <Button size="sm" onClick={saveResend} disabled={savingResend || !!domainError}>

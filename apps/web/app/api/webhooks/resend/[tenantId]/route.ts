@@ -10,10 +10,39 @@ const EVENT_MAP: Record<string, { statusName: string; tsColumn: string; countCol
   'email.complained': { statusName: 'complained', tsColumn: 'bounced_at',  countColumn: 'bounced_count' },
 }
 
-export async function POST(request: NextRequest) {
-  const secret = process.env.RESEND_WEBHOOK_SECRET
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ tenantId: string }> }
+) {
+  const { tenantId } = await params
+
+  const supabase = createAdminClient()
+
+  // Look up tenant's webhook secret
+  const { data: integration } = await supabase
+    .from('tenant_integrations')
+    .select('resend_webhook_secret')
+    .eq('tenant_id', tenantId)
+    .is('campaign_id', null)
+    .single()
+
+  let secret: string | null = null
+
+  if (integration?.resend_webhook_secret) {
+    // Decrypt the stored secret
+    const { data: decrypted } = await supabase.rpc('decrypt_integration_key', {
+      encrypted: integration.resend_webhook_secret,
+    })
+    secret = decrypted
+  }
+
+  // Fallback to global env var (for Scrutix internal)
   if (!secret) {
-    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+    secret = process.env.RESEND_WEBHOOK_SECRET ?? null
+  }
+
+  if (!secret) {
+    return NextResponse.json({ error: 'Webhook secret not configured for this tenant' }, { status: 500 })
   }
 
   const rawBody = await request.text()
@@ -40,8 +69,6 @@ export async function POST(request: NextRequest) {
   if (!mapping || !resendEmailId) {
     return NextResponse.json({ ok: true, skipped: true })
   }
-
-  const supabase = createAdminClient()
 
   // Find the recipient row
   const { data: recipient } = await supabase

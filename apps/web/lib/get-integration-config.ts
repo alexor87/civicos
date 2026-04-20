@@ -7,11 +7,15 @@ export interface IntegrationConfig {
   resend_api_key: string | null
   resend_api_key_hint: string | null
   resend_domain: string | null
+  resend_from_name: string | null
+  resend_from_email: string | null
   twilio_sid: string | null
   twilio_token: string | null
   twilio_token_hint: string | null
   twilio_from: string | null
   twilio_whatsapp_from: string | null
+  resend_webhook_secret: string | null
+  resend_webhook_secret_hint: string | null
 }
 
 /**
