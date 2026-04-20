@@ -393,7 +393,7 @@ export function PublicRegistrationSettingsForm({
                 placeholder="¡Únete a nuestra causa! Regístrate aquí: {link}"
                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#2262ec] focus:ring-2 focus:ring-[#2262ec]/20 resize-none"
               />
-              <p className="text-xs text-slate-400 mt-1">Usa <code className="bg-slate-100 px-1 rounded">{'{link}'}</code> donde quieras que aparezca el enlace de registro</p>
+              <p className="text-xs text-slate-400 mt-1">Usa <code className="bg-slate-100 px-1 rounded">{'{link}'}</code> donde quieras que aparezca el enlace de registro. Si no lo incluyes, se añadirá al final del mensaje automáticamente.</p>
             </Field>
 
             <p className="text-sm font-medium text-slate-700">Niveles de gamificación</p>

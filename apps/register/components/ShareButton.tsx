@@ -19,9 +19,10 @@ export function ShareButton({ referralLink, slug, primaryColor = '#2262ec', mess
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const messageText = message
-    ? message.replace(/\{link\}/g, referralLink)
-    : `¡Únete a nuestra causa! Regístrate aquí: ${referralLink}`
+  const rawMessage = message?.trim() || '¡Únete a nuestra causa! Regístrate aquí: {link}'
+  const messageText = rawMessage.includes('{link}')
+    ? rawMessage.replace(/\{link\}/g, referralLink)
+    : `${rawMessage} ${referralLink}`
   const whatsappMessage = encodeURIComponent(messageText)
   const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`
 
