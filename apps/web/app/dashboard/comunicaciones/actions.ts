@@ -187,6 +187,13 @@ export async function sendCampaign(campaignId: string) {
 
   let sent = 0
   let failed = 0
+  const recipientRows: {
+    email_campaign_id: string
+    contact_id: string
+    resend_email_id: string
+    recipient_email: string
+    status: string
+  }[] = []
 
   for (const contact of recipients) {
     // Personalize HTML for each recipient
@@ -195,16 +202,31 @@ export async function sendCampaign(campaignId: string) {
       .replace(/\{apellido\}/gi, contact.last_name ?? '')
 
     try {
-      await resend.emails.send({
+      const { data: sendResult } = await resend.emails.send({
         from:    fromAddress,
         to:      contact.email!,
         subject: emailCampaign.subject,
         html:    personalizedHtml,
       })
+      if (sendResult?.id) {
+        recipientRows.push({
+          email_campaign_id: campaignId,
+          contact_id: contact.id,
+          resend_email_id: sendResult.id,
+          recipient_email: contact.email!,
+          status: 'sent',
+        })
+      }
       sent++
     } catch {
       failed++
     }
+  }
+
+  // Store per-recipient tracking data for webhook correlation
+  if (recipientRows.length > 0) {
+    const adminSupabase = createAdminClient()
+    await adminSupabase.from('email_campaign_recipients').insert(recipientRows)
   }
 
   await supabase

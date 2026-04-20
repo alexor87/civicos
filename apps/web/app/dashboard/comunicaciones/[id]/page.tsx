@@ -8,6 +8,7 @@ import type { SegmentFilter } from '@/lib/types/database'
 import { SendCampaignButton } from '@/components/dashboard/SendCampaignButton'
 import { TestEmailButton } from '@/components/dashboard/TestEmailButton'
 import { EmailPreview } from '@/components/dashboard/EmailPreview'
+import { EmailCampaignAnalytics } from '@/components/dashboard/EmailCampaignAnalytics'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
   draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
@@ -192,6 +193,17 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
             </div>
           </div>
         </div>
+
+        {/* Analytics — only for sent campaigns */}
+        {!isDraft && (
+          <EmailCampaignAnalytics
+            recipientCount={campaign.recipient_count ?? 0}
+            deliveredCount={campaign.delivered_count ?? 0}
+            openedCount={campaign.opened_count ?? 0}
+            clickedCount={campaign.clicked_count ?? 0}
+            bouncedCount={campaign.bounced_count ?? 0}
+          />
+        )}
 
         {/* Email preview — inbox simulation */}
         <div>
