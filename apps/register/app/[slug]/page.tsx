@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { CampaignHero } from '@/components/CampaignHero'
 import { PublicRegistrationForm } from '@/components/PublicRegistrationForm'
@@ -51,6 +52,18 @@ export default async function RegistrationPage({ params }: PageProps) {
             <PublicRegistrationForm config={config} />
           </div>
         </div>
+
+        {config.referral_enabled && (
+          <div className="mt-4 text-center">
+            <Link
+              href={`/${slug}/mis-referidos`}
+              className="inline-flex items-center gap-1 text-sm font-medium hover:underline"
+              style={{ color: config.primary_color }}
+            >
+              ¿Ya eres parte? Obtén tu link personal para invitar →
+            </Link>
+          </div>
+        )}
 
         <p className="text-center text-xs text-slate-400 mt-6">
           Powered by Scrutix

@@ -193,7 +193,7 @@ export function ReferralPanel({ config, slug }: { config: ReferralConfig; slug: 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
           <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
           <p className="text-slate-500 text-sm">
-            No encontramos registros con ese número. ¿Ya te registraste?
+            No encontramos ese número en nuestra base. Verifica que esté escrito correctamente o regístrate como simpatizante para recibir tu link personal.
           </p>
           <Link
             href={`/${slug}`}

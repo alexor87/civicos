@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Globe, Eye, Users, Shield, Bell, Palette, MapPin } from 'lucide-react'
+import { Globe, Eye, Users, Shield, Bell, Palette, MapPin, Copy, Check } from 'lucide-react'
 
 interface FormData {
   campaign_id: string
@@ -225,6 +225,26 @@ export function PublicRegistrationSettingsForm({
           </div>
         </div>
       </Section>
+
+      {/* ── Enlaces para compartir ──────────────────────────────────── */}
+      {form.slug && (
+        <Section icon={<Globe className="w-5 h-5" />} title="Enlaces para compartir">
+          <div className="space-y-4">
+            <CopyableUrl
+              url={publicUrl}
+              label="Link del formulario de registro"
+              help="Compártelo para que nuevas personas se registren como simpatizantes."
+            />
+            {form.referral_enabled && (
+              <CopyableUrl
+                url={`${publicUrl}/mis-referidos`}
+                label="Link para que tus contactos obtengan su link de referidos"
+                help="Comparte este link por WhatsApp, SMS, QR o cara a cara. Cualquier persona que ya esté en tu base de datos (incluidos los importados por archivo) puede ingresar su teléfono ahí y obtener su link personal para invitar a otros."
+              />
+            )}
+          </div>
+        </Section>
+      )}
 
       {/* ── Apariencia ───────────────────────────────────────────────── */}
       <Section icon={<Palette className="w-5 h-5" />} title="Apariencia">
@@ -493,6 +513,32 @@ function Section({
         <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       </div>
       {children}
+    </div>
+  )
+}
+
+function CopyableUrl({ url, label, help }: { url: string; label: string; help?: string }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(`https://${url}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div>
+      <p className="text-sm font-medium text-slate-700 mb-1">{label}</p>
+      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+        <span className="flex-1 text-sm text-slate-700 font-mono truncate">{url}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="shrink-0 p-1.5 rounded-md hover:bg-slate-200 transition-colors"
+          title="Copiar enlace"
+        >
+          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
+        </button>
+      </div>
+      {help && <p className="text-xs text-slate-400 mt-1">{help}</p>}
     </div>
   )
 }
