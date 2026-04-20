@@ -240,7 +240,7 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
                 const s    = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft
                 const isDraft = campaign.status === 'draft'
                 const href = isEmailTab
-                  ? `/dashboard/comunicaciones/${campaign.id}${isDraft ? '/edit' : ''}`
+                  ? `/dashboard/comunicaciones/${campaign.id}`
                   : isSmsTab
                   ? `/dashboard/comunicaciones/sms/${campaign.id}`
                   : `/dashboard/comunicaciones/whatsapp/${campaign.id}`
