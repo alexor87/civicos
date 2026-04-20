@@ -42,7 +42,7 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_ids, role, email')
+    .select('campaign_ids, role')
     .eq('id', user.id)
     .single()
 
@@ -92,7 +92,7 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
       submitLabel="Guardar cambios"
       initialData={{ ...initialData, recipientIds, recipientContacts }}
       campaignId={campaignId}
-      userEmail={profile?.email ?? user.email ?? ''}
+      userEmail={user.email ?? ''}
     />
   )
 }

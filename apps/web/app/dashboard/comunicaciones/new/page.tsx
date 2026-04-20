@@ -15,7 +15,7 @@ export default async function NewCampaignPage({ searchParams }: { searchParams: 
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_ids, email')
+    .select('campaign_ids')
     .eq('id', user.id)
     .single()
 
@@ -34,7 +34,7 @@ export default async function NewCampaignPage({ searchParams }: { searchParams: 
       isTemplate={isTemplate}
       submitLabel={isTemplate ? 'Guardar plantilla' : 'Guardar borrador'}
       campaignId={campaignId}
-      userEmail={profile?.email ?? user.email ?? ''}
+      userEmail={user.email ?? ''}
     />
   )
 }
