@@ -21,7 +21,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('campaign_ids, role, email')
+    .select('campaign_ids, role')
     .eq('id', user.id)
     .single()
 
@@ -92,7 +92,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
                 </Link>
               )}
               {canSend && isDraft && (
-                <TestEmailButton campaignId={id} defaultEmail={profile?.email ?? ''} />
+                <TestEmailButton campaignId={id} defaultEmail={user.email ?? ''} />
               )}
               {canSend && isDraft && (
                 <SendCampaignButton campaignId={id} recipientCount={campaign.recipient_count} />
