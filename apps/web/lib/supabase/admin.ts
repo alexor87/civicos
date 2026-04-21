@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 /**
  * Supabase admin client using the service role key.
  * Only for server-side use — NEVER expose to the browser.
- * Required for: inviteUserByEmail, managing auth users.
+ * Required for: generating auth links, managing auth users.
  *
  * Requires SUPABASE_SERVICE_ROLE_KEY in .env.local
  */

@@ -3,8 +3,77 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAppUrl, sendInviteEmail } from '@/lib/email/transactional'
+import type { InviteRole } from '@/lib/email/templates/invite-email'
 
-const VALID_ROLES = ['field_coordinator', 'volunteer', 'analyst']
+const VALID_ROLES: InviteRole[] = ['field_coordinator', 'volunteer', 'analyst']
+
+interface InviteContext {
+  email: string
+  fullName: string
+  phone: string | null
+  role: InviteRole
+  tenantId: string | null | undefined
+  campaignIds: string[]
+  inviterName: string
+}
+
+async function issueInvite(ctx: InviteContext): Promise<{ error?: string }> {
+  const appUrl = getAppUrl()
+  const admin = createAdminClient()
+
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: 'invite',
+    email: ctx.email,
+    options: {
+      redirectTo: `${appUrl}/auth/callback?next=/welcome`,
+      data: {
+        full_name:    ctx.fullName,
+        role:         ctx.role,
+        phone:        ctx.phone ?? undefined,
+        tenant_id:    ctx.tenantId,
+        campaign_ids: ctx.campaignIds,
+      },
+    },
+  })
+
+  if (linkError) {
+    return { error: linkError.message }
+  }
+  if (!linkData?.properties?.hashed_token) {
+    return { error: 'No se pudo generar el link de invitación' }
+  }
+
+  const actionLink =
+    linkData.properties.action_link ||
+    `${appUrl}/auth/callback?token_hash=${linkData.properties.hashed_token}&type=invite&next=/welcome`
+
+  const supabase = await createClient()
+  let campaignName = 'tu campaña'
+  if (ctx.campaignIds.length > 0) {
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('name')
+      .eq('id', ctx.campaignIds[0])
+      .single()
+    if (campaign?.name) campaignName = campaign.name
+  }
+
+  const sendResult = await sendInviteEmail({
+    to: ctx.email,
+    inviteeName: ctx.fullName,
+    inviterName: ctx.inviterName,
+    campaignName,
+    role: ctx.role,
+    actionLink,
+  })
+
+  if (!sendResult.ok) {
+    return { error: `Email no enviado: ${sendResult.error}` }
+  }
+
+  return {}
+}
 
 export async function inviteTeamMember(formData: FormData): Promise<void> {
   const supabase = await createClient()
@@ -13,7 +82,7 @@ export async function inviteTeamMember(formData: FormData): Promise<void> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id, campaign_ids, role')
+    .select('tenant_id, campaign_ids, role, full_name')
     .eq('id', user.id)
     .single()
 
@@ -25,36 +94,31 @@ export async function inviteTeamMember(formData: FormData): Promise<void> {
   const phone    = (formData.get('phone')     as string)?.trim() || null
   const role     = formData.get('role') as string
 
-  if (!fullName || !email || !VALID_ROLES.includes(role)) return
+  if (!fullName || !email || !VALID_ROLES.includes(role as InviteRole)) return
 
-  // Use admin client to send a proper Supabase auth invitation by email.
-  // This creates the auth user, sends the invite email, and the DB trigger
-  // creates their profile with the provided user_metadata.
-  try {
-    const admin = createAdminClient()
-    const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-      data: {
-        full_name:    fullName,
-        role,
-        phone:        phone ?? undefined,
-        tenant_id:    profile?.tenant_id,
-        campaign_ids: profile?.campaign_ids ?? [],
-      },
-    })
-    if (error) {
-      console.error('[inviteTeamMember] Auth invite error:', error.message)
-      return
-    }
-  } catch (err) {
-    console.error('[inviteTeamMember] Admin client error:', err)
+  const result = await issueInvite({
+    email,
+    fullName,
+    phone,
+    role: role as InviteRole,
+    tenantId: profile?.tenant_id,
+    campaignIds: profile?.campaign_ids ?? [],
+    inviterName: profile?.full_name?.trim() || 'Tu equipo',
+  })
+
+  if (result.error) {
+    console.error('[inviteTeamMember] invite failed:', result.error)
     return
   }
 
   redirect('/dashboard/team')
 }
 
-export async function promoteContactToMember(contactId: string, role: string): Promise<{ error?: string }> {
-  if (!VALID_ROLES.includes(role)) return { error: 'Rol inválido' }
+export async function promoteContactToMember(
+  contactId: string,
+  role: string
+): Promise<{ error?: string }> {
+  if (!VALID_ROLES.includes(role as InviteRole)) return { error: 'Rol inválido' }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -62,7 +126,7 @@ export async function promoteContactToMember(contactId: string, role: string): P
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id, campaign_ids, role')
+    .select('tenant_id, campaign_ids, role, full_name')
     .eq('id', user.id)
     .single()
 
@@ -81,54 +145,47 @@ export async function promoteContactToMember(contactId: string, role: string): P
 
   const fullName = `${contact.first_name} ${contact.last_name}`.trim()
 
-  try {
-    const admin = createAdminClient()
-    const { error } = await admin.auth.admin.inviteUserByEmail(contact.email, {
-      data: {
-        full_name:    fullName,
-        role,
-        phone:        contact.phone ?? undefined,
-        tenant_id:    profile?.tenant_id,
-        campaign_ids: profile?.campaign_ids ?? [],
-      },
-    })
+  const result = await issueInvite({
+    email: contact.email,
+    fullName,
+    phone: contact.phone ?? null,
+    role: role as InviteRole,
+    tenantId: profile?.tenant_id,
+    campaignIds: profile?.campaign_ids ?? [],
+    inviterName: profile?.full_name?.trim() || 'Tu equipo',
+  })
 
-    if (error) {
-      // User already exists in auth — add them to this tenant instead
-      if (error.message.includes('already been registered')) {
-        const { data: { users } } = await admin.auth.admin.listUsers()
-        const existingUser = users.find(u => u.email === contact.email)
-        if (!existingUser) return { error: 'No se encontró el usuario registrado' }
+  if (result.error) {
+    // User already exists in auth — add them to this tenant instead
+    if (result.error.toLowerCase().includes('already been registered')) {
+      const admin = createAdminClient()
+      const { data: { users } } = await admin.auth.admin.listUsers()
+      const existingUser = users.find(u => u.email === contact.email)
+      if (!existingUser) return { error: 'No se encontró el usuario registrado' }
 
-        // Check if already a member of this tenant
-        const { data: existingProfile } = await admin
+      const { data: existingProfile } = await admin
+        .from('profiles')
+        .select('tenant_id, campaign_ids')
+        .eq('id', existingUser.id)
+        .single()
+
+      if (existingProfile?.tenant_id === profile?.tenant_id) {
+        const mergedCampaigns = Array.from(new Set([
+          ...(existingProfile.campaign_ids ?? []),
+          ...(profile?.campaign_ids ?? []),
+        ]))
+        const { error: updateErr } = await admin
           .from('profiles')
-          .select('tenant_id, campaign_ids')
+          .update({ role, campaign_ids: mergedCampaigns })
           .eq('id', existingUser.id)
-          .single()
-
-        if (existingProfile?.tenant_id === profile?.tenant_id) {
-          // Same tenant — just make sure campaign_ids are updated
-          const mergedCampaigns = Array.from(new Set([
-            ...(existingProfile.campaign_ids ?? []),
-            ...(profile?.campaign_ids ?? []),
-          ]))
-          const { error: updateErr } = await admin
-            .from('profiles')
-            .update({ role, campaign_ids: mergedCampaigns })
-            .eq('id', existingUser.id)
-          if (updateErr) return { error: updateErr.message }
-          return {}
-        }
-
-        // Different tenant — cannot move without losing access to the other tenant
-        return { error: 'Este usuario ya pertenece a otra organización. No se puede agregar sin perder su acceso actual.' }
+        if (updateErr) return { error: updateErr.message }
+        return {}
       }
 
-      return { error: error.message }
+      return { error: 'Este usuario ya pertenece a otra organización. No se puede agregar sin perder su acceso actual.' }
     }
-  } catch (err) {
-    return { error: String(err) }
+
+    return { error: result.error }
   }
 
   return {}
