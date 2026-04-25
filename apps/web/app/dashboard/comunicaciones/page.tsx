@@ -41,8 +41,17 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
     : null
 
   const emailConfigured    = !!(integrationConfig?.resend_api_key && integrationConfig?.resend_domain)
-  const smsConfigured      = !!(integrationConfig?.twilio_sid && integrationConfig?.twilio_token && integrationConfig?.twilio_from)
-  const whatsappConfigured = !!(integrationConfig?.twilio_sid && integrationConfig?.twilio_token && integrationConfig?.twilio_whatsapp_from)
+
+  const smsProvider        = integrationConfig?.sms_provider ?? 'twilio'
+  const whatsappProvider   = integrationConfig?.whatsapp_provider ?? 'twilio'
+
+  const smsConfigured = smsProvider === 'infobip'
+    ? !!(integrationConfig?.infobip_api_key && integrationConfig?.infobip_base_url && integrationConfig?.infobip_sms_from)
+    : !!(integrationConfig?.twilio_sid && integrationConfig?.twilio_token && integrationConfig?.twilio_from)
+
+  const whatsappConfigured = whatsappProvider === 'infobip'
+    ? !!(integrationConfig?.infobip_api_key && integrationConfig?.infobip_base_url && integrationConfig?.infobip_whatsapp_from)
+    : !!(integrationConfig?.twilio_sid && integrationConfig?.twilio_token && integrationConfig?.twilio_whatsapp_from)
 
   const [{ data: allEmailCampaigns }, { data: smsCampaigns }, { data: whatsappCampaigns }] = await Promise.all([
     supabase.from('email_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
@@ -86,7 +95,7 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
           <div>
             <h1 className="text-2xl font-semibold text-[#1b1f23]">Comunicaciones</h1>
             <p className="text-sm text-[#6a737d] mt-1">
-              {isEmailTab ? 'Campañas de email a segmentos de contactos' : 'Campañas de SMS via Twilio'}
+              {isEmailTab ? 'Campañas de email a segmentos de contactos' : isSmsTab ? 'Campañas de SMS a segmentos de contactos' : 'Campañas de WhatsApp a segmentos de contactos'}
             </p>
           </div>
           <Link href={newHref}>
