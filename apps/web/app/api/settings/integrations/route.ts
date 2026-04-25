@@ -27,11 +27,23 @@ export async function PATCH(request: Request) {
   const adminSupabase = createAdminClient()
 
   // Plain-text fields
-  const plainFields = ['resend_domain', 'resend_from_name', 'resend_from_email', 'twilio_sid', 'twilio_from', 'twilio_whatsapp_from'] as const
+  const plainFields = [
+    'resend_domain', 'resend_from_name', 'resend_from_email',
+    'twilio_sid', 'twilio_from', 'twilio_whatsapp_from',
+    'sms_provider', 'whatsapp_provider',
+    'infobip_base_url', 'infobip_sms_from', 'infobip_whatsapp_from',
+  ] as const
   const updates: Record<string, unknown> = {}
 
   for (const key of plainFields) {
     if (key in body) updates[key] = body[key] || null
+  }
+
+  // Provider selection guard: only allow known values.
+  for (const key of ['sms_provider', 'whatsapp_provider'] as const) {
+    if (key in updates && updates[key] !== null && !['twilio', 'infobip'].includes(updates[key] as string)) {
+      return NextResponse.json({ error: `Valor inválido para ${key}` }, { status: 400 })
+    }
   }
 
   // Encrypt sensitive fields via DB function
@@ -59,6 +71,19 @@ export async function PATCH(request: Request) {
   } else if ('twilio_token' in body) {
     updates.twilio_token = null
     updates.twilio_token_hint = null
+  }
+
+  if ('infobip_api_key' in body && body.infobip_api_key) {
+    const { data: encrypted, error: encryptErr } = await adminSupabase.rpc('encrypt_integration_key', { raw: body.infobip_api_key })
+    if (!encrypted) {
+      return NextResponse.json({ error: `No se pudo encriptar la API key de Infobip. ${encryptErr?.message ?? 'Contacta al administrador.'}` }, { status: 500 })
+    }
+    updates.infobip_api_key = encrypted
+    const key = body.infobip_api_key as string
+    updates.infobip_api_key_hint = key.length > 4 ? `${key.slice(0, 4)}...${key.slice(-4)}` : '****'
+  } else if ('infobip_api_key' in body) {
+    updates.infobip_api_key = null
+    updates.infobip_api_key_hint = null
   }
 
   if ('resend_webhook_secret' in body && body.resend_webhook_secret) {

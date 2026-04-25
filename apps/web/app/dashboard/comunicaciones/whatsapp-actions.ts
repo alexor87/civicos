@@ -3,8 +3,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import twilio from 'twilio'
-import { getIntegrationConfig } from '@/lib/get-integration-config'
+import { getMessagingProvider } from '@/lib/messaging/dispatcher'
+import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
@@ -117,22 +117,18 @@ export async function sendWhatsAppCampaign(campaignId: string) {
 
   const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
 
-  // Load credentials from tenant integrations
-  const adminSupabase = createAdminClient()
-  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
-
-  let twilioToken = process.env.TWILIO_AUTH_TOKEN ?? ''
-  if (integrationConfig?.twilio_token) {
-    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.twilio_token })
-    if (decrypted) twilioToken = decrypted
-    else twilioToken = integrationConfig.twilio_token
-  }
-
-  const twilioSid    = integrationConfig?.twilio_sid            ?? process.env.TWILIO_ACCOUNT_SID   ?? ''
-  const whatsappFrom = integrationConfig?.twilio_whatsapp_from  ?? process.env.TWILIO_WHATSAPP_FROM ?? ''
-
-  if (!twilioSid || !twilioToken || !whatsappFrom) {
-    return { error: 'Configura el número de WhatsApp en Configuración → Integraciones' }
+  let provider
+  try {
+    provider = await getMessagingProvider(
+      supabase,
+      createAdminClient(),
+      profile!.tenant_id,
+      activeCampaignId || null,
+      'whatsapp'
+    )
+  } catch (err) {
+    if (err instanceof MessagingConfigError) return { error: err.message }
+    throw err
   }
 
   let contacts: { id: string; phone: string | null; first_name: string; last_name: string }[] = []
@@ -163,24 +159,17 @@ export async function sendWhatsAppCampaign(campaignId: string) {
     return { error: 'No hay destinatarios con teléfono en este segmento' }
   }
 
-  const client = twilio(twilioSid, twilioToken)
-
   let sent   = 0
   let failed = 0
 
   for (const contact of recipients) {
-    const toNumber = contact.phone!.startsWith('whatsapp:')
-      ? contact.phone!
-      : `whatsapp:${contact.phone!}`
+    const result = await provider.sendWhatsApp({
+      to:                contact.phone!,
+      templateId:        waCampaign.template_name,
+      templateVariables: (waCampaign.template_variables ?? {}) as Record<string, string>,
+    })
 
-    try {
-      const msg = await client.messages.create({
-        from:             whatsappFrom.startsWith('whatsapp:') ? whatsappFrom : `whatsapp:${whatsappFrom}`,
-        to:               toNumber,
-        contentSid:       waCampaign.template_name,
-        contentVariables: JSON.stringify(waCampaign.template_variables ?? {}),
-      })
-
+    if (result.ok) {
       await supabase.from('whatsapp_conversations').insert({
         tenant_id:           profile!.tenant_id,
         campaign_id:         activeCampaignId,
@@ -188,12 +177,11 @@ export async function sendWhatsAppCampaign(campaignId: string) {
         contact_id:          contact.id,
         direction:           'outbound',
         body:                waCampaign.template_name,
-        twilio_message_sid:  msg.sid,
+        twilio_message_sid:  result.providerMessageId ?? '',
         status:              'sent',
       })
-
       sent++
-    } catch {
+    } else {
       failed++
     }
   }

@@ -3,8 +3,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import twilio from 'twilio'
-import { getIntegrationConfig } from '@/lib/get-integration-config'
+import { getMessagingProvider } from '@/lib/messaging/dispatcher'
+import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
@@ -76,7 +76,7 @@ export async function updateSmsCampaign(campaignId: string, formData: FormData):
     .from('sms_campaigns')
     .update({ name, body_text, segment_id: segment_id || null })
     .eq('id', campaignId)
-    .eq('status', 'draft') // safety: only edit drafts
+    .eq('status', 'draft')
 
   if (error) return
 
@@ -110,22 +110,18 @@ export async function sendSmsCampaign(campaignId: string) {
 
   const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
 
-  // Load Twilio credentials from tenant integrations
-  const adminSupabase = createAdminClient()
-  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
-
-  let twilioToken = process.env.TWILIO_AUTH_TOKEN ?? ''
-  if (integrationConfig?.twilio_token) {
-    const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.twilio_token })
-    if (decrypted) twilioToken = decrypted
-    else twilioToken = integrationConfig.twilio_token
-  }
-
-  const twilioSid  = integrationConfig?.twilio_sid  ?? process.env.TWILIO_ACCOUNT_SID ?? ''
-  const fromNumber = integrationConfig?.twilio_from  ?? process.env.TWILIO_FROM_NUMBER ?? ''
-
-  if (!twilioSid || !twilioToken || !fromNumber) {
-    return { error: 'Configura las credenciales de Twilio en Configuración → Integraciones' }
+  let provider
+  try {
+    provider = await getMessagingProvider(
+      supabase,
+      createAdminClient(),
+      profile!.tenant_id,
+      activeCampaignId || null,
+      'sms'
+    )
+  } catch (err) {
+    if (err instanceof MessagingConfigError) return { error: err.message }
+    throw err
   }
 
   let contacts: { id: string; phone: string | null; first_name: string; last_name: string }[] = []
@@ -157,8 +153,6 @@ export async function sendSmsCampaign(campaignId: string) {
     return { error: 'No hay destinatarios con teléfono en este segmento' }
   }
 
-  const client = twilio(twilioSid, twilioToken)
-
   let sent = 0
   let failed = 0
 
@@ -167,16 +161,9 @@ export async function sendSmsCampaign(campaignId: string) {
       .replace(/\{nombre\}/gi,  contact.first_name ?? '')
       .replace(/\{apellido\}/gi, contact.last_name ?? '')
 
-    try {
-      await client.messages.create({
-        from: fromNumber,
-        to:   contact.phone!,
-        body: personalizedBody,
-      })
-      sent++
-    } catch {
-      failed++
-    }
+    const result = await provider.sendSMS({ to: contact.phone!, body: personalizedBody })
+    if (result.ok) sent++
+    else failed++
   }
 
   await supabase
@@ -214,39 +201,27 @@ export async function sendTestSms(campaignId: string, toPhone: string) {
 
   if (!smsCampaign) return { error: 'Campaña SMS no encontrada' }
 
-  const adminSupabase2 = createAdminClient()
-  const integrationConfig2 = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
-
-  let twilioToken = process.env.TWILIO_AUTH_TOKEN ?? ''
-  if (integrationConfig2?.twilio_token) {
-    const { data: decrypted } = await adminSupabase2.rpc('decrypt_integration_key', { encrypted: integrationConfig2.twilio_token })
-    if (decrypted) twilioToken = decrypted
-    else twilioToken = integrationConfig2.twilio_token
-  }
-
-  const twilioSid  = integrationConfig2?.twilio_sid  ?? process.env.TWILIO_ACCOUNT_SID ?? ''
-  const fromNumber = integrationConfig2?.twilio_from  ?? process.env.TWILIO_FROM_NUMBER ?? ''
-
-  if (!twilioSid || !twilioToken || !fromNumber) {
-    return { error: 'Configura las credenciales de Twilio en Configuración → Integraciones' }
+  let provider
+  try {
+    provider = await getMessagingProvider(
+      supabase,
+      createAdminClient(),
+      profile!.tenant_id,
+      activeCampaignId || null,
+      'sms'
+    )
+  } catch (err) {
+    if (err instanceof MessagingConfigError) return { error: err.message }
+    throw err
   }
 
   const previewBody = smsCampaign.body_text
     .replace(/\{nombre\}/gi,  profile?.full_name?.split(' ')[0] ?? 'Usuario')
     .replace(/\{apellido\}/gi, profile?.full_name?.split(' ')[1] ?? '')
 
-  const client = twilio(twilioSid, twilioToken)
-
-  try {
-    await client.messages.create({
-      from: fromNumber,
-      to:   toPhone,
-      body: `[PRUEBA] ${previewBody}`,
-    })
-    return { ok: true }
-  } catch {
-    return { error: 'Error al enviar el SMS de prueba' }
-  }
+  const result = await provider.sendSMS({ to: toPhone, body: `[PRUEBA] ${previewBody}` })
+  if (!result.ok) return { error: result.error || 'Error al enviar el SMS de prueba' }
+  return { ok: true }
 }
 
 // ── deleteSmsCampaign ─────────────────────────────────────────────────────────

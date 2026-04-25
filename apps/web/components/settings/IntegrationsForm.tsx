@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Mail, MessageSquare, Brain, ChevronDown, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Circle, Trash2, Globe, ExternalLink } from 'lucide-react'
 
+type ProviderId = 'twilio' | 'infobip'
+
 interface IntegrationConfig {
   id:                     string
   tenant_id:              string
@@ -26,6 +28,13 @@ interface IntegrationConfig {
   twilio_whatsapp_from:   string | null
   resend_webhook_secret:  string | null
   resend_webhook_secret_hint: string | null
+  sms_provider:           ProviderId | null
+  whatsapp_provider:      ProviderId | null
+  infobip_api_key:        string | null
+  infobip_api_key_hint:   string | null
+  infobip_base_url:       string | null
+  infobip_sms_from:       string | null
+  infobip_whatsapp_from:  string | null
 }
 
 interface Props {
@@ -341,6 +350,20 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
   const [savingWhatsApp,   setSavingWhatsApp]   = useState(false)
   const [whatsappOpen,     setWhatsappOpen]     = useState(false)
 
+  // Provider selection per channel
+  const [smsProvider,      setSmsProvider]      = useState<ProviderId>(config?.sms_provider      ?? 'twilio')
+  const [whatsappProvider, setWhatsappProvider] = useState<ProviderId>(config?.whatsapp_provider ?? 'twilio')
+
+  // Infobip state
+  const [infobipApiKey,        setInfobipApiKey]        = useState('')
+  const [showInfobipKey,       setShowInfobipKey]       = useState(false)
+  const [infobipBaseUrl,       setInfobipBaseUrl]       = useState(config?.infobip_base_url       ?? '')
+  const [infobipSmsFrom,       setInfobipSmsFrom]       = useState(config?.infobip_sms_from       ?? '')
+  const [infobipWhatsappFrom,  setInfobipWhatsappFrom]  = useState(config?.infobip_whatsapp_from  ?? '')
+  const [testingInfobip,       setTestingInfobip]       = useState(false)
+  const infobipHasKey = !!(config?.infobip_api_key_hint || infobipApiKey)
+  const infobipHasBase = !!infobipBaseUrl.trim()
+
   // Resend status: needs both API key and domain
   const resendHasKey    = !!(config?.resend_api_key_hint || resendApiKey)
   const resendHasDomain = !!resendDomain.trim()
@@ -350,14 +373,32 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
 
   // Twilio status: needs SID, token, and from number
   const twilioHasToken = !!(config?.twilio_token_hint || twilioToken)
-  const twilioStatus: IntegrationStatus = twilioSid.trim() && twilioHasToken && twilioFrom.trim()
+  const twilioCoreOk   = !!(twilioSid.trim() && twilioHasToken)
+
+  // SMS status by selected provider
+  const smsStatus: IntegrationStatus =
+    smsProvider === 'infobip'
+      ? (infobipHasKey && infobipHasBase && infobipSmsFrom.trim()
+          ? 'connected'
+          : (infobipHasKey || infobipHasBase || infobipSmsFrom.trim() ? 'unverified' : 'unconfigured'))
+      : (twilioCoreOk && twilioFrom.trim()
+          ? 'connected'
+          : (twilioSid.trim() || twilioHasToken || twilioFrom.trim() ? 'unverified' : 'unconfigured'))
+
+  // WhatsApp status by selected provider
+  const whatsappStatus: IntegrationStatus =
+    whatsappProvider === 'infobip'
+      ? (infobipHasKey && infobipHasBase && infobipWhatsappFrom.trim()
+          ? 'connected'
+          : (infobipHasKey || infobipHasBase || infobipWhatsappFrom.trim() ? 'unverified' : 'unconfigured'))
+      : (twilioCoreOk && whatsappFrom.trim()
+          ? 'connected'
+          : (whatsappFrom.trim() ? 'unverified' : 'unconfigured'))
+
+  // Legacy alias kept for the hint badge on the SMS card
+  const twilioStatus: IntegrationStatus = twilioCoreOk && twilioFrom.trim()
     ? 'connected'
     : (twilioSid.trim() || twilioHasToken || twilioFrom.trim() ? 'unverified' : 'unconfigured')
-
-  // WhatsApp status: needs Twilio creds + WhatsApp number
-  const whatsappStatus: IntegrationStatus = twilioStatus === 'connected' && whatsappFrom.trim()
-    ? 'connected'
-    : (whatsappFrom.trim() ? 'unverified' : 'unconfigured')
 
   // ── Domain / email validation ───────────────────────────────────────────
   const isFullEmail = resendDomain.includes('@')
@@ -429,16 +470,20 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
     } else toast.error('Error al guardar configuración de email')
   }
 
-  const saveTwilio = async () => {
+  const saveSmsConfig = async () => {
     setSavingTwilio(true)
-    const payload: Record<string, unknown> = {
-      twilio_sid:   twilioSid   || null,
-      twilio_from:  twilioFrom  || null,
-    }
-    if (twilioToken) {
-      payload.twilio_token = twilioToken
+    const payload: Record<string, unknown> = { sms_provider: smsProvider }
+    if (smsProvider === 'twilio') {
+      payload.twilio_sid  = twilioSid  || null
+      payload.twilio_from = twilioFrom || null
+      if (twilioToken) payload.twilio_token = twilioToken
+    } else {
+      payload.infobip_base_url = infobipBaseUrl || null
+      payload.infobip_sms_from = infobipSmsFrom || null
+      if (infobipApiKey) payload.infobip_api_key = infobipApiKey
     }
     if (campaignId) payload.campaign_id = campaignId
+
     const res = await fetch('/api/settings/integrations', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -447,24 +492,33 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
     setSavingTwilio(false)
     if (res.ok) {
       toast.success('Configuración de SMS guardada')
-      if (twilioToken) setTwilioToken('')
+      if (twilioToken)   setTwilioToken('')
+      if (infobipApiKey) setInfobipApiKey('')
     } else toast.error('Error al guardar configuración de SMS')
   }
 
-  const saveWhatsApp = async () => {
+  const saveWhatsAppConfig = async () => {
     setSavingWhatsApp(true)
-    const payload: Record<string, unknown> = {
-      twilio_whatsapp_from: whatsappFrom || null,
+    const payload: Record<string, unknown> = { whatsapp_provider: whatsappProvider }
+    if (whatsappProvider === 'twilio') {
+      payload.twilio_whatsapp_from = whatsappFrom || null
+    } else {
+      payload.infobip_base_url      = infobipBaseUrl      || null
+      payload.infobip_whatsapp_from = infobipWhatsappFrom || null
+      if (infobipApiKey) payload.infobip_api_key = infobipApiKey
     }
     if (campaignId) payload.campaign_id = campaignId
+
     const res = await fetch('/api/settings/integrations', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
     setSavingWhatsApp(false)
-    if (res.ok) toast.success('Configuración de WhatsApp guardada')
-    else toast.error('Error al guardar configuración de WhatsApp')
+    if (res.ok) {
+      toast.success('Configuración de WhatsApp guardada')
+      if (infobipApiKey) setInfobipApiKey('')
+    } else toast.error('Error al guardar configuración de WhatsApp')
   }
 
   // ── Test handlers ──────────────────────────────────────────────────────
@@ -505,6 +559,28 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
     }
     setTestingTwilio(false)
   }
+
+  const testInfobip = async () => {
+    setTestingInfobip(true)
+    try {
+      const res = await fetch('/api/settings/integrations/test-infobip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (res.ok) toast.success('Conexión con Infobip verificada')
+      else {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error ?? 'No se pudo verificar la conexión con Infobip')
+      }
+    } catch {
+      toast.error('Error de conexión')
+    }
+    setTestingInfobip(false)
+  }
+
+  const testActiveSmsProvider     = () => smsProvider     === 'infobip' ? testInfobip() : testTwilio()
+  const testActiveWhatsappProvider = () => whatsappProvider === 'infobip' ? testInfobip() : testTwilio()
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -733,7 +809,7 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
         )}
       </Card>
 
-      {/* ── Twilio Card ─────────────────────────────────────────────────────── */}
+      {/* ── SMS Card ─────────────────────────────────────────────────────── */}
       <Card className="border border-slate-200 rounded-xl overflow-hidden">
         <CardHeader
           className="cursor-pointer hover:bg-slate-50/50 transition-colors py-4 px-5"
@@ -743,82 +819,129 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
             <div className="flex items-center gap-3">
               <MessageSquare className="h-5 w-5 text-slate-500" />
               <div>
-                <p className="text-sm font-semibold text-slate-900">SMS — Twilio</p>
-                {twilioFrom && <p className="text-xs text-slate-500 mt-0.5">Origen: {twilioFrom}</p>}
+                <p className="text-sm font-semibold text-slate-900">
+                  SMS — {smsProvider === 'infobip' ? 'Infobip' : 'Twilio'}
+                </p>
+                {smsProvider === 'twilio' && twilioFrom && (
+                  <p className="text-xs text-slate-500 mt-0.5">Origen: {twilioFrom}</p>
+                )}
+                {smsProvider === 'infobip' && infobipSmsFrom && (
+                  <p className="text-xs text-slate-500 mt-0.5">Sender: {infobipSmsFrom}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <StatusBadge status={twilioStatus} />
+              <StatusBadge status={smsStatus} />
               <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${twilioOpen ? 'rotate-180' : ''}`} />
             </div>
           </div>
         </CardHeader>
         {twilioOpen && (
           <CardContent className="border-t border-slate-100 pt-4 space-y-4">
-            {config?.twilio_token_hint && (
-              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
-                <span>Auth Token: <code className="font-mono">{config.twilio_token_hint}</code></span>
-                <CheckCircle className="h-3 w-3 text-emerald-500" />
-              </div>
+            <div className="space-y-1.5">
+              <Label>Proveedor</Label>
+              <Select value={smsProvider} onValueChange={(v) => setSmsProvider(v as ProviderId)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="twilio">Twilio</SelectItem>
+                  <SelectItem value="infobip">Infobip</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {smsProvider === 'twilio' ? (
+              <>
+                {config?.twilio_token_hint && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+                    <span>Auth Token: <code className="font-mono">{config.twilio_token_hint}</code></span>
+                    <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="twilio_sid">Account SID</Label>
+                  <Input id="twilio_sid" value={twilioSid} onChange={e => setTwilioSid(e.target.value)} placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="twilio_token">Auth Token</Label>
+                  <div className="relative">
+                    <Input
+                      id="twilio_token"
+                      type={showToken ? 'text' : 'password'}
+                      value={twilioToken}
+                      onChange={e => setTwilioToken(e.target.value)}
+                      placeholder={config?.twilio_token_hint ? 'Dejar vacío para mantener el actual' : 'Tu Auth Token de Twilio'}
+                      className="pr-10"
+                    />
+                    <button type="button" onClick={() => setShowToken(!showToken)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                      aria-label={showToken ? 'Ocultar token' : 'Mostrar token'}>
+                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">El token se encripta antes de guardarse.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="twilio_from">Número de origen</Label>
+                  <Input id="twilio_from" value={twilioFrom} onChange={e => setTwilioFrom(e.target.value)} placeholder="+15551234567" />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Encuentra estas credenciales en{' '}
+                  <a href="https://console.twilio.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">console.twilio.com</a>{' '}→ Account Info.
+                </p>
+              </>
+            ) : (
+              <>
+                {config?.infobip_api_key_hint && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+                    <span>API Key: <code className="font-mono">{config.infobip_api_key_hint}</code></span>
+                    <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="infobip_api_key">API Key</Label>
+                  <div className="relative">
+                    <Input
+                      id="infobip_api_key"
+                      type={showInfobipKey ? 'text' : 'password'}
+                      value={infobipApiKey}
+                      onChange={e => setInfobipApiKey(e.target.value)}
+                      placeholder={config?.infobip_api_key_hint ? 'Dejar vacío para mantener la actual' : 'Tu API key de Infobip'}
+                      className="pr-10"
+                    />
+                    <button type="button" onClick={() => setShowInfobipKey(!showInfobipKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                      aria-label={showInfobipKey ? 'Ocultar key' : 'Mostrar key'}>
+                      {showInfobipKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">La API key se encripta antes de guardarse.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="infobip_base_url">Base URL</Label>
+                  <Input id="infobip_base_url" value={infobipBaseUrl} onChange={e => setInfobipBaseUrl(e.target.value)} placeholder="55eexx.api.infobip.com" />
+                  <p className="text-xs text-muted-foreground">El subdominio asignado por Infobip (sin https://).</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="infobip_sms_from">Sender SMS</Label>
+                  <Input id="infobip_sms_from" value={infobipSmsFrom} onChange={e => setInfobipSmsFrom(e.target.value)} placeholder="Scrutix o +5731xxxxxxx" />
+                  <p className="text-xs text-muted-foreground">Sender ID alfanumérico o número aprobado.</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Encuentra estas credenciales en{' '}
+                  <a href="https://portal.infobip.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">portal.infobip.com</a>{' '}→ Página de inicio.
+                </p>
+              </>
             )}
-            <div className="space-y-1.5">
-              <Label htmlFor="twilio_sid">Account SID</Label>
-              <Input
-                id="twilio_sid"
-                value={twilioSid}
-                onChange={e => setTwilioSid(e.target.value)}
-                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="twilio_token">Auth Token</Label>
-              <div className="relative">
-                <Input
-                  id="twilio_token"
-                  type={showToken ? 'text' : 'password'}
-                  value={twilioToken}
-                  onChange={e => setTwilioToken(e.target.value)}
-                  placeholder={config?.twilio_token_hint ? 'Dejar vacío para mantener el actual' : 'Tu Auth Token de Twilio'}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken(!showToken)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-                  aria-label={showToken ? 'Ocultar token' : 'Mostrar token'}
-                >
-                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                El token se encripta antes de guardarla.
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="twilio_from">Número de origen</Label>
-              <Input
-                id="twilio_from"
-                value={twilioFrom}
-                onChange={e => setTwilioFrom(e.target.value)}
-                placeholder="+15551234567"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Encuentra estas credenciales en{' '}
-              <a href="https://console.twilio.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                console.twilio.com
-              </a>{' '}
-              → Account Info.
-            </p>
+
             <div className="flex gap-2">
-              <Button size="sm" onClick={saveTwilio} disabled={savingTwilio}>
+              <Button size="sm" onClick={saveSmsConfig} disabled={savingTwilio}>
                 {savingTwilio && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {savingTwilio ? 'Guardando…' : 'Guardar'}
               </Button>
-              {twilioStatus !== 'unconfigured' && (
-                <Button size="sm" variant="outline" onClick={testTwilio} disabled={testingTwilio}>
-                  {testingTwilio && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {testingTwilio ? 'Probando…' : 'Probar conexión'}
+              {smsStatus !== 'unconfigured' && (
+                <Button size="sm" variant="outline" onClick={testActiveSmsProvider} disabled={testingTwilio || testingInfobip}>
+                  {(testingTwilio || testingInfobip) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {(testingTwilio || testingInfobip) ? 'Probando…' : 'Probar conexión'}
                 </Button>
               )}
             </div>
@@ -835,8 +958,15 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
             <div className="flex items-center gap-3">
               <MessageSquare className="h-5 w-5 text-[#25D366]" />
               <div>
-                <p className="text-sm font-semibold text-slate-900">WhatsApp — Twilio Business</p>
-                {whatsappFrom && <p className="text-xs text-slate-500 mt-0.5">Número: {whatsappFrom}</p>}
+                <p className="text-sm font-semibold text-slate-900">
+                  WhatsApp — {whatsappProvider === 'infobip' ? 'Infobip' : 'Twilio Business'}
+                </p>
+                {whatsappProvider === 'twilio' && whatsappFrom && (
+                  <p className="text-xs text-slate-500 mt-0.5">Número: {whatsappFrom}</p>
+                )}
+                {whatsappProvider === 'infobip' && infobipWhatsappFrom && (
+                  <p className="text-xs text-slate-500 mt-0.5">Sender: {infobipWhatsappFrom}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -847,42 +977,72 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
         </CardHeader>
         {whatsappOpen && (
           <CardContent className="border-t border-slate-100 pt-4 space-y-4">
-            {twilioStatus === 'connected' ? (
-              <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-                <CheckCircle className="h-3 w-3" />
-                Usa las mismas credenciales de Twilio configuradas en SMS
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-                <AlertCircle className="h-3 w-3" />
-                Primero configura las credenciales de Twilio en la sección de SMS
-              </div>
-            )}
             <div className="space-y-1.5">
-              <Label htmlFor="twilio_whatsapp_from">Número de WhatsApp Business</Label>
-              <Input
-                id="twilio_whatsapp_from"
-                value={whatsappFrom}
-                onChange={e => setWhatsappFrom(e.target.value)}
-                placeholder="+5731xxxxxxx"
-              />
-              <p className="text-xs text-muted-foreground">
-                El número aprobado como WhatsApp Sender en{' '}
-                <a href="https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders" target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                  console.twilio.com
-                </a>{' '}
-                → WhatsApp Senders.
-              </p>
+              <Label>Proveedor</Label>
+              <Select value={whatsappProvider} onValueChange={(v) => setWhatsappProvider(v as ProviderId)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="twilio">Twilio</SelectItem>
+                  <SelectItem value="infobip">Infobip</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            {whatsappProvider === 'twilio' ? (
+              <>
+                {twilioStatus === 'connected' ? (
+                  <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+                    <CheckCircle className="h-3 w-3" />
+                    Usa las mismas credenciales de Twilio configuradas en SMS
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                    <AlertCircle className="h-3 w-3" />
+                    Primero configura las credenciales de Twilio en la sección de SMS
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="twilio_whatsapp_from">Número de WhatsApp Business</Label>
+                  <Input id="twilio_whatsapp_from" value={whatsappFrom} onChange={e => setWhatsappFrom(e.target.value)} placeholder="+5731xxxxxxx" />
+                  <p className="text-xs text-muted-foreground">
+                    El número aprobado como WhatsApp Sender en{' '}
+                    <a href="https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders" target="_blank" rel="noreferrer" className="text-primary hover:underline">console.twilio.com</a>{' '}→ WhatsApp Senders.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                {(infobipHasKey && infobipHasBase) ? (
+                  <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+                    <CheckCircle className="h-3 w-3" />
+                    Usa las mismas credenciales de Infobip configuradas en SMS
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                    <AlertCircle className="h-3 w-3" />
+                    Configura primero la API key y Base URL de Infobip en la sección de SMS
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="infobip_whatsapp_from">Número de WhatsApp Sender</Label>
+                  <Input id="infobip_whatsapp_from" value={infobipWhatsappFrom} onChange={e => setInfobipWhatsappFrom(e.target.value)} placeholder="+5731xxxxxxx" />
+                  <p className="text-xs text-muted-foreground">
+                    El número aprobado vía Meta en{' '}
+                    <a href="https://portal.infobip.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">portal.infobip.com</a>{' '}→ Canales y números → WhatsApp.
+                  </p>
+                </div>
+              </>
+            )}
+
             <div className="flex gap-2">
-              <Button size="sm" onClick={saveWhatsApp} disabled={savingWhatsApp}>
+              <Button size="sm" onClick={saveWhatsAppConfig} disabled={savingWhatsApp}>
                 {savingWhatsApp && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {savingWhatsApp ? 'Guardando…' : 'Guardar'}
               </Button>
               {whatsappStatus !== 'unconfigured' && (
-                <Button size="sm" variant="outline" onClick={testTwilio} disabled={testingTwilio}>
-                  {testingTwilio && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {testingTwilio ? 'Probando…' : 'Probar conexión'}
+                <Button size="sm" variant="outline" onClick={testActiveWhatsappProvider} disabled={testingTwilio || testingInfobip}>
+                  {(testingTwilio || testingInfobip) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {(testingTwilio || testingInfobip) ? 'Probando…' : 'Probar conexión'}
                 </Button>
               )}
             </div>

@@ -33,7 +33,7 @@ vi.mock('@/lib/supabase/server', () => ({
       if (table === 'tenant_integrations') {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn(() => ({
+            or: vi.fn(() => ({
               limit: vi.fn(() => ({
                 single: mockIntegrationQuery,
               })),
