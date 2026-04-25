@@ -51,6 +51,11 @@ export default async function WhatsAppCampaignDetailPage({ params }: { params: P
     segmentName = seg?.name ?? null
   }
 
+  const manualCount = campaign.recipient_ids?.length ?? 0
+  const recipientLabel = manualCount > 0
+    ? `Manual · ${manualCount} contacto${manualCount === 1 ? '' : 's'}`
+    : segmentName ?? 'Todos los contactos'
+
   // Conversation history for this campaign
   const { data: conversations } = await supabase
     .from('whatsapp_conversations')
@@ -111,8 +116,8 @@ export default async function WhatsAppCampaignDetailPage({ params }: { params: P
               <dd className="font-mono text-[#1b1f23] mt-0.5">{campaign.template_name}</dd>
             </div>
             <div>
-              <dt className="text-[#6a737d]">Segmento</dt>
-              <dd className="text-[#1b1f23] mt-0.5">{segmentName ?? 'Todos los contactos'}</dd>
+              <dt className="text-[#6a737d]">Destinatarios</dt>
+              <dd className="text-[#1b1f23] mt-0.5">{recipientLabel}</dd>
             </div>
             <div>
               <dt className="text-[#6a737d]">Destinatarios</dt>

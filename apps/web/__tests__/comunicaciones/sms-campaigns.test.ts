@@ -5,17 +5,20 @@ const {
   mockGetUser,
   mockProfileSingle,
   mockInsert,
+  mockSmsInsert,
   mockSmsSingle,
   mockCampaignSingle,
   mockUpdate,
   mockDelete,
   mockSegmentSingle,
   mockContactsQuery,
+  mockContactsByIds,
   mockTwilioCreate,
 } = vi.hoisted(() => ({
   mockGetUser:        vi.fn(),
   mockProfileSingle:  vi.fn(),
   mockInsert:         vi.fn(),
+  mockSmsInsert:      vi.fn(),
   mockSmsSingle:      vi.fn(),
   mockCampaignSingle: vi.fn().mockResolvedValue({ data: {
     twilio_sid:   'ACtest',
@@ -26,6 +29,7 @@ const {
   mockDelete:         vi.fn(),
   mockSegmentSingle:  vi.fn(),
   mockContactsQuery:  vi.fn(),
+  mockContactsByIds:  vi.fn(),
   mockTwilioCreate:   vi.fn().mockResolvedValue({ sid: 'SM123' }),
 }))
 
@@ -42,7 +46,10 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       if (table === 'sms_campaigns') {
         return {
-          insert:  vi.fn(() => ({ select: vi.fn(() => ({ single: mockInsert })) })),
+          insert:  vi.fn((payload: unknown) => {
+            mockSmsInsert(payload)
+            return { select: vi.fn(() => ({ single: mockInsert })) }
+          }),
           select:  vi.fn(() => ({ eq: vi.fn(() => ({ single: mockSmsSingle })) })),
           update:  vi.fn(() => ({ eq: vi.fn(() => ({ eq: mockUpdate })) })),
           delete:  vi.fn(() => ({ eq: mockDelete })),
@@ -59,6 +66,11 @@ vi.mock('@/lib/supabase/server', () => ({
             eq: vi.fn(() => ({
               is: vi.fn(() => ({
                 not: vi.fn(mockContactsQuery),
+              })),
+            })),
+            in: vi.fn(() => ({
+              is: vi.fn(() => ({
+                not: vi.fn(mockContactsByIds),
               })),
             })),
           })),
@@ -178,6 +190,46 @@ describe('createSmsCampaign', () => {
       createSmsCampaign(makeFormData({ name: 'SMS Agosto', body_text: 'Únete {nombre}' }))
     ).rejects.toThrow('REDIRECT:/dashboard/comunicaciones/sms/sms1')
   })
+
+  it('persists recipient_ids when manual selection is provided', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
+    mockProfileSingle.mockResolvedValueOnce({
+      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'campaign_manager' },
+    })
+    mockInsert.mockResolvedValueOnce({ data: { id: 'sms2' }, error: null })
+    await expect(
+      createSmsCampaign(makeFormData({
+        name: 'Manual SMS',
+        body_text: 'Hola',
+        segment_id: 'seg-should-be-ignored',
+        recipient_ids: JSON.stringify(['a', 'b', 'c']),
+      }))
+    ).rejects.toThrow('REDIRECT:/dashboard/comunicaciones/sms/sms2')
+    expect(mockSmsInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipient_ids: ['a', 'b', 'c'],
+        segment_id:    null, // overridden because recipient_ids is set
+      })
+    )
+  })
+
+  it('ignores invalid recipient_ids payload', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
+    mockProfileSingle.mockResolvedValueOnce({
+      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'campaign_manager' },
+    })
+    mockInsert.mockResolvedValueOnce({ data: { id: 'sms3' }, error: null })
+    await expect(
+      createSmsCampaign(makeFormData({
+        name: 'Bad IDs',
+        body_text: 'Hola',
+        recipient_ids: 'not-json',
+      }))
+    ).rejects.toThrow('REDIRECT:/dashboard/comunicaciones/sms/sms3')
+    expect(mockSmsInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ recipient_ids: null })
+    )
+  })
 })
 
 // ── sendSmsCampaign ───────────────────────────────────────────────────────────
@@ -220,7 +272,7 @@ describe('sendSmsCampaign', () => {
     })
     mockContactsQuery.mockResolvedValueOnce({ data: [] })
     const result = await sendSmsCampaign('sms1')
-    expect(result).toEqual({ error: 'No hay destinatarios con teléfono en este segmento' })
+    expect(result).toEqual({ error: 'No hay destinatarios con teléfono para esta campaña' })
   })
 
   it('returns error when analyst role tries to send', async () => {
@@ -230,6 +282,34 @@ describe('sendSmsCampaign', () => {
     })
     const result = await sendSmsCampaign('sms1')
     expect(result).toEqual({ error: 'No tienes permiso para enviar campañas SMS' })
+  })
+
+  it('sends SMS to manually selected recipients (overrides segment)', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
+    mockProfileSingle.mockResolvedValueOnce({
+      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'campaign_manager' },
+    })
+    mockSmsSingle.mockResolvedValueOnce({
+      data: {
+        id: 'sms1',
+        status: 'draft',
+        segment_id: 'seg1',
+        recipient_ids: ['contact-a', 'contact-b'],
+        body_text: 'Hola {nombre}',
+      },
+    })
+    mockContactsByIds.mockResolvedValueOnce({
+      data: [
+        { id: 'contact-a', phone: '+573001111111', first_name: 'Ana',  last_name: 'A.' },
+        { id: 'contact-b', phone: '+573002222222', first_name: 'Beto', last_name: 'B.' },
+      ],
+    })
+    const result = await sendSmsCampaign('sms1')
+    expect(result).toEqual({ sent: 2, failed: 0 })
+    expect(mockTwilioCreate).toHaveBeenCalledTimes(2)
+    // Segment branch must not execute
+    expect(mockSegmentSingle).not.toHaveBeenCalled()
+    expect(mockContactsQuery).not.toHaveBeenCalled()
   })
 
   it('sends SMS to contacts without segment', async () => {

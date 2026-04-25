@@ -8,6 +8,18 @@ import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
+function parseRecipientIds(raw: string | null): string[] | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+    const ids = parsed.filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
+    return ids.length > 0 ? ids : null
+  } catch {
+    return null
+  }
+}
+
 // ── createWhatsAppCampaign ────────────────────────────────────────────────────
 
 export async function createWhatsAppCampaign(formData: FormData): Promise<void> {
@@ -28,6 +40,7 @@ export async function createWhatsAppCampaign(formData: FormData): Promise<void> 
   const template_name      = (formData.get('template_name') as string)?.trim()
   const template_variables = (formData.get('template_variables') as string) || '{}'
   const segment_id         = (formData.get('segment_id') as string) || null
+  const recipient_ids      = parseRecipientIds(formData.get('recipient_ids') as string | null)
 
   if (!name || !template_name) return
 
@@ -42,7 +55,8 @@ export async function createWhatsAppCampaign(formData: FormData): Promise<void> 
       name,
       template_name,
       template_variables: parsedVariables,
-      segment_id:         segment_id || null,
+      segment_id:         recipient_ids ? null : (segment_id || null),
+      recipient_ids:      recipient_ids || null,
       status:             'draft',
       recipient_count:    0,
       created_by:         user.id,
@@ -75,6 +89,7 @@ export async function updateWhatsAppCampaign(campaignId: string, formData: FormD
   const template_name      = (formData.get('template_name') as string)?.trim()
   const template_variables = (formData.get('template_variables') as string) || '{}'
   const segment_id         = (formData.get('segment_id') as string) || null
+  const recipient_ids      = parseRecipientIds(formData.get('recipient_ids') as string | null)
 
   if (!name || !template_name) return
 
@@ -83,7 +98,13 @@ export async function updateWhatsAppCampaign(campaignId: string, formData: FormD
 
   await supabase
     .from('whatsapp_campaigns')
-    .update({ name, template_name, template_variables: parsedVariables, segment_id: segment_id || null })
+    .update({
+      name,
+      template_name,
+      template_variables: parsedVariables,
+      segment_id:    recipient_ids ? null : (segment_id || null),
+      recipient_ids: recipient_ids || null,
+    })
     .eq('id', campaignId)
     .eq('status', 'draft')
 
@@ -131,9 +152,18 @@ export async function sendWhatsAppCampaign(campaignId: string) {
     throw err
   }
 
+  // Resolve recipients — manual IDs > segment > all
   let contacts: { id: string; phone: string | null; first_name: string; last_name: string }[] = []
 
-  if (waCampaign.segment_id) {
+  if (waCampaign.recipient_ids?.length) {
+    const { data } = await supabase
+      .from('contacts')
+      .select('id, phone, first_name, last_name')
+      .in('id', waCampaign.recipient_ids)
+      .is('deleted_at', null)
+      .not('phone', 'is', null)
+    contacts = (data ?? []) as typeof contacts
+  } else if (waCampaign.segment_id) {
     const { data: segment } = await supabase
       .from('contact_segments')
       .select('filters')
@@ -156,7 +186,7 @@ export async function sendWhatsAppCampaign(campaignId: string) {
 
   const recipients = contacts.filter(c => c.phone)
   if (recipients.length === 0) {
-    return { error: 'No hay destinatarios con teléfono en este segmento' }
+    return { error: 'No hay destinatarios con teléfono para esta campaña' }
   }
 
   let sent   = 0

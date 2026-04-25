@@ -27,6 +27,15 @@ export default async function EditSmsCampaignPage({ params }: { params: Promise<
 
   if (!campaign || campaign.status !== 'draft') redirect(`/dashboard/comunicaciones/sms/${id}`)
 
+  let manualContacts: { id: string; first_name: string | null; last_name: string | null; email: string | null; phone: string | null }[] = []
+  if (campaign.recipient_ids?.length) {
+    const { data } = await supabase
+      .from('contacts')
+      .select('id, first_name, last_name, email, phone')
+      .in('id', campaign.recipient_ids)
+    manualContacts = (data ?? []) as typeof manualContacts
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
@@ -41,12 +50,15 @@ export default async function EditSmsCampaignPage({ params }: { params: Promise<
         </div>
 
         <SmsCampaignForm
+          campaignId={campaignId}
           segments={segments ?? []}
           action={updateSmsCampaign.bind(null, id)}
           defaultValues={{
-            name:       campaign.name,
-            body_text:  campaign.body_text,
-            segment_id: campaign.segment_id ?? '',
+            name:            campaign.name,
+            body_text:       campaign.body_text,
+            segment_id:      campaign.segment_id ?? '',
+            recipient_ids:   campaign.recipient_ids ?? [],
+            manual_contacts: manualContacts,
           }}
         />
       </div>

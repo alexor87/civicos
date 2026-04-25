@@ -41,7 +41,7 @@ export default async function NewSmsCampaignPage() {
           </p>
         </div>
 
-        <SmsCampaignForm segments={segments ?? []} action={createSmsCampaign} />
+        <SmsCampaignForm campaignId={campaignId} segments={segments ?? []} action={createSmsCampaign} />
       </div>
     </div>
   )

@@ -9,16 +9,26 @@ interface Contact {
   first_name: string | null
   last_name: string | null
   email: string | null
+  phone?: string | null
 }
+
+type RequireField = 'email' | 'phone'
 
 interface Props {
   campaignId: string
   selectedIds: string[]
   selectedContacts: Contact[]
   onChange: (ids: string[], contacts: Contact[]) => void
+  requireField?: RequireField
 }
 
-export function ContactPicker({ campaignId, selectedIds, selectedContacts, onChange }: Props) {
+export function ContactPicker({
+  campaignId,
+  selectedIds,
+  selectedContacts,
+  onChange,
+  requireField = 'email',
+}: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Contact[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -35,9 +45,8 @@ export function ContactPicker({ campaignId, selectedIds, selectedContacts, onCha
     try {
       const res = await fetch(`/api/contacts/search?q=${encodeURIComponent(q)}&campaign_id=${campaignId}`)
       const data = await res.json()
-      // Only show contacts that have email and aren't already selected
       const filtered = (data.results ?? []).filter(
-        (c: Contact) => c.email && !selectedIds.includes(c.id)
+        (c: Contact) => !!c[requireField] && !selectedIds.includes(c.id),
       )
       setResults(filtered)
     } catch {
@@ -45,7 +54,7 @@ export function ContactPicker({ campaignId, selectedIds, selectedContacts, onCha
     } finally {
       setIsSearching(false)
     }
-  }, [campaignId, selectedIds])
+  }, [campaignId, selectedIds, requireField])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -57,7 +66,6 @@ export function ContactPicker({ campaignId, selectedIds, selectedContacts, onCha
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [query, search])
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -82,23 +90,25 @@ export function ContactPicker({ campaignId, selectedIds, selectedContacts, onCha
   }
 
   const displayName = (c: Contact) =>
-    [c.first_name, c.last_name].filter(Boolean).join(' ') || c.email || 'Sin nombre'
+    [c.first_name, c.last_name].filter(Boolean).join(' ') || c[requireField] || 'Sin nombre'
+
+  const placeholder = requireField === 'phone'
+    ? 'Buscar por nombre o teléfono...'
+    : 'Buscar por nombre o email...'
 
   return (
     <div ref={containerRef} className="space-y-2">
-      {/* Search input */}
       <div className="relative">
         <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
           value={query}
           onChange={e => { setQuery(e.target.value); setShowDropdown(true) }}
           onFocus={() => setShowDropdown(true)}
-          placeholder="Buscar por nombre o email..."
+          placeholder={placeholder}
           className="pl-7 text-xs h-8"
         />
       </div>
 
-      {/* Search results dropdown */}
       {showDropdown && (query.trim() || isSearching) && (
         <div className="border rounded-md bg-background shadow-md max-h-40 overflow-y-auto">
           {isSearching ? (
@@ -116,7 +126,11 @@ export function ContactPicker({ campaignId, selectedIds, selectedContacts, onCha
                 <User className="h-3 w-3 text-muted-foreground shrink-0" />
                 <div className="min-w-0 flex-1">
                   <span className="text-xs font-medium truncate block">{displayName(c)}</span>
-                  {c.email && <span className="text-[10px] text-muted-foreground truncate block">{c.email}</span>}
+                  {c[requireField] && (
+                    <span className="text-[10px] text-muted-foreground truncate block">
+                      {c[requireField]}
+                    </span>
+                  )}
                 </div>
               </button>
             ))
@@ -124,7 +138,6 @@ export function ContactPicker({ campaignId, selectedIds, selectedContacts, onCha
         </div>
       )}
 
-      {/* Selected contacts as chips */}
       {selectedContacts.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {selectedContacts.map(c => (

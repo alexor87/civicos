@@ -52,6 +52,11 @@ export default async function SmsCampaignDetailPage({ params }: { params: Promis
     segmentName = seg?.name ?? null
   }
 
+  const manualCount = campaign.recipient_ids?.length ?? 0
+  const recipientLabel = manualCount > 0
+    ? `Manual · ${manualCount} contacto${manualCount === 1 ? '' : 's'}`
+    : segmentName ?? 'Todos los contactos'
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
@@ -113,9 +118,9 @@ export default async function SmsCampaignDetailPage({ params }: { params: Promis
             </div>
             <div>
               <p className="text-sm font-semibold text-[#1b1f23] truncate max-w-[140px]">
-                {segmentName ?? 'Todos los contactos'}
+                {recipientLabel}
               </p>
-              <p className="text-xs text-[#6a737d] mt-0.5">Segmento</p>
+              <p className="text-xs text-[#6a737d] mt-0.5">Destinatarios</p>
             </div>
           </div>
           <div className="flex items-center gap-3 px-5 py-4">
