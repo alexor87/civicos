@@ -41,7 +41,7 @@ export default async function NewWhatsAppCampaignPage() {
           </p>
         </div>
 
-        <WhatsAppCampaignForm segments={segments ?? []} action={createWhatsAppCampaign} />
+        <WhatsAppCampaignForm campaignId={campaignId} segments={segments ?? []} action={createWhatsAppCampaign} />
       </div>
     </div>
   )

@@ -5,17 +5,20 @@ const {
   mockGetUser,
   mockProfileSingle,
   mockInsert,
+  mockWaInsert,
   mockWaCampaignSingle,
   mockCampaignSingle,
   mockUpdate,
   mockDelete,
   mockContactsQuery,
+  mockContactsByIds,
   mockTwilioCreate,
   mockConversationsInsert,
 } = vi.hoisted(() => ({
   mockGetUser:             vi.fn(),
   mockProfileSingle:       vi.fn(),
   mockInsert:              vi.fn(),
+  mockWaInsert:            vi.fn(),
   mockWaCampaignSingle:    vi.fn(),
   mockCampaignSingle:      vi.fn().mockResolvedValue({
     data: {
@@ -27,6 +30,7 @@ const {
   mockUpdate:              vi.fn(),
   mockDelete:              vi.fn(),
   mockContactsQuery:       vi.fn(),
+  mockContactsByIds:       vi.fn(),
   mockTwilioCreate:        vi.fn().mockResolvedValue({ sid: 'SM123' }),
   mockConversationsInsert: vi.fn().mockResolvedValue({ error: null }),
 }))
@@ -44,7 +48,10 @@ vi.mock('@/lib/supabase/server', () => ({
       }
       if (table === 'whatsapp_campaigns') {
         return {
-          insert:  vi.fn(() => ({ select: vi.fn(() => ({ single: mockInsert })) })),
+          insert:  vi.fn((payload: unknown) => {
+            mockWaInsert(payload)
+            return { select: vi.fn(() => ({ single: mockInsert })) }
+          }),
           select:  vi.fn(() => ({ eq: vi.fn(() => ({ single: mockWaCampaignSingle })) })),
           update:  vi.fn(() => ({ eq: vi.fn(() => ({ eq: mockUpdate })) })),
           delete:  vi.fn(() => ({ eq: mockDelete })),
@@ -61,6 +68,11 @@ vi.mock('@/lib/supabase/server', () => ({
             eq: vi.fn(() => ({
               is: vi.fn(() => ({
                 not: vi.fn(mockContactsQuery),
+              })),
+            })),
+            in: vi.fn(() => ({
+              is: vi.fn(() => ({
+                not: vi.fn(mockContactsByIds),
               })),
             })),
           })),
@@ -186,6 +198,28 @@ describe('createWhatsAppCampaign', () => {
       createWhatsAppCampaign(makeFormData({ name: 'WA Agosto', template_name: 'promo_votacion' }))
     ).rejects.toThrow('REDIRECT:/dashboard/comunicaciones/whatsapp/wa1')
   })
+
+  it('persists recipient_ids when manual selection is provided', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
+    mockProfileSingle.mockResolvedValueOnce({
+      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'campaign_manager' },
+    })
+    mockInsert.mockResolvedValueOnce({ data: { id: 'wa2' }, error: null })
+    await expect(
+      createWhatsAppCampaign(makeFormData({
+        name:           'Manual WA',
+        template_name:  'hello_world',
+        segment_id:     'seg-ignored',
+        recipient_ids:  JSON.stringify(['x', 'y']),
+      }))
+    ).rejects.toThrow('REDIRECT:/dashboard/comunicaciones/whatsapp/wa2')
+    expect(mockWaInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipient_ids: ['x', 'y'],
+        segment_id:    null,
+      })
+    )
+  })
 })
 
 // ── sendWhatsAppCampaign ──────────────────────────────────────────────────────
@@ -237,7 +271,31 @@ describe('sendWhatsAppCampaign', () => {
     })
     mockContactsQuery.mockResolvedValueOnce({ data: [] })
     const result = await sendWhatsAppCampaign('wa1')
-    expect(result).toEqual({ error: 'No hay destinatarios con teléfono en este segmento' })
+    expect(result).toEqual({ error: 'No hay destinatarios con teléfono para esta campaña' })
+  })
+
+  it('sends WhatsApp to manually selected recipients (overrides segment)', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
+    mockProfileSingle.mockResolvedValueOnce({
+      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'campaign_manager' },
+    })
+    mockWaCampaignSingle.mockResolvedValueOnce({
+      data: {
+        id: 'wa1', status: 'draft', segment_id: 'seg1',
+        recipient_ids: ['ct-a', 'ct-b'],
+        template_name: 'hello_world', template_variables: {},
+      },
+    })
+    mockContactsByIds.mockResolvedValueOnce({
+      data: [
+        { id: 'ct-a', phone: '+573001111111', first_name: 'Ana',  last_name: 'A.' },
+        { id: 'ct-b', phone: '+573002222222', first_name: 'Beto', last_name: 'B.' },
+      ],
+    })
+    const result = await sendWhatsAppCampaign('wa1')
+    expect(result).toEqual({ sent: 2, failed: 0 })
+    expect(mockTwilioCreate).toHaveBeenCalledTimes(2)
+    expect(mockContactsQuery).not.toHaveBeenCalled()
   })
 
   it('sends WhatsApp to contacts and logs conversations', async () => {

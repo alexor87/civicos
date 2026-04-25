@@ -8,6 +8,18 @@ import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
 
+function parseRecipientIds(raw: string | null): string[] | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+    const ids = parsed.filter((x: unknown): x is string => typeof x === 'string' && x.length > 0)
+    return ids.length > 0 ? ids : null
+  } catch {
+    return null
+  }
+}
+
 // ── createSmsCampaign ─────────────────────────────────────────────────────────
 
 export async function createSmsCampaign(formData: FormData): Promise<void> {
@@ -24,9 +36,10 @@ export async function createSmsCampaign(formData: FormData): Promise<void> {
   const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
   if (!canManage) return
 
-  const name       = (formData.get('name') as string)?.trim()
-  const body_text  = (formData.get('body_text') as string)?.trim()
-  const segment_id = (formData.get('segment_id') as string) || null
+  const name          = (formData.get('name') as string)?.trim()
+  const body_text     = (formData.get('body_text') as string)?.trim()
+  const segment_id    = (formData.get('segment_id') as string) || null
+  const recipient_ids = parseRecipientIds(formData.get('recipient_ids') as string | null)
 
   if (!name || !body_text) return
 
@@ -37,7 +50,8 @@ export async function createSmsCampaign(formData: FormData): Promise<void> {
       campaign_id:     profile?.campaign_ids?.[0] ?? null,
       name,
       body_text,
-      segment_id:      segment_id || null,
+      segment_id:      recipient_ids ? null : (segment_id || null),
+      recipient_ids:   recipient_ids || null,
       status:          'draft',
       recipient_count: 0,
       created_by:      user.id,
@@ -66,15 +80,21 @@ export async function updateSmsCampaign(campaignId: string, formData: FormData):
   const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
   if (!canManage) return
 
-  const name       = (formData.get('name') as string)?.trim()
-  const body_text  = (formData.get('body_text') as string)?.trim()
-  const segment_id = (formData.get('segment_id') as string) || null
+  const name          = (formData.get('name') as string)?.trim()
+  const body_text     = (formData.get('body_text') as string)?.trim()
+  const segment_id    = (formData.get('segment_id') as string) || null
+  const recipient_ids = parseRecipientIds(formData.get('recipient_ids') as string | null)
 
   if (!name || !body_text) return
 
   const { error } = await supabase
     .from('sms_campaigns')
-    .update({ name, body_text, segment_id: segment_id || null })
+    .update({
+      name,
+      body_text,
+      segment_id:    recipient_ids ? null : (segment_id || null),
+      recipient_ids: recipient_ids || null,
+    })
     .eq('id', campaignId)
     .eq('status', 'draft')
 
@@ -124,9 +144,18 @@ export async function sendSmsCampaign(campaignId: string) {
     throw err
   }
 
+  // Resolve recipients — manual IDs > segment > all
   let contacts: { id: string; phone: string | null; first_name: string; last_name: string }[] = []
 
-  if (smsCampaign.segment_id) {
+  if (smsCampaign.recipient_ids?.length) {
+    const { data } = await supabase
+      .from('contacts')
+      .select('id, phone, first_name, last_name')
+      .in('id', smsCampaign.recipient_ids)
+      .is('deleted_at', null)
+      .not('phone', 'is', null)
+    contacts = (data ?? []) as typeof contacts
+  } else if (smsCampaign.segment_id) {
     const { data: segment } = await supabase
       .from('contact_segments')
       .select('filters')
@@ -150,7 +179,7 @@ export async function sendSmsCampaign(campaignId: string) {
   const recipients = contacts.filter(c => c.phone)
 
   if (recipients.length === 0) {
-    return { error: 'No hay destinatarios con teléfono en este segmento' }
+    return { error: 'No hay destinatarios con teléfono para esta campaña' }
   }
 
   let sent = 0
