@@ -1,4 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// SMS + WhatsApp cards are gated by feature flags in production. Tests assume
+// they are visible — force the flags on.
+vi.mock('@/lib/features/messaging-channels', () => ({
+  SMS_CHANNEL_ENABLED: true,
+  WHATSAPP_CHANNEL_ENABLED: true,
+  ANY_NON_EMAIL_CHANNEL_ENABLED: true,
+  isChannelEnabled: () => true,
+}))
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { IntegrationsForm } from '@/components/settings/IntegrationsForm'
 

@@ -15,6 +15,7 @@ import {
   CATEGORY_CONFIG,
   describeTrigger,
 } from './flowTypes'
+import { SMS_CHANNEL_ENABLED, WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 import { FlowRecipeCard } from './FlowRecipeCard'
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -478,8 +479,14 @@ function ActionConfigForm({
 
 // ── Action type picker ───────────────────────────────────────────
 
+const MESSAGING_TYPES: ActionType[] = [
+  ...(WHATSAPP_CHANNEL_ENABLED ? (['send_whatsapp'] as ActionType[]) : []),
+  ...(SMS_CHANNEL_ENABLED      ? (['send_sms']      as ActionType[]) : []),
+  'send_email',
+]
+
 const ACTION_GROUPS: { label: string; types: ActionType[] }[] = [
-  { label: 'Mensajes', types: ['send_whatsapp', 'send_sms', 'send_email'] },
+  { label: 'Mensajes', types: MESSAGING_TYPES },
   { label: 'Datos del contacto', types: ['add_tag', 'remove_tag', 'change_sympathy'] },
   { label: 'Tareas y eventos', types: ['create_task', 'notify_team', 'create_calendar_event'] },
   { label: 'Control', types: ['wait'] },
@@ -535,7 +542,10 @@ export function VisualFlowEditor({ initialFlow }: VisualFlowEditorProps = {}) {
   const [saving, setSaving]           = useState(false)
   const [saveError, setSaveError]     = useState<string | null>(null)
 
-  const triggerTypes = Object.keys(TRIGGER_CONFIG) as TriggerType[]
+  // Hide `contact_replied` trigger when neither SMS nor WhatsApp is enabled
+  const triggerTypes = (Object.keys(TRIGGER_CONFIG) as TriggerType[]).filter(t =>
+    t === 'contact_replied' ? (SMS_CHANNEL_ENABLED || WHATSAPP_CHANNEL_ENABLED) : true
+  )
 
   function selectTrigger(type: TriggerType) {
     setTrigger(defaultTrigger(type))

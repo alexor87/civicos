@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus, Mail, MessageSquare, Send, FileText, AlertCircle, TrendingUp, Inbox, LayoutTemplate } from 'lucide-react'
 import { SmartCommsPanel } from '@/components/dashboard/comunicaciones/SmartCommsPanel'
 import { ServiceSetupModal } from '@/components/dashboard/comunicaciones/ServiceSetupModal'
+import { SMS_CHANNEL_ENABLED, WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 // WhatsApp icon via MessageSquare with green tint handled via className
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
@@ -17,9 +19,15 @@ type SearchParams = Promise<{ tab?: string; type?: string }>
 
 export default async function ComunicacionesPage({ searchParams }: { searchParams: SearchParams }) {
   const { tab = 'email', type = 'campaigns' } = await searchParams
+
+  // Bounce disabled-channel tabs back to email
+  if ((tab === 'sms' && !SMS_CHANNEL_ENABLED) || (tab === 'whatsapp' && !WHATSAPP_CHANNEL_ENABLED)) {
+    redirect('/dashboard/comunicaciones?tab=email')
+  }
+
   const isEmailTab     = tab === 'email' || (tab !== 'sms' && tab !== 'whatsapp')
-  const isSmsTab       = tab === 'sms'
-  const isWhatsAppTab  = tab === 'whatsapp'
+  const isSmsTab       = tab === 'sms'      && SMS_CHANNEL_ENABLED
+  const isWhatsAppTab  = tab === 'whatsapp' && WHATSAPP_CHANNEL_ENABLED
   const isTemplateView = isEmailTab && type === 'templates'
 
   const supabase = await createClient()
@@ -53,11 +61,17 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
     ? !!(integrationConfig?.infobip_api_key && integrationConfig?.infobip_base_url && integrationConfig?.infobip_whatsapp_from)
     : !!(integrationConfig?.twilio_sid && integrationConfig?.twilio_token && integrationConfig?.twilio_whatsapp_from)
 
-  const [{ data: allEmailCampaigns }, { data: smsCampaigns }, { data: whatsappCampaigns }] = await Promise.all([
+  const [{ data: allEmailCampaigns }, smsRes, waRes] = await Promise.all([
     supabase.from('email_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
-    supabase.from('sms_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
-    supabase.from('whatsapp_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
+    SMS_CHANNEL_ENABLED
+      ? supabase.from('sms_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] as Array<Record<string, unknown>> }),
+    WHATSAPP_CHANNEL_ENABLED
+      ? supabase.from('whatsapp_campaigns').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] as Array<Record<string, unknown>> }),
   ])
+  const smsCampaigns      = smsRes.data
+  const whatsappCampaigns = waRes.data
 
   // Split email items into templates vs campaigns
   const emailTemplates  = (allEmailCampaigns ?? []).filter((c: { is_template?: boolean }) => c.is_template)
@@ -85,8 +99,8 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
     <div className="min-h-screen bg-background">
       {/* Service setup modal for unconfigured channels */}
       {isEmailTab && !emailConfigured && <ServiceSetupModal channel="email" isConfigured={false} />}
-      {isSmsTab && !smsConfigured && <ServiceSetupModal channel="sms" isConfigured={false} />}
-      {isWhatsAppTab && !whatsappConfigured && <ServiceSetupModal channel="whatsapp" isConfigured={false} />}
+      {isSmsTab      && SMS_CHANNEL_ENABLED      && !smsConfigured      && <ServiceSetupModal channel="sms" isConfigured={false} />}
+      {isWhatsAppTab && WHATSAPP_CHANNEL_ENABLED && !whatsappConfigured && <ServiceSetupModal channel="whatsapp" isConfigured={false} />}
 
       <div className="p-4 md:p-6 lg:p-8 space-y-6">
 
@@ -106,51 +120,57 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
           </Link>
         </div>
 
-        {/* Main channel tabs */}
-        <div className="flex gap-1 bg-white border border-[#dcdee6] rounded-md p-1 w-fit">
-          <Link
-            href="/dashboard/comunicaciones?tab=email"
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-              isEmailTab
-                ? 'bg-[#2960ec] text-white'
-                : 'text-[#6a737d] hover:text-[#1b1f23]'
-            }`}
-          >
-            <Mail className="h-3.5 w-3.5" />
-            Email
-            <span className={`ml-1 text-xs tabular-nums ${isEmailTab ? 'text-blue-200' : 'text-[#6a737d]'}`}>
-              {(allEmailCampaigns ?? []).length}
-            </span>
-          </Link>
-          <Link
-            href="/dashboard/comunicaciones?tab=sms"
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-              isSmsTab
-                ? 'bg-[#2960ec] text-white'
-                : 'text-[#6a737d] hover:text-[#1b1f23]'
-            }`}
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            SMS
-            <span className={`ml-1 text-xs tabular-nums ${isSmsTab ? 'text-blue-200' : 'text-[#6a737d]'}`}>
-              {smsCampaigns?.length ?? 0}
-            </span>
-          </Link>
-          <Link
-            href="/dashboard/comunicaciones?tab=whatsapp"
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-              isWhatsAppTab
-                ? 'bg-[#25D366] text-white'
-                : 'text-[#6a737d] hover:text-[#1b1f23]'
-            }`}
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            WhatsApp
-            <span className={`ml-1 text-xs tabular-nums ${isWhatsAppTab ? 'text-green-100' : 'text-[#6a737d]'}`}>
-              {whatsappCampaigns?.length ?? 0}
-            </span>
-          </Link>
-        </div>
+        {/* Main channel tabs — only render the bar if more than one channel is enabled */}
+        {(SMS_CHANNEL_ENABLED || WHATSAPP_CHANNEL_ENABLED) && (
+          <div className="flex gap-1 bg-white border border-[#dcdee6] rounded-md p-1 w-fit">
+            <Link
+              href="/dashboard/comunicaciones?tab=email"
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                isEmailTab
+                  ? 'bg-[#2960ec] text-white'
+                  : 'text-[#6a737d] hover:text-[#1b1f23]'
+              }`}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Email
+              <span className={`ml-1 text-xs tabular-nums ${isEmailTab ? 'text-blue-200' : 'text-[#6a737d]'}`}>
+                {(allEmailCampaigns ?? []).length}
+              </span>
+            </Link>
+            {SMS_CHANNEL_ENABLED && (
+              <Link
+                href="/dashboard/comunicaciones?tab=sms"
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                  isSmsTab
+                    ? 'bg-[#2960ec] text-white'
+                    : 'text-[#6a737d] hover:text-[#1b1f23]'
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                SMS
+                <span className={`ml-1 text-xs tabular-nums ${isSmsTab ? 'text-blue-200' : 'text-[#6a737d]'}`}>
+                  {smsCampaigns?.length ?? 0}
+                </span>
+              </Link>
+            )}
+            {WHATSAPP_CHANNEL_ENABLED && (
+              <Link
+                href="/dashboard/comunicaciones?tab=whatsapp"
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                  isWhatsAppTab
+                    ? 'bg-[#25D366] text-white'
+                    : 'text-[#6a737d] hover:text-[#1b1f23]'
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                WhatsApp
+                <span className={`ml-1 text-xs tabular-nums ${isWhatsAppTab ? 'text-green-100' : 'text-[#6a737d]'}`}>
+                  {whatsappCampaigns?.length ?? 0}
+                </span>
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Email sub-tabs: Campañas / Plantillas */}
         {isEmailTab && (

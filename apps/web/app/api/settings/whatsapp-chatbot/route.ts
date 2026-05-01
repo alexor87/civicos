@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 export async function GET() {
+  if (!WHATSAPP_CHANNEL_ENABLED) {
+    return NextResponse.json({ error: 'whatsapp channel disabled' }, { status: 503 })
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -29,6 +34,10 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!WHATSAPP_CHANNEL_ENABLED) {
+    return NextResponse.json({ error: 'whatsapp channel disabled' }, { status: 503 })
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

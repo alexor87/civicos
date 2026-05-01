@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { ReportesCharts } from '@/components/dashboard/ReportesCharts'
 import { ReportesExportButtons } from '@/components/dashboard/ReportesExportButtons'
+import { SMS_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 export default async function ReportesPage() {
   const supabase = await createClient()
@@ -66,11 +67,13 @@ export default async function ReportesPage() {
       .eq('campaign_id', campaignId)
       .eq('status', 'sent'),
 
-    // SMS campaigns reach
-    supabase.from('sms_campaigns')
-      .select('recipient_count')
-      .eq('campaign_id', campaignId)
-      .eq('status', 'sent'),
+    // SMS campaigns reach (only when channel is enabled)
+    SMS_CHANNEL_ENABLED
+      ? supabase.from('sms_campaigns')
+          .select('recipient_count')
+          .eq('campaign_id', campaignId)
+          .eq('status', 'sent')
+      : Promise.resolve({ data: [] as { recipient_count: number | null }[] }),
 
     // Active volunteers (last 7 days)
     supabase.from('canvass_visits')
