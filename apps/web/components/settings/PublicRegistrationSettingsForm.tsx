@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Globe, Eye, Users, Shield, Bell, Palette, MapPin, Copy, Check } from 'lucide-react'
-import { WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 interface FormData {
   campaign_id: string
@@ -406,18 +405,16 @@ export function PublicRegistrationSettingsForm({
 
         {form.referral_enabled && (
           <div className="mt-4 space-y-4">
-            {WHATSAPP_CHANNEL_ENABLED && (
-              <Field label="Mensaje de WhatsApp al compartir">
-                <textarea
-                  value={form.whatsapp_share_message}
-                  onChange={(e) => update('whatsapp_share_message', e.target.value)}
-                  rows={3}
-                  placeholder="¡Únete a nuestra causa! Regístrate aquí: {link}"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#2262ec] focus:ring-2 focus:ring-[#2262ec]/20 resize-none"
-                />
-                <p className="text-xs text-slate-400 mt-1">Usa <code className="bg-slate-100 px-1 rounded">{'{link}'}</code> donde quieras que aparezca el enlace de registro. Si no lo incluyes, se añadirá al final del mensaje automáticamente.</p>
-              </Field>
-            )}
+            <Field label="Mensaje de WhatsApp al compartir">
+              <textarea
+                value={form.whatsapp_share_message}
+                onChange={(e) => update('whatsapp_share_message', e.target.value)}
+                rows={3}
+                placeholder="¡Únete a nuestra causa! Regístrate aquí: {link}"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#2262ec] focus:ring-2 focus:ring-[#2262ec]/20 resize-none"
+              />
+              <p className="text-xs text-slate-400 mt-1">Usa <code className="bg-slate-100 px-1 rounded">{'{link}'}</code> donde quieras que aparezca el enlace de registro. Si no lo incluyes, se añadirá al final del mensaje automáticamente.</p>
+            </Field>
 
             <p className="text-sm font-medium text-slate-700">Niveles de gamificación</p>
             {form.level_names.map((name, i) => (

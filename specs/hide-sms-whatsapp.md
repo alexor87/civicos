@@ -44,7 +44,7 @@ Cuando ambos están en `false`, la UI se comporta como si solo existiera email:
 - [ ] RF-7: Content Studio (Contenido IA) — `sms` removido del dropdown de tipos de contenido.
 - [ ] RF-8: SmartCommsPanel sugiere solo email-related actions cuando los otros canales están off.
 - [ ] RF-9: Reportes — KPI de "SMS enviados" oculto. Total de comunicaciones = solo emails.
-- [ ] RF-10: Public registration — el share button de WhatsApp queda oculto en la página pública de "mis referidos".
+- [ ] ~~RF-10: Public registration — el share button de WhatsApp queda oculto en la página pública de "mis referidos".~~ **Removed:** el share button es un deep link `wa.me/?text=...` que abre la app de WhatsApp en el dispositivo del usuario; no usa proveedor ni API. Se mantiene visible.
 - [ ] RF-11: Server actions y API routes de SMS/WhatsApp retornan `{ error: 'Canal SMS/WhatsApp deshabilitado temporalmente' }` (HTTP 503 para API routes) cuando se invocan con el flag off.
 - [ ] RF-12: La sidebar no cambia — "Comunicaciones" sigue visible (lleva al hub que ahora solo muestra email).
 
@@ -71,8 +71,8 @@ Cuando ambos están en `false`, la UI se comporta como si solo existiera email:
 | `apps/web/app/dashboard/contenido/page.tsx` | Filtrar tipo `sms` del dropdown |
 | `apps/web/components/dashboard/comunicaciones/SmartCommsPanel.tsx` | Restringir suggestions a email |
 | `apps/web/app/dashboard/reportes/page.tsx` | Ocultar KPIs de SMS; usar solo email reach |
-| `apps/web/components/settings/PublicRegistrationSettingsForm.tsx` | Ocultar campo `whatsapp_share_message` (si lo hay) |
-| `apps/web/app/registro/[id]/page.tsx` (o public referral page) | Ocultar share button de WhatsApp |
+| ~~`apps/web/components/settings/PublicRegistrationSettingsForm.tsx`~~ | ~~Ocultar campo `whatsapp_share_message`~~ — no aplica, es un deep link a la app del usuario |
+| ~~`apps/web/app/registro/[id]/page.tsx`~~ | ~~Ocultar share button de WhatsApp~~ — no aplica, es un deep link a la app del usuario |
 
 ### Archivos a modificar (server)
 | Archivo | Cambio |
