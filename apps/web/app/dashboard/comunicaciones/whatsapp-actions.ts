@@ -7,6 +7,9 @@ import { getMessagingProvider } from '@/lib/messaging/dispatcher'
 import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
+import { WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
+
+const WHATSAPP_DISABLED_ERROR = 'El canal WhatsApp está deshabilitado temporalmente.'
 
 function parseRecipientIds(raw: string | null): string[] | null {
   if (!raw) return null
@@ -23,6 +26,8 @@ function parseRecipientIds(raw: string | null): string[] | null {
 // ── createWhatsAppCampaign ────────────────────────────────────────────────────
 
 export async function createWhatsAppCampaign(formData: FormData): Promise<void> {
+  if (!WHATSAPP_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -72,6 +77,8 @@ export async function createWhatsAppCampaign(formData: FormData): Promise<void> 
 // ── updateWhatsAppCampaign ────────────────────────────────────────────────────
 
 export async function updateWhatsAppCampaign(campaignId: string, formData: FormData): Promise<void> {
+  if (!WHATSAPP_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -114,6 +121,8 @@ export async function updateWhatsAppCampaign(campaignId: string, formData: FormD
 // ── sendWhatsAppCampaign ──────────────────────────────────────────────────────
 
 export async function sendWhatsAppCampaign(campaignId: string) {
+  if (!WHATSAPP_CHANNEL_ENABLED) return { error: WHATSAPP_DISABLED_ERROR }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')

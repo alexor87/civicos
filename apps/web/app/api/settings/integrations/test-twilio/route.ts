@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
+import { ANY_NON_EMAIL_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 export async function POST() {
+  if (!ANY_NON_EMAIL_CHANNEL_ENABLED) {
+    return NextResponse.json({ error: 'Canales SMS/WhatsApp deshabilitados' }, { status: 503 })
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })

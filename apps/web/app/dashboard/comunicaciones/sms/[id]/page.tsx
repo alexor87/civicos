@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, MessageSquare, Send, Trash2, FileText, AlertCircle, Users, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { deleteSmsCampaign } from '../../sms-actions'
 import { SendSmsButton } from '@/components/dashboard/SendSmsButton'
 import { TestSmsButton } from '@/components/dashboard/TestSmsButton'
+import { SMS_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
   draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
@@ -13,6 +15,8 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: Re
 }
 
 export default async function SmsCampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  if (!SMS_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

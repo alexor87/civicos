@@ -85,6 +85,13 @@ vi.mock('@/lib/supabase/admin', () => ({
   })),
 }))
 
+vi.mock('@/lib/features/messaging-channels', () => ({
+  SMS_CHANNEL_ENABLED: true,
+  WHATSAPP_CHANNEL_ENABLED: true,
+  ANY_NON_EMAIL_CHANNEL_ENABLED: true,
+  isChannelEnabled: () => true,
+}))
+
 import { POST } from '@/app/api/webhooks/whatsapp/route'
 
 function makeTwilioBody(params: Record<string, string>) {

@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { WhatsAppCampaignForm } from '@/components/dashboard/WhatsAppCampaignForm'
 import { createWhatsAppCampaign } from '../../whatsapp-actions'
+import { WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 export default async function NewWhatsAppCampaignPage() {
+  if (!WHATSAPP_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')

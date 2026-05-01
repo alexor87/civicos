@@ -124,6 +124,13 @@ vi.mock('@/app/dashboard/contacts/segments/actions', () => ({
   applyFilters: vi.fn(async () => ({ data: [] })),
 }))
 
+vi.mock('@/lib/features/messaging-channels', () => ({
+  SMS_CHANNEL_ENABLED: true,
+  WHATSAPP_CHANNEL_ENABLED: true,
+  ANY_NON_EMAIL_CHANNEL_ENABLED: true,
+  isChannelEnabled: () => true,
+}))
+
 import {
   createWhatsAppCampaign,
   sendWhatsAppCampaign,

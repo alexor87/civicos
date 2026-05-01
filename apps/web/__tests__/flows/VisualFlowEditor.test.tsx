@@ -1,4 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// Tests exercise SMS/WhatsApp action paths in the flow builder, which are
+// gated by feature flags in production. Force them on for these tests.
+vi.mock('@/lib/features/messaging-channels', () => ({
+  SMS_CHANNEL_ENABLED: true,
+  WHATSAPP_CHANNEL_ENABLED: true,
+  ANY_NON_EMAIL_CHANNEL_ENABLED: true,
+  isChannelEnabled: () => true,
+}))
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { VisualFlowEditor } from '@/components/dashboard/flows/VisualFlowEditor'
 

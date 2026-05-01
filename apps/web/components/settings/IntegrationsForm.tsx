@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Mail, MessageSquare, Brain, ChevronDown, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Circle, Trash2, Globe, ExternalLink } from 'lucide-react'
+import { SMS_CHANNEL_ENABLED, WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 type ProviderId = 'twilio' | 'infobip'
 
@@ -810,6 +811,7 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
       </Card>
 
       {/* ── SMS Card ─────────────────────────────────────────────────────── */}
+      {SMS_CHANNEL_ENABLED && (
       <Card className="border border-slate-200 rounded-xl overflow-hidden">
         <CardHeader
           className="cursor-pointer hover:bg-slate-50/50 transition-colors py-4 px-5"
@@ -948,7 +950,9 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
           </CardContent>
         )}
       </Card>
+      )}
       {/* ── WhatsApp Card ──────────────────────────────────────────────────── */}
+      {WHATSAPP_CHANNEL_ENABLED && (
       <Card className="border border-slate-200 rounded-xl overflow-hidden">
         <CardHeader
           className="cursor-pointer hover:bg-slate-50/50 transition-colors py-4 px-5"
@@ -1049,6 +1053,7 @@ export function IntegrationsForm({ integrationConfig, campaignId, tenantId }: Pr
           </CardContent>
         )}
       </Card>
+      )}
     </div>
   )
 }

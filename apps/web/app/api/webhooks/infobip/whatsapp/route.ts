@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
 import { getMessagingProvider } from '@/lib/messaging/dispatcher'
 import { MessagingConfigError } from '@/lib/messaging/types'
+import { WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 interface InfobipInboundResult {
   from?: string
@@ -20,6 +21,10 @@ interface InfobipInboundPayload {
 }
 
 export async function POST(req: NextRequest) {
+  if (!WHATSAPP_CHANNEL_ENABLED) {
+    return NextResponse.json({ error: 'whatsapp channel disabled' }, { status: 503 })
+  }
+
   let payload: InfobipInboundPayload
   try {
     payload = (await req.json()) as InfobipInboundPayload

@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { SmsCampaignForm } from '@/components/dashboard/SmsCampaignForm'
 import { updateSmsCampaign } from '../../../sms-actions'
+import { SMS_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 export default async function EditSmsCampaignPage({ params }: { params: Promise<{ id: string }> }) {
+  if (!SMS_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -7,6 +7,9 @@ import { getMessagingProvider } from '@/lib/messaging/dispatcher'
 import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
 import type { SegmentFilter } from '@/lib/types/database'
+import { SMS_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
+
+const SMS_DISABLED_ERROR = 'El canal SMS está deshabilitado temporalmente.'
 
 function parseRecipientIds(raw: string | null): string[] | null {
   if (!raw) return null
@@ -23,6 +26,8 @@ function parseRecipientIds(raw: string | null): string[] | null {
 // ── createSmsCampaign ─────────────────────────────────────────────────────────
 
 export async function createSmsCampaign(formData: FormData): Promise<void> {
+  if (!SMS_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -67,6 +72,8 @@ export async function createSmsCampaign(formData: FormData): Promise<void> {
 // ── updateSmsCampaign ─────────────────────────────────────────────────────────
 
 export async function updateSmsCampaign(campaignId: string, formData: FormData): Promise<void> {
+  if (!SMS_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -106,6 +113,8 @@ export async function updateSmsCampaign(campaignId: string, formData: FormData):
 // ── sendSmsCampaign ───────────────────────────────────────────────────────────
 
 export async function sendSmsCampaign(campaignId: string) {
+  if (!SMS_CHANNEL_ENABLED) return { error: SMS_DISABLED_ERROR }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -210,6 +219,8 @@ export async function sendSmsCampaign(campaignId: string) {
 // ── sendTestSms ───────────────────────────────────────────────────────────────
 
 export async function sendTestSms(campaignId: string, toPhone: string) {
+  if (!SMS_CHANNEL_ENABLED) return { error: SMS_DISABLED_ERROR }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')

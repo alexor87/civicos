@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { generateContent, type ContentType, type ContentTone, type GenerateContentResult } from '@/app/dashboard/contenido/generate-action'
+import { SMS_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -349,7 +350,9 @@ function GenerateForm({
 const ALL_CONTENT_TYPES: { type: ContentType; label: string; icon: React.ElementType }[] = [
   { type: 'email',          label: 'Email',         icon: Mail          },
   { type: 'script',         label: 'Script',        icon: MessageSquare },
-  { type: 'sms',            label: 'SMS',           icon: Smartphone    },
+  ...(SMS_CHANNEL_ENABLED
+    ? [{ type: 'sms' as const, label: 'SMS', icon: Smartphone }]
+    : []),
   { type: 'talking_points', label: 'Talking Points',icon: Mic           },
   { type: 'speech',         label: 'Discurso',      icon: Megaphone     },
   { type: 'social_post',    label: 'Redes',         icon: Share2        },

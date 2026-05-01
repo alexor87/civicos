@@ -122,6 +122,15 @@ vi.mock('@/app/dashboard/contacts/segments/actions', () => ({
   applyFilters: vi.fn(async () => ({ data: [] })),
 }))
 
+// SMS feature flag is OFF by default in production code; tests need it ON to
+// exercise the underlying logic.
+vi.mock('@/lib/features/messaging-channels', () => ({
+  SMS_CHANNEL_ENABLED: true,
+  WHATSAPP_CHANNEL_ENABLED: true,
+  ANY_NON_EMAIL_CHANNEL_ENABLED: true,
+  isChannelEnabled: () => true,
+}))
+
 import {
   createSmsCampaign,
   sendSmsCampaign,

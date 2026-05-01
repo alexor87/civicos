@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, MessageSquare, Send, Trash2, FileText, AlertCircle, ArrowDown, ArrowUp } from 'lucide-react'
 import Link from 'next/link'
 import { deleteWhatsAppCampaign } from '../../whatsapp-actions'
 import { SendWhatsAppButton } from '@/components/dashboard/SendWhatsAppButton'
+import { WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
   draft:  { label: 'Borrador', className: 'bg-muted text-[#6a737d] border-[#dcdee6]',        Icon: FileText },
@@ -12,6 +14,8 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: Re
 }
 
 export default async function WhatsAppCampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  if (!WHATSAPP_CHANNEL_ENABLED) redirect('/dashboard/comunicaciones?tab=email')
+
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

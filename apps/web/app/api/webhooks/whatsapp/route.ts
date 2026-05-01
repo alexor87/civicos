@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callAI } from '@/lib/ai/call-ai'
 import { TwilioProvider } from '@/lib/messaging/providers/twilio'
+import { WHATSAPP_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
 
 // Twilio sends URL-encoded form data for webhooks
 function parseTwilioBody(body: string): Record<string, string> {
@@ -15,6 +16,10 @@ function parseTwilioBody(body: string): Record<string, string> {
 }
 
 export async function POST(req: NextRequest) {
+  if (!WHATSAPP_CHANNEL_ENABLED) {
+    return NextResponse.json({ error: 'whatsapp channel disabled' }, { status: 503 })
+  }
+
   const rawBody = await req.text()
   const params  = parseTwilioBody(rawBody)
 
