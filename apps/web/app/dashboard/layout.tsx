@@ -88,11 +88,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     return { id: c.id, name: c.name, tenant_id: c.tenant_id, tenant_name: tenantNameForCampaign, is_new_tenant: isNewTenant }
   })
 
-  // Resolve active campaign: prefer cookie if still valid; else first campaign of active tenant; else first overall.
-  const validCampaignIds = enrichedCampaigns.map(c => c.id)
-  const activeCampaignId = (cookieCampaignId && validCampaignIds.includes(cookieCampaignId))
-    ? cookieCampaignId
-    : (enrichedCampaigns.find(c => c.tenant_id === activeTenantId)?.id ?? enrichedCampaigns[0]?.id ?? '')
+  // Resolve active campaign — invariant: must belong to the active tenant.
+  // If no campaign in active tenant: leave empty ("Sin campaña") instead of
+  // falling back to a campaign of another tenant, which would mismatch RLS
+  // scope and silently show 0 data.
+  const cookieCampaign = enrichedCampaigns.find(c => c.id === cookieCampaignId)
+  const activeCampaignId = cookieCampaign?.tenant_id === activeTenantId
+    ? cookieCampaign.id
+    : (enrichedCampaigns.find(c => c.tenant_id === activeTenantId)?.id ?? '')
 
   const { count: suggestionCount } = await (
     supabase.from('ai_suggestions')
