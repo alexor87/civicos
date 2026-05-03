@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendAccessGrantedEmail } from '@/lib/email/transactional'
+import { sendAccessGrantedEmail, getAppUrl } from '@/lib/email/transactional'
 import type { InviteRole } from '@/lib/email/templates/invite-email'
 
 export interface AddExistingUserResult {
@@ -77,6 +77,26 @@ export async function addExistingUserToTenant(params: {
     campaignNames = (camps ?? []).map((c: { name: string }) => c.name).filter(Boolean)
   }
 
+  // Generate a magic-link sign-in token so the email CTA establishes the
+  // INVITEE's session (not whatever session the recipient has in their
+  // browser — which could belong to a different user, e.g. the inviter).
+  const appUrl = getAppUrl()
+  const fallbackLink = `${appUrl}/dashboard`
+  let actionLink = fallbackLink
+  let magicLinkFailed = false
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type:  'magiclink',
+    email: params.inviteeEmail,
+    options: {
+      redirectTo: `${appUrl}/auth/callback?next=/dashboard`,
+    },
+  })
+  if (linkError || !linkData?.properties?.action_link) {
+    magicLinkFailed = true
+  } else {
+    actionLink = linkData.properties.action_link
+  }
+
   const sendResult = await sendAccessGrantedEmail({
     to:            params.inviteeEmail,
     inviteeName:   params.inviteeName,
@@ -84,9 +104,11 @@ export async function addExistingUserToTenant(params: {
     tenantName:    tenant?.name ?? '',
     role:          params.role,
     campaignNames,
+    actionLink,
   })
 
-  return sendResult.ok
-    ? { existing_user: true }
-    : { existing_user: true, email_failed: true }
+  if (!sendResult.ok || magicLinkFailed) {
+    return { existing_user: true, email_failed: true }
+  }
+  return { existing_user: true }
 }

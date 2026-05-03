@@ -316,12 +316,22 @@ describe('promoteContactToMember — multi-tenant', () => {
     })
   }
 
-  it('inserts a new tenant_users row, sends access-granted email, and returns existing_user=true', async () => {
+  it('inserts a new tenant_users row, generates a magic-link, sends access-granted email with that link, and returns existing_user=true', async () => {
     setupBaseMocks()
     mockTenantUsersMaybeSingle.mockResolvedValueOnce({ data: null })
     mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
     mockAdminTenantsSingle.mockResolvedValueOnce({ data: { name: 'Jeoz' } })
     mockAdminCampaignsIn.mockResolvedValueOnce({ data: [{ name: 'Campaña Juan Esteban' }] })
+    // Second generateLink call (type: 'magiclink') succeeds with a token URL
+    mockGenerateLink.mockResolvedValueOnce({
+      data: {
+        properties: {
+          hashed_token: 'magic-token-xyz',
+          action_link:  'https://app.scrutix.co/auth/callback?token_hash=magic-token-xyz&type=magiclink&next=/dashboard',
+        },
+      },
+      error: null,
+    })
     mockSendAccessGrantedEmail.mockResolvedValueOnce({ ok: true, id: 'msg_1' })
 
     const result = await promoteContactToMember('contact_id_1', 'volunteer')
@@ -334,6 +344,12 @@ describe('promoteContactToMember — multi-tenant', () => {
       campaign_ids: ['c_target_1'],
     })
     expect(mockTenantUsersUpdate).not.toHaveBeenCalled()
+    // generateLink called twice: once for the original invite (failed), once for the magic-link
+    expect(mockGenerateLink).toHaveBeenCalledTimes(2)
+    expect(mockGenerateLink).toHaveBeenLastCalledWith(expect.objectContaining({
+      type:  'magiclink',
+      email: 'alexor87@gmail.com',
+    }))
     expect(mockSendAccessGrantedEmail).toHaveBeenCalledWith(expect.objectContaining({
       to:            'alexor87@gmail.com',
       inviteeName:   'Alexander Ortiz',
@@ -341,6 +357,7 @@ describe('promoteContactToMember — multi-tenant', () => {
       tenantName:    'Jeoz',
       role:          'volunteer',
       campaignNames: ['Campaña Juan Esteban'],
+      actionLink:    expect.stringContaining('token_hash=magic-token-xyz'),
     }))
     expect(mockSendInviteEmail).not.toHaveBeenCalled()
   })
@@ -369,13 +386,39 @@ describe('promoteContactToMember — multi-tenant', () => {
     mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
     mockAdminTenantsSingle.mockResolvedValueOnce({ data: { name: 'Jeoz' } })
     mockAdminCampaignsIn.mockResolvedValueOnce({ data: [] })
+    mockGenerateLink.mockResolvedValueOnce({
+      data: { properties: { hashed_token: 't', action_link: 'https://app.scrutix.co/auth/callback?token_hash=t' } },
+      error: null,
+    })
     mockSendAccessGrantedEmail.mockResolvedValueOnce({ ok: false, error: 'Domain not verified' })
 
     const result = await promoteContactToMember('contact_id_1', 'volunteer')
 
     expect(result).toEqual({ existing_user: true, email_failed: true })
-    // Membership row was still inserted (no rollback)
     expect(mockTenantUsersInsert).toHaveBeenCalled()
+  })
+
+  it('falls back to /dashboard URL when magic-link generation fails (and reports email_failed=true)', async () => {
+    setupBaseMocks()
+    mockTenantUsersMaybeSingle.mockResolvedValueOnce({ data: null })
+    mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
+    mockAdminTenantsSingle.mockResolvedValueOnce({ data: { name: 'Jeoz' } })
+    mockAdminCampaignsIn.mockResolvedValueOnce({ data: [] })
+    // Second generateLink call (magiclink) FAILS
+    mockGenerateLink.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Auth temporarily unavailable' },
+    })
+    mockSendAccessGrantedEmail.mockResolvedValueOnce({ ok: true, id: 'msg_3' })
+
+    const result = await promoteContactToMember('contact_id_1', 'volunteer')
+
+    expect(result).toEqual({ existing_user: true, email_failed: true })
+    expect(mockTenantUsersInsert).toHaveBeenCalled()
+    // Email still sent — but with the fallback /dashboard URL
+    expect(mockSendAccessGrantedEmail).toHaveBeenCalledWith(expect.objectContaining({
+      actionLink: expect.stringContaining('/dashboard'),
+    }))
   })
 })
 
@@ -400,12 +443,22 @@ describe('inviteTeamMember — multi-tenant fallback for existing users', () => 
     })
   }
 
-  it('falls back to tenant_users insert + access-granted email when invitee already exists', async () => {
+  it('falls back to tenant_users insert + access-granted email with magic-link when invitee already exists', async () => {
     setupExistingUserMocks()
     mockTenantUsersMaybeSingle.mockResolvedValueOnce({ data: null })
     mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
     mockAdminTenantsSingle.mockResolvedValueOnce({ data: { name: 'Jeoz' } })
     mockAdminCampaignsIn.mockResolvedValueOnce({ data: [{ name: 'Campaña Juan Esteban' }] })
+    // Magic-link generation succeeds on the second call
+    mockGenerateLink.mockResolvedValueOnce({
+      data: {
+        properties: {
+          hashed_token: 'magic-token-abc',
+          action_link:  'https://app.scrutix.co/auth/callback?token_hash=magic-token-abc&type=magiclink&next=/dashboard',
+        },
+      },
+      error: null,
+    })
     mockSendAccessGrantedEmail.mockResolvedValueOnce({ ok: true, id: 'msg_2' })
 
     const result = await inviteTeamMember(

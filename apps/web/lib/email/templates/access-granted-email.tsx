@@ -51,12 +51,12 @@ export function AccessGrantedEmail({
       )}
 
       <EmailParagraph>
-        Como ya tienes una cuenta de CivicOS, puedes entrar con tu correo y
-        contraseña habituales. Encontrarás <strong>{tenantName}</strong> en el
-        selector de campañas del header.
+        Click el botón para entrar a CivicOS. Encontrarás{' '}
+        <strong>{tenantName}</strong> disponible en el selector de campañas
+        del header. Este enlace inicia sesión con tu cuenta de CivicOS.
       </EmailParagraph>
 
-      <EmailButton href={actionLink} label="Abrir CivicOS" />
+      <EmailButton href={actionLink} label="Entrar a CivicOS" />
 
       <EmailFallbackLink href={actionLink} />
     </EmailLayout>
