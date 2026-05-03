@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkPermission } from '@/lib/auth/check-permission'
 import { getAppUrl, sendInviteEmail } from '@/lib/email/transactional'
+import { addExistingUserToTenant } from '@/lib/team/add-existing-user-to-tenant'
 import type { InviteRole } from '@/lib/email/templates/invite-email'
 
 const VALID_ROLES: InviteRole[] = [
@@ -72,9 +73,40 @@ export async function POST(request: Request) {
       },
     })
 
-    if (linkError || !linkData?.properties?.hashed_token) {
+    if (linkError) {
+      // Multi-tenant fallback: if the email already belongs to an auth user,
+      // grant access to this tenant via tenant_users + send notification email.
+      if (linkError.message.toLowerCase().includes('already been registered')) {
+        const targetTenantId = profile?.tenant_id
+        if (!targetTenantId) {
+          return NextResponse.json({ error: 'No se pudo determinar el tenant destino' }, { status: 400 })
+        }
+        const result = await addExistingUserToTenant({
+          inviteeEmail:      normalizedEmail,
+          inviteeName,
+          inviterName,
+          targetTenantId,
+          targetCampaignIds: campaignIds,
+          role:              role as InviteRole,
+        })
+        if (result.error) {
+          return NextResponse.json({ error: result.error }, { status: 500 })
+        }
+        return NextResponse.json({
+          success:       true,
+          existing_user: true,
+          email_failed:  result.email_failed ?? false,
+        })
+      }
+
       return NextResponse.json(
-        { error: linkError?.message || 'No se pudo generar el link de invitación' },
+        { error: linkError.message || 'No se pudo generar el link de invitación' },
+        { status: 400 }
+      )
+    }
+    if (!linkData?.properties?.hashed_token) {
+      return NextResponse.json(
+        { error: 'No se pudo generar el link de invitación' },
         { status: 400 }
       )
     }

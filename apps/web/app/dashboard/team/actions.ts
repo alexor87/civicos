@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppUrl, sendInviteEmail } from '@/lib/email/transactional'
+import { addExistingUserToTenant, type AddExistingUserResult } from '@/lib/team/add-existing-user-to-tenant'
 import type { InviteRole } from '@/lib/email/templates/invite-email'
 
 const VALID_ROLES: InviteRole[] = ['field_coordinator', 'volunteer', 'analyst']
@@ -17,6 +18,8 @@ interface InviteContext {
   campaignIds: string[]
   inviterName: string
 }
+
+export type TeamActionResult = AddExistingUserResult
 
 async function issueInvite(ctx: InviteContext): Promise<{ error?: string }> {
   const appUrl = getAppUrl()
@@ -75,7 +78,7 @@ async function issueInvite(ctx: InviteContext): Promise<{ error?: string }> {
   return {}
 }
 
-export async function inviteTeamMember(formData: FormData): Promise<void> {
+export async function inviteTeamMember(formData: FormData): Promise<TeamActionResult | void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -107,8 +110,21 @@ export async function inviteTeamMember(formData: FormData): Promise<void> {
   })
 
   if (result.error) {
-    console.error('[inviteTeamMember] invite failed:', result.error)
-    return
+    if (result.error.toLowerCase().includes('already been registered')) {
+      const targetTenantId = profile?.tenant_id
+      if (!targetTenantId) return { error: 'No se pudo determinar el tenant destino' }
+
+      return await addExistingUserToTenant({
+        inviteeEmail:      email,
+        inviteeName:       fullName,
+        inviterName:       profile?.full_name?.trim() || 'Tu equipo',
+        targetTenantId,
+        targetCampaignIds: profile?.campaign_ids ?? [],
+        role:              role as InviteRole,
+      })
+    }
+
+    return { error: result.error }
   }
 
   redirect('/dashboard/team')
@@ -117,7 +133,7 @@ export async function inviteTeamMember(formData: FormData): Promise<void> {
 export async function promoteContactToMember(
   contactId: string,
   role: string
-): Promise<{ error?: string }> {
+): Promise<TeamActionResult> {
   if (!VALID_ROLES.includes(role as InviteRole)) return { error: 'Rol inválido' }
 
   const supabase = await createClient()
@@ -156,48 +172,18 @@ export async function promoteContactToMember(
   })
 
   if (result.error) {
-    // User already exists in auth — multi-tenant: grant access to this tenant via tenant_users
     if (result.error.toLowerCase().includes('already been registered')) {
-      const admin = createAdminClient()
-      const { data: { users } } = await admin.auth.admin.listUsers()
-      const existingUser = users.find(u => u.email === contact.email)
-      if (!existingUser) return { error: 'No se encontró el usuario registrado' }
-
       const targetTenantId = profile?.tenant_id
       if (!targetTenantId) return { error: 'No se pudo determinar el tenant destino' }
 
-      const { data: existingMembership } = await admin
-        .from('tenant_users')
-        .select('campaign_ids, role')
-        .eq('user_id', existingUser.id)
-        .eq('tenant_id', targetTenantId)
-        .maybeSingle()
-
-      const mergedCampaigns = Array.from(new Set([
-        ...(existingMembership?.campaign_ids ?? []),
-        ...(profile?.campaign_ids ?? []),
-      ]))
-
-      if (existingMembership) {
-        const { error: updateErr } = await admin
-          .from('tenant_users')
-          .update({ role, campaign_ids: mergedCampaigns })
-          .eq('user_id', existingUser.id)
-          .eq('tenant_id', targetTenantId)
-        if (updateErr) return { error: updateErr.message }
-        return {}
-      }
-
-      const { error: insertErr } = await admin
-        .from('tenant_users')
-        .insert({
-          user_id:      existingUser.id,
-          tenant_id:    targetTenantId,
-          role,
-          campaign_ids: mergedCampaigns,
-        })
-      if (insertErr) return { error: insertErr.message }
-      return {}
+      return await addExistingUserToTenant({
+        inviteeEmail:      contact.email,
+        inviteeName:       fullName,
+        inviterName:       profile?.full_name?.trim() || 'Tu equipo',
+        targetTenantId,
+        targetCampaignIds: profile?.campaign_ids ?? [],
+        role:              role as InviteRole,
+      })
     }
 
     return { error: result.error }
