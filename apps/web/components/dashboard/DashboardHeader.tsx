@@ -46,13 +46,21 @@ interface SearchContact    { id: string; first_name: string; last_name: string; 
 interface SearchTerritory  { id: string; name: string }
 interface SearchResults    { contacts: SearchContact[]; territories: SearchTerritory[] }
 
+interface CampaignOption {
+  id: string
+  name: string
+  tenant_id?: string
+  tenant_name?: string
+  is_new_tenant?: boolean
+}
+
 interface Props {
   campaignName: string
   userFullName: string | null
   userInitials: string
   userRole: string
   avatarUrl?: string | null
-  campaigns?: { id: string; name: string }[]
+  campaigns?: CampaignOption[]
   activeCampaignId?: string
   userId?: string
   notificationsEnabled?: boolean
@@ -134,6 +142,14 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
         body: JSON.stringify({ campaignId: id }),
       })
       if (res.ok) {
+        const json = await res.json() as { tenant_changed?: boolean }
+        if (json.tenant_changed) {
+          // Refresh JWT so RLS picks up the new active_tenant_id, then hard
+          // reload to discard any client-side state scoped to the previous tenant.
+          await createClient().auth.refreshSession()
+          window.location.href = '/dashboard'
+          return
+        }
         setCampaignOpen(false)
         router.refresh()
       }
@@ -141,6 +157,19 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
       setSwitching(false)
     }
   }
+
+  // Group campaigns by tenant for the dropdown when the user has 2+ tenants.
+  const tenantsInDropdown = Array.from(
+    new Set(campaigns.map(c => c.tenant_id).filter((t): t is string => !!t))
+  )
+  const isMultiTenant = tenantsInDropdown.length >= 2
+  const groupedCampaigns: { tenantId: string; tenantName: string; items: CampaignOption[] }[] = isMultiTenant
+    ? tenantsInDropdown.map(tid => ({
+        tenantId:   tid,
+        tenantName: campaigns.find(c => c.tenant_id === tid)?.tenant_name ?? '',
+        items:      campaigns.filter(c => c.tenant_id === tid),
+      }))
+    : [{ tenantId: '', tenantName: '', items: campaigns }]
 
   const showCampaignSwitcher = userRole === 'super_admin' && campaigns.length > 0
 
@@ -254,31 +283,48 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
 
             {campaignOpen && (
               <div className="absolute right-0 top-full mt-1.5 w-64 bg-white border border-[#dcdee6] rounded-lg shadow-lg overflow-hidden z-50">
-                <div className="px-3 py-2 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider border-b border-slate-100">
-                  Campañas
-                </div>
-                <div className="max-h-60 overflow-y-auto">
-                  {campaigns.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => switchCampaign(c.id)}
-                      disabled={switching}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-sm ${
-                        c.id === activeCampaignId
-                          ? 'bg-primary/5 text-primary font-medium'
-                          : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
-                        c.id === activeCampaignId ? 'bg-primary/10' : 'bg-slate-100'
-                      }`}>
-                        {c.id === activeCampaignId
-                          ? <Check className="h-3.5 w-3.5 text-primary" />
-                          : <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                        }
-                      </div>
-                      <span className="truncate">{c.name}</span>
-                    </button>
+                {!isMultiTenant && (
+                  <div className="px-3 py-2 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider border-b border-slate-100">
+                    Campañas
+                  </div>
+                )}
+                <div className="max-h-72 overflow-y-auto">
+                  {groupedCampaigns.map(group => (
+                    <div key={group.tenantId || 'single'}>
+                      {isMultiTenant && (
+                        <div className="px-3 py-2 text-[10px] font-semibold text-[#6a737d] uppercase tracking-wider bg-slate-50 border-b border-slate-100">
+                          {group.tenantName}
+                        </div>
+                      )}
+                      {group.items.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => switchCampaign(c.id)}
+                          disabled={switching}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-sm ${
+                            c.id === activeCampaignId
+                              ? 'bg-primary/5 text-primary font-medium'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
+                            c.id === activeCampaignId ? 'bg-primary/10' : 'bg-slate-100'
+                          }`}>
+                            {c.id === activeCampaignId
+                              ? <Check className="h-3.5 w-3.5 text-primary" />
+                              : <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                            }
+                          </div>
+                          <span className="truncate flex-1">{c.name}</span>
+                          {c.is_new_tenant && (
+                            <span
+                              title="Acceso reciente"
+                              className="h-2 w-2 rounded-full bg-blue-500 shrink-0"
+                            />
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   ))}
                 </div>
                 <div className="border-t border-slate-100">
