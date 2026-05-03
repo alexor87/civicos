@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,14 +46,9 @@ export default async function NewScriptPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
-  const tenantId = profile?.tenant_id
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
+  const tenantId = activeTenantId
   if (!campaignId || !tenantId) notFound()
 
   const boundCreate = createScript.bind(null, campaignId, tenantId, user.id)

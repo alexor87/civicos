@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -10,13 +11,8 @@ export default async function ScriptsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
 
   const { data: scripts } = await supabase
     .from('canvass_scripts')

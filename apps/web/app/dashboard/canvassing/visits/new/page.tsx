@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -90,14 +91,9 @@ export default async function NewVisitPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
-  const tenantId = profile?.tenant_id
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
+  const tenantId = activeTenantId
   if (!campaignId || !tenantId) notFound()
 
   const [{ data: contacts }, { data: territories }] = await Promise.all([

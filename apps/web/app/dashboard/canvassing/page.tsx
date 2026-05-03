@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Button } from '@/components/ui/button'
 import { CanvassingStats } from '@/components/dashboard/CanvassingStats'
 import { Plus, MapPin, FileText, AlertCircle, ChevronRight } from 'lucide-react'
@@ -14,13 +15,8 @@ export default async function CanvassingPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
 
   const [
     { data: territories },
@@ -57,7 +53,7 @@ export default async function CanvassingPage() {
   // based on the current viewport bounds and zoom level.
   // This eliminates loading all contacts with geo into memory (was the main bottleneck).
 
-  const canApprove = ['super_admin', 'campaign_manager', 'field_coordinator'].includes(profile?.role ?? '')
+  const canApprove = ['super_admin', 'campaign_manager', 'field_coordinator'].includes(role ?? '')
 
   // ── Coverage data for map ────────────────────────────────────────────────────
   const visitsByTerritory = (visitCounts ?? []).reduce<Record<string, number>>((acc, v) => {
