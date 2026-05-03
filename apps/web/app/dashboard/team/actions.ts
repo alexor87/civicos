@@ -156,33 +156,48 @@ export async function promoteContactToMember(
   })
 
   if (result.error) {
-    // User already exists in auth — add them to this tenant instead
+    // User already exists in auth — multi-tenant: grant access to this tenant via tenant_users
     if (result.error.toLowerCase().includes('already been registered')) {
       const admin = createAdminClient()
       const { data: { users } } = await admin.auth.admin.listUsers()
       const existingUser = users.find(u => u.email === contact.email)
       if (!existingUser) return { error: 'No se encontró el usuario registrado' }
 
-      const { data: existingProfile } = await admin
-        .from('profiles')
-        .select('tenant_id, campaign_ids')
-        .eq('id', existingUser.id)
-        .single()
+      const targetTenantId = profile?.tenant_id
+      if (!targetTenantId) return { error: 'No se pudo determinar el tenant destino' }
 
-      if (existingProfile?.tenant_id === profile?.tenant_id) {
-        const mergedCampaigns = Array.from(new Set([
-          ...(existingProfile.campaign_ids ?? []),
-          ...(profile?.campaign_ids ?? []),
-        ]))
+      const { data: existingMembership } = await admin
+        .from('tenant_users')
+        .select('campaign_ids, role')
+        .eq('user_id', existingUser.id)
+        .eq('tenant_id', targetTenantId)
+        .maybeSingle()
+
+      const mergedCampaigns = Array.from(new Set([
+        ...(existingMembership?.campaign_ids ?? []),
+        ...(profile?.campaign_ids ?? []),
+      ]))
+
+      if (existingMembership) {
         const { error: updateErr } = await admin
-          .from('profiles')
+          .from('tenant_users')
           .update({ role, campaign_ids: mergedCampaigns })
-          .eq('id', existingUser.id)
+          .eq('user_id', existingUser.id)
+          .eq('tenant_id', targetTenantId)
         if (updateErr) return { error: updateErr.message }
         return {}
       }
 
-      return { error: 'Este usuario ya pertenece a otra organización. No se puede agregar sin perder su acceso actual.' }
+      const { error: insertErr } = await admin
+        .from('tenant_users')
+        .insert({
+          user_id:      existingUser.id,
+          tenant_id:    targetTenantId,
+          role,
+          campaign_ids: mergedCampaigns,
+        })
+      if (insertErr) return { error: insertErr.message }
+      return {}
     }
 
     return { error: result.error }
