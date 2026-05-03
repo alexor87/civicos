@@ -53,7 +53,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const admin = createAdminClient()
   const { data: memberships } = await admin
     .from('tenant_users')
-    .select('tenant_id, campaign_ids, created_at, tenants(id, name)')
+    .select('tenant_id, campaign_ids, role, custom_role_id, created_at, tenants(id, name)')
     .eq('user_id', user.id)
 
   const allCampaignIds = Array.from(
@@ -96,6 +96,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const activeCampaignId = cookieCampaign?.tenant_id === activeTenantId
     ? cookieCampaign.id
     : (enrichedCampaigns.find(c => c.tenant_id === activeTenantId)?.id ?? '')
+
+  // Effective role / custom_role_id — scoped to the active tenant via
+  // tenant_users. profile.role is the user's HOME tenant role and is wrong
+  // when they are operating in a different tenant via the switcher.
+  type MembershipFull = Membership & { role: string; custom_role_id: string | null }
+  const activeMembership = (memberships as MembershipFull[] | null)?.find(m => m.tenant_id === activeTenantId)
+  const effectiveRole = activeMembership?.role ?? (profile.role as string)
+  const effectiveCustomRoleId = activeTenantId === homeTenantId
+    ? (profile.custom_role_id as string | null)
+    : (activeMembership?.custom_role_id ?? null)
 
   const { count: suggestionCount } = await (
     supabase.from('ai_suggestions')
@@ -161,8 +171,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <BrandProvider brand={effectiveBrand}>
       <FeaturesProvider features={features} plan={tenantPlan}>
       <PermissionsProvider
-        userRole={profile.role}
-        customRoleId={profile.custom_role_id ?? null}
+        userRole={effectiveRole}
+        customRoleId={effectiveCustomRoleId}
         tenantId={activeTenantId}
       >
       <SidebarProvider>
@@ -171,7 +181,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           tenantName={tenantName}
           campaignName={campaignName}
           userFullName={profile.full_name}
-          userRole={profile.role}
+          userRole={effectiveRole}
           userInitials={userInitials}
           campaignId={firstCampaignId}
           suggestionCount={suggestionCount ?? 0}
@@ -184,7 +194,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             campaignName={campaignName}
             userFullName={profile.full_name}
             userInitials={userInitials}
-            userRole={profile.role}
+            userRole={effectiveRole}
             avatarUrl={profile.avatar_url}
             campaigns={allCampaigns}
             activeCampaignId={activeCampaignId}

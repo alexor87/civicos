@@ -144,9 +144,9 @@ export function DashboardHeader({ campaignName, userFullName, userInitials, user
       if (res.ok) {
         const json = await res.json() as { tenant_changed?: boolean }
         if (json.tenant_changed) {
-          // Refresh JWT so RLS picks up the new active_tenant_id, then hard
-          // reload to discard any client-side state scoped to the previous tenant.
-          await createClient().auth.refreshSession()
+          // Server already refreshed the JWT with the new active_tenant_id and
+          // wrote it to cookies. Hard reload to discard any client-side state
+          // scoped to the previous tenant; the next request uses the new JWT.
           window.location.href = '/dashboard'
           return
         }

@@ -56,6 +56,14 @@ export async function POST(req: NextRequest) {
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 
     cookieStore.set('active_tenant_id', targetTenantId, cookieOpts)
+
+    // Force the auth hook (enrich-jwt) to re-issue the JWT with the new
+    // active_tenant_id claim. Without this, the user's session keeps the old
+    // tenant_id and RLS continues scoping queries to the previous tenant.
+    // The server client writes the refreshed JWT to cookies via the cookie
+    // handler — the next request (after the client's hard reload) picks up
+    // the new claims.
+    await supabase.auth.refreshSession()
   }
 
   cookieStore.set('active_campaign_id', campaignId, cookieOpts)
