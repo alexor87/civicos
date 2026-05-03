@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 
 const ALLOWED_FIELDS = [
   'full_name', 'short_name', 'phone', 'custom_title',
@@ -23,7 +24,20 @@ export async function GET() {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+
+  // Override campaign_ids and role with the active-tenant scope so client
+  // components see what's relevant for the tenant the user is currently
+  // operating in (not the home tenant).
+  const { activeTenantId, campaignIds, activeCampaignId, role } =
+    await getActiveCampaignContext(supabase, user.id)
+
+  return NextResponse.json({
+    ...data,
+    campaign_ids:       campaignIds,
+    role:               role ?? data.role,
+    active_tenant_id:   activeTenantId,
+    active_campaign_id: activeCampaignId,
+  })
 }
 
 export async function PATCH(request: NextRequest) {

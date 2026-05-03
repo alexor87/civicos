@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { ContactProfile } from '@/components/dashboard/ContactProfile'
 import type { ReferredByInfo, ReferrerStats } from '@/components/dashboard/ContactProfile'
 import { PromoteToMemberButton } from '@/components/dashboard/contacts/PromoteToMemberButton'
@@ -20,13 +21,8 @@ export default async function ContactProfilePage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
   if (!campaignId) notFound()
 
   // Fetch contact (RLS enforces tenant isolation)
@@ -111,7 +107,7 @@ export default async function ContactProfilePage({
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-          {contact.email && ['super_admin', 'campaign_manager'].includes(profile?.role ?? '') && (
+          {contact.email && ['super_admin', 'campaign_manager'].includes(role ?? '') && (
             <PromoteToMemberButton
               contactId={contact.id}
               contactName={`${contact.first_name} ${contact.last_name}`}
@@ -128,7 +124,7 @@ export default async function ContactProfilePage({
       <ContactProfile contact={contact} visits={visits} referredByInfo={referredByInfo} referrerStats={referrerStats} />
 
       {/* GDPR actions — only for managers/admins */}
-      {['super_admin', 'campaign_manager'].includes(profile?.role ?? '') && (
+      {['super_admin', 'campaign_manager'].includes(role ?? '') && (
         <div className="px-6 pb-6 pt-2 border-t border-gray-100 mt-4">
           <p className="text-xs text-[#6a737d] mb-2">Privacidad de datos (Ley 1581)</p>
           <GDPRActions

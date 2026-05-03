@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { CampaignSettingsForm } from '@/components/settings/CampaignSettingsForm'
 
 export default async function CampaignSettingsPage() {
@@ -7,13 +8,8 @@ export default async function CampaignSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
   if (!campaignId) {
     return (
       <div className="text-sm text-[#6a737d]">
@@ -36,7 +32,7 @@ export default async function CampaignSettingsPage() {
     )
   }
 
-  const canEdit = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  const canEdit = ['super_admin', 'campaign_manager'].includes(role ?? '')
 
   return (
     <div className="space-y-4">

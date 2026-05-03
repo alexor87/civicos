@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { IntegrationsForm } from '@/components/settings/IntegrationsForm'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
 
@@ -8,15 +9,10 @@ export default async function IntegrationsSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canEdit = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
-  const tenantId = profile?.tenant_id
-  const campaignId = profile?.campaign_ids?.[0] ?? null
+  const { activeTenantId, activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canEdit = ['super_admin', 'campaign_manager'].includes(role ?? '')
+  const tenantId = activeTenantId
+  const campaignId = activeCampaignId || null
 
   const config = tenantId
     ? await getIntegrationConfig(supabase, tenantId, campaignId)
