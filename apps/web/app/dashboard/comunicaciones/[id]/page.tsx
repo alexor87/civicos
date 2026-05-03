@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, Mail, Send, Trash2, FileText, AlertCircle, Users, Pencil, Copy, Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -22,11 +23,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, role')
-    .eq('id', user.id)
-    .single()
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
 
   const { data: campaign } = await supabase
     .from('email_campaigns')
@@ -43,7 +40,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   }
 
   const s = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft
-  const canSend = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  const canSend = ['super_admin', 'campaign_manager'].includes(role ?? '')
   const isDraft = campaign.status === 'draft'
 
   let segmentName: string | null = null
@@ -62,7 +59,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   // For drafts, compute real recipient count (recipient_count is only set after sending)
   let displayCount = campaign.recipient_count ?? 0
   if (isDraft) {
-    const campaignId = profile?.campaign_ids?.[0] ?? ''
+    const campaignId = activeCampaignId
     if (hasManualRecipients) {
       const { count } = await supabase
         .from('contacts')

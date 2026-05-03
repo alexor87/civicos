@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { getMessagingProvider } from '@/lib/messaging/dispatcher'
 import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
@@ -32,13 +33,8 @@ export async function createSmsCampaign(formData: FormData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { activeTenantId, activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) return
 
   const name          = (formData.get('name') as string)?.trim()
@@ -51,8 +47,8 @@ export async function createSmsCampaign(formData: FormData): Promise<void> {
   const { data, error } = await supabase
     .from('sms_campaigns')
     .insert({
-      tenant_id:       profile?.tenant_id,
-      campaign_id:     profile?.campaign_ids?.[0] ?? null,
+      tenant_id:       activeTenantId,
+      campaign_id:     activeCampaignId || null,
       name,
       body_text,
       segment_id:      recipient_ids ? null : (segment_id || null),
@@ -78,13 +74,8 @@ export async function updateSmsCampaign(campaignId: string, formData: FormData):
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) return
 
   const name          = (formData.get('name') as string)?.trim()
@@ -119,13 +110,8 @@ export async function sendSmsCampaign(campaignId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canSend = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  const ctx = await getActiveCampaignContext(supabase, user.id)
+  const canSend = ['super_admin', 'campaign_manager'].includes(ctx.role ?? '')
   if (!canSend) return { error: 'No tienes permiso para enviar campañas SMS' }
 
   const { data: smsCampaign } = await supabase
@@ -137,14 +123,14 @@ export async function sendSmsCampaign(campaignId: string) {
   if (!smsCampaign) return { error: 'Campaña SMS no encontrada' }
   if (smsCampaign.status === 'sent') return { error: 'Esta campaña SMS ya fue enviada' }
 
-  const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
+  const activeCampaignId = ctx.activeCampaignId
 
   let provider
   try {
     provider = await getMessagingProvider(
       supabase,
       createAdminClient(),
-      profile!.tenant_id,
+      ctx.activeTenantId!,
       activeCampaignId || null,
       'sms'
     )
@@ -225,16 +211,17 @@ export async function sendTestSms(campaignId: string, toPhone: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, role, full_name, campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const canSend = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const ctx = await getActiveCampaignContext(supabase, user.id)
+  const canSend = ['super_admin', 'campaign_manager', 'analyst'].includes(ctx.role ?? '')
   if (!canSend) return { error: 'No tienes permiso para enviar SMS de prueba' }
 
-  const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
+  const { data: profileSlim } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single<{ full_name: string | null }>()
+
+  const activeCampaignId = ctx.activeCampaignId
 
   const { data: smsCampaign } = await supabase
     .from('sms_campaigns').select('body_text').eq('id', campaignId).single()
@@ -246,7 +233,7 @@ export async function sendTestSms(campaignId: string, toPhone: string) {
     provider = await getMessagingProvider(
       supabase,
       createAdminClient(),
-      profile!.tenant_id,
+      ctx.activeTenantId!,
       activeCampaignId || null,
       'sms'
     )
@@ -256,8 +243,8 @@ export async function sendTestSms(campaignId: string, toPhone: string) {
   }
 
   const previewBody = smsCampaign.body_text
-    .replace(/\{nombre\}/gi,  profile?.full_name?.split(' ')[0] ?? 'Usuario')
-    .replace(/\{apellido\}/gi, profile?.full_name?.split(' ')[1] ?? '')
+    .replace(/\{nombre\}/gi,  profileSlim?.full_name?.split(' ')[0] ?? 'Usuario')
+    .replace(/\{apellido\}/gi, profileSlim?.full_name?.split(' ')[1] ?? '')
 
   const result = await provider.sendSMS({ to: toPhone, body: `[PRUEBA] ${previewBody}` })
   if (!result.ok) return { error: result.error || 'Error al enviar el SMS de prueba' }
@@ -271,12 +258,11 @@ export async function deleteSmsCampaign(id: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles').select('campaign_ids').eq('id', user.id).single()
+  const { campaignIds } = await getActiveCampaignContext(supabase, user.id)
 
   const { data: campaign } = await supabase
     .from('sms_campaigns').select('campaign_id').eq('id', id).single()
-  if (!campaign || !profile?.campaign_ids?.includes(campaign.campaign_id)) redirect('/dashboard/comunicaciones?tab=sms')
+  if (!campaign || !campaignIds.includes(campaign.campaign_id)) redirect('/dashboard/comunicaciones?tab=sms')
 
   await supabase.from('sms_campaigns').delete().eq('id', id)
   redirect('/dashboard/comunicaciones?tab=sms')

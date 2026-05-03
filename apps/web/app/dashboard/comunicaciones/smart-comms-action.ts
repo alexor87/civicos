@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { callAI } from '@/lib/ai/call-ai'
 import { type ContentTone } from '@/app/dashboard/contenido/generate-action'
 
@@ -48,13 +49,8 @@ export async function analyzeSmartComms(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
   if (!campaignId) return { error: 'No hay campaña activa' }
 
   const { data: campaign } = await supabase
@@ -143,7 +139,7 @@ Devuelve ÚNICAMENTE este JSON (sin texto extra):
     const adminSupabase = createAdminClient()
     const aiResult = await callAI(
       adminSupabase,
-      profile.tenant_id,
+      activeTenantId!,
       campaignId,
       [{ role: 'user', content: prompt }],
       { maxTokens: 1024 },

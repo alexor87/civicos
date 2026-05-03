@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { EmailCampaignEditor } from '@/components/dashboard/EmailCampaignEditor'
 import { updateCampaign } from '../../actions'
 import { extractBlocks, createDefaultBlock, type ExtractedBlocks } from '@/lib/email-blocks'
@@ -40,13 +41,8 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) redirect('/dashboard/comunicaciones')
 
   const { data: campaign } = await supabase
@@ -58,7 +54,7 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
 
   if (!campaign) notFound()
 
-  const campaignId = profile?.campaign_ids?.[0] ?? ''
+  const campaignId = activeCampaignId
   const { data: segments } = await supabase
     .from('contact_segments')
     .select('id, name')
