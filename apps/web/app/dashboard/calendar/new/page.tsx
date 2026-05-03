@@ -2,6 +2,7 @@ import { ArrowLeft, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { EventForm } from '@/components/dashboard/calendar/EventForm'
 
 export const metadata = { title: 'Nuevo evento · Scrutix' }
@@ -12,13 +13,8 @@ export default async function NewCalendarEventPage({ searchParams }: { searchPar
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0] ?? undefined
+  const { activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId || undefined
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">

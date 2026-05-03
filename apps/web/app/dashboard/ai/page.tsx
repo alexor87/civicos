@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { AISuggestionsPanel } from '@/components/dashboard/AISuggestionsPanel'
 import { AIStatusChart } from '@/components/dashboard/AIStatusChart'
 import { CampaignBriefPanel } from '@/components/dashboard/ai/CampaignBriefPanel'
@@ -10,13 +11,8 @@ export default async function AIPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
 
   const { data: campaign } = await supabase
     .from('campaigns')
@@ -86,7 +82,7 @@ export default async function AIPage() {
         history={history ?? []}
         agentRuns={agentRuns ?? []}
         campaignId={campaignId ?? ''}
-        userRole={profile?.role ?? 'analyst'}
+        userRole={role ?? 'analyst'}
         campaignName={campaignName}
         thresholds={thresholds}
       />

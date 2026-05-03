@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { KnowledgeUploader } from '@/components/dashboard/knowledge/KnowledgeUploader'
 import { KnowledgeDocumentList } from '@/components/dashboard/knowledge/KnowledgeDocumentList'
 import { VolunteerChatbot } from '@/components/dashboard/knowledge/VolunteerChatbot'
@@ -10,14 +11,9 @@ export default async function KnowledgeBasePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0] ?? ''
-  const canUpload  = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
+  const canUpload  = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
 
   const { data: documents } = await supabase
     .from('knowledge_document_meta')
