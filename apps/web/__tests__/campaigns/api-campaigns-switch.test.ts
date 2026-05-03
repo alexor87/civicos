@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const {
   mockGetUser,
+  mockRefreshSession,
   mockTenantUsersSelectEq,
   mockProfileSelectSingle,
   mockAdminProfilesUpdateEq,
   mockCookieSet,
 } = vi.hoisted(() => ({
   mockGetUser:               vi.fn(),
+  mockRefreshSession:        vi.fn(),
   mockTenantUsersSelectEq:   vi.fn(),
   mockProfileSelectSingle:   vi.fn(),
   mockAdminProfilesUpdateEq: vi.fn(),
@@ -16,7 +18,7 @@ const {
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
-    auth: { getUser: mockGetUser },
+    auth: { getUser: mockGetUser, refreshSession: mockRefreshSession },
     from: vi.fn((table: string) => {
       if (table === 'tenant_users') {
         return {
@@ -66,6 +68,7 @@ function makeRequest(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockRefreshSession.mockResolvedValue({ data: { session: null }, error: null })
 })
 
 describe('POST /api/campaigns/switch — multi-tenant', () => {
@@ -108,6 +111,7 @@ describe('POST /api/campaigns/switch — multi-tenant', () => {
     expect(res.status).toBe(200)
     expect(json).toEqual({ ok: true, tenant_changed: false, tenant_id: 't_a' })
     expect(mockAdminProfilesUpdateEq).not.toHaveBeenCalled()
+    expect(mockRefreshSession).not.toHaveBeenCalled()
     expect(mockCookieSet).toHaveBeenCalledWith(
       'active_campaign_id',
       'c1',
@@ -140,6 +144,9 @@ describe('POST /api/campaigns/switch — multi-tenant', () => {
     expect(res.status).toBe(200)
     expect(json).toEqual({ ok: true, tenant_changed: true, tenant_id: 't_b' })
     expect(mockAdminProfilesUpdateEq).toHaveBeenCalled()
+    // Cross-tenant switch must trigger a JWT refresh so RLS picks up the new
+    // active_tenant_id; otherwise the user keeps querying with the old scope.
+    expect(mockRefreshSession).toHaveBeenCalled()
     expect(mockCookieSet).toHaveBeenCalledWith(
       'active_tenant_id',
       't_b',
