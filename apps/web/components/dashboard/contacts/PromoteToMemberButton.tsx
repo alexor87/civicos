@@ -32,13 +32,17 @@ export function PromoteToMemberButton({ contactId, contactName }: Props) {
 
   const handlePromote = async (role: string) => {
     setLoading(true)
-    const toastId = toast.loading('Enviando invitación…')
+    const toastId = toast.loading('Procesando…')
     try {
       const result = await promoteContactToMember(contactId, role)
       if (result.error) {
         toast.error(result.error, { id: toastId })
+      } else if (result.existing_user && result.email_failed) {
+        toast.warning(`${contactName} ya tenía cuenta y fue agregado al equipo, pero no pudimos enviarle la notificación por email. Avísale manualmente.`, { id: toastId })
+      } else if (result.existing_user) {
+        toast.success(`${contactName} ya tenía cuenta. Lo agregamos al equipo y le enviamos una notificación por email.`, { id: toastId })
       } else {
-        toast.success(`${contactName} fue invitado al equipo. Recibirá un email de acceso.`, { id: toastId })
+        toast.success(`${contactName} fue invitado al equipo. Recibirá un email para crear su cuenta.`, { id: toastId })
       }
     } catch (err) {
       toast.error(`Error al invitar: ${err instanceof Error ? err.message : String(err)}`, { id: toastId })

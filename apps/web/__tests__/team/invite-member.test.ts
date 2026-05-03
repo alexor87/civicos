@@ -11,7 +11,10 @@ const {
   mockTenantUsersMaybeSingle,
   mockTenantUsersInsert,
   mockTenantUsersUpdate,
+  mockAdminTenantsSingle,
+  mockAdminCampaignsIn,
   mockSendInviteEmail,
+  mockSendAccessGrantedEmail,
 } = vi.hoisted(() => ({
   mockGetUser:                 vi.fn(),
   mockProfileSingle:           vi.fn(),
@@ -22,7 +25,10 @@ const {
   mockTenantUsersMaybeSingle:  vi.fn(),
   mockTenantUsersInsert:       vi.fn(),
   mockTenantUsersUpdate:       vi.fn(),
+  mockAdminTenantsSingle:      vi.fn(),
+  mockAdminCampaignsIn:        vi.fn(),
   mockSendInviteEmail:         vi.fn(),
+  mockSendAccessGrantedEmail:  vi.fn(),
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -81,6 +87,20 @@ vi.mock('@/lib/supabase/admin', () => ({
           })),
         }
       }
+      if (table === 'tenants') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({ single: mockAdminTenantsSingle })),
+          })),
+        }
+      }
+      if (table === 'campaigns') {
+        return {
+          select: vi.fn(() => ({
+            in: vi.fn(() => mockAdminCampaignsIn()),
+          })),
+        }
+      }
       return {}
     }),
   })),
@@ -89,6 +109,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 vi.mock('@/lib/email/transactional', () => ({
   getAppUrl: () => 'https://app.scrutix.co',
   sendInviteEmail: mockSendInviteEmail,
+  sendAccessGrantedEmail: mockSendAccessGrantedEmail,
 }))
 
 vi.mock('next/navigation', () => ({
@@ -204,7 +225,7 @@ describe('inviteTeamMember', () => {
     )
   })
 
-  it('does not redirect when generateLink fails', async () => {
+  it('does not redirect when generateLink fails with a non-multi-tenant error', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
     mockProfileSingle.mockResolvedValueOnce({
       data: {
@@ -216,17 +237,17 @@ describe('inviteTeamMember', () => {
     })
     mockGenerateLink.mockResolvedValueOnce({
       data: null,
-      error: { message: 'User already been registered' },
+      error: { message: 'Some other auth provider error' },
     })
 
     const result = await inviteTeamMember(
       makeFormData({ full_name: 'María', email: 'maria@test.com', role: 'volunteer' })
     )
-    expect(result).toBeUndefined()
+    expect(result).toEqual({ error: 'Some other auth provider error' })
     expect(mockSendInviteEmail).not.toHaveBeenCalled()
   })
 
-  it('does not redirect when Resend send fails', async () => {
+  it('returns error when Resend send fails for a brand-new invitee', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
     mockProfileSingle.mockResolvedValueOnce({
       data: {
@@ -241,7 +262,7 @@ describe('inviteTeamMember', () => {
     const result = await inviteTeamMember(
       makeFormData({ full_name: 'María', email: 'maria@test.com', role: 'volunteer' })
     )
-    expect(result).toBeUndefined()
+    expect(result).toEqual({ error: expect.stringContaining('Domain not verified') })
   })
 
   it('falls back to "tu campaña" when profile has no campaigns', async () => {
@@ -295,16 +316,17 @@ describe('promoteContactToMember — multi-tenant', () => {
     })
   }
 
-  it('inserts a new tenant_users row when the user belongs to a different tenant (no error returned)', async () => {
+  it('inserts a new tenant_users row, sends access-granted email, and returns existing_user=true', async () => {
     setupBaseMocks()
-    // No existing membership in the target tenant
     mockTenantUsersMaybeSingle.mockResolvedValueOnce({ data: null })
     mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
+    mockAdminTenantsSingle.mockResolvedValueOnce({ data: { name: 'Jeoz' } })
+    mockAdminCampaignsIn.mockResolvedValueOnce({ data: [{ name: 'Campaña Juan Esteban' }] })
+    mockSendAccessGrantedEmail.mockResolvedValueOnce({ ok: true, id: 'msg_1' })
 
     const result = await promoteContactToMember('contact_id_1', 'volunteer')
 
-    expect(result).toEqual({})
-    expect(result.error).toBeUndefined()
+    expect(result).toEqual({ existing_user: true })
     expect(mockTenantUsersInsert).toHaveBeenCalledWith({
       user_id:      existingUserId,
       tenant_id:    't_target',
@@ -312,11 +334,19 @@ describe('promoteContactToMember — multi-tenant', () => {
       campaign_ids: ['c_target_1'],
     })
     expect(mockTenantUsersUpdate).not.toHaveBeenCalled()
+    expect(mockSendAccessGrantedEmail).toHaveBeenCalledWith(expect.objectContaining({
+      to:            'alexor87@gmail.com',
+      inviteeName:   'Alexander Ortiz',
+      inviterName:   'Inviter Admin',
+      tenantName:    'Jeoz',
+      role:          'volunteer',
+      campaignNames: ['Campaña Juan Esteban'],
+    }))
+    expect(mockSendInviteEmail).not.toHaveBeenCalled()
   })
 
-  it('updates the existing tenant_users row when the user is already in the same tenant (merges campaigns, no insert)', async () => {
+  it('updates existing tenant_users row, does NOT send access-granted email (no new info)', async () => {
     setupBaseMocks()
-    // Existing membership with another campaign_id already attached
     mockTenantUsersMaybeSingle.mockResolvedValueOnce({
       data: { campaign_ids: ['c_existing'], role: 'volunteer' },
     })
@@ -324,11 +354,77 @@ describe('promoteContactToMember — multi-tenant', () => {
 
     const result = await promoteContactToMember('contact_id_1', 'field_coordinator')
 
-    expect(result).toEqual({})
+    expect(result).toEqual({ existing_user: true })
     expect(mockTenantUsersInsert).not.toHaveBeenCalled()
     expect(mockTenantUsersUpdate).toHaveBeenCalledWith({
       role: 'field_coordinator',
       campaign_ids: expect.arrayContaining(['c_existing', 'c_target_1']),
     })
+    expect(mockSendAccessGrantedEmail).not.toHaveBeenCalled()
+  })
+
+  it('returns email_failed=true when access-granted email fails, but membership still persists', async () => {
+    setupBaseMocks()
+    mockTenantUsersMaybeSingle.mockResolvedValueOnce({ data: null })
+    mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
+    mockAdminTenantsSingle.mockResolvedValueOnce({ data: { name: 'Jeoz' } })
+    mockAdminCampaignsIn.mockResolvedValueOnce({ data: [] })
+    mockSendAccessGrantedEmail.mockResolvedValueOnce({ ok: false, error: 'Domain not verified' })
+
+    const result = await promoteContactToMember('contact_id_1', 'volunteer')
+
+    expect(result).toEqual({ existing_user: true, email_failed: true })
+    // Membership row was still inserted (no rollback)
+    expect(mockTenantUsersInsert).toHaveBeenCalled()
+  })
+})
+
+describe('inviteTeamMember — multi-tenant fallback for existing users', () => {
+  const callerProfile = {
+    tenant_id:    't_target',
+    campaign_ids: ['c_target_1'],
+    role:         'super_admin',
+    full_name:    'Inviter Admin',
+  }
+  const existingUserId = '69d0fb8e-2060-430a-a5c2-c456853db5b3'
+
+  function setupExistingUserMocks() {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'caller_user' } } })
+    mockProfileSingle.mockResolvedValueOnce({ data: callerProfile })
+    mockGenerateLink.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'A user with this email address has already been registered' },
+    })
+    mockListUsers.mockResolvedValueOnce({
+      data: { users: [{ id: existingUserId, email: 'alexor87@gmail.com' }] },
+    })
+  }
+
+  it('falls back to tenant_users insert + access-granted email when invitee already exists', async () => {
+    setupExistingUserMocks()
+    mockTenantUsersMaybeSingle.mockResolvedValueOnce({ data: null })
+    mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
+    mockAdminTenantsSingle.mockResolvedValueOnce({ data: { name: 'Jeoz' } })
+    mockAdminCampaignsIn.mockResolvedValueOnce({ data: [{ name: 'Campaña Juan Esteban' }] })
+    mockSendAccessGrantedEmail.mockResolvedValueOnce({ ok: true, id: 'msg_2' })
+
+    const result = await inviteTeamMember(
+      makeFormData({ full_name: 'Alexander Ortiz', email: 'alexor87@gmail.com', role: 'volunteer' })
+    )
+
+    expect(result).toEqual({ existing_user: true })
+    expect(mockTenantUsersInsert).toHaveBeenCalledWith({
+      user_id:      existingUserId,
+      tenant_id:    't_target',
+      role:         'volunteer',
+      campaign_ids: ['c_target_1'],
+    })
+    expect(mockSendAccessGrantedEmail).toHaveBeenCalledWith(expect.objectContaining({
+      to:          'alexor87@gmail.com',
+      inviteeName: 'Alexander Ortiz',
+      tenantName:  'Jeoz',
+      role:        'volunteer',
+    }))
+    expect(mockSendInviteEmail).not.toHaveBeenCalled()
   })
 })

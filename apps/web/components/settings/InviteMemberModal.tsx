@@ -71,7 +71,15 @@ export function InviteMemberModal({ open, onClose, onInvited }: Props) {
       })
 
       if (res.ok) {
-        toast.success(`Invitación enviada a ${email.trim()}`)
+        const data = await res.json().catch(() => ({})) as { existing_user?: boolean; email_failed?: boolean }
+        const target = email.trim()
+        if (data.existing_user && data.email_failed) {
+          toast.warning(`${target} ya tenía cuenta y fue agregado al equipo, pero no pudimos enviarle la notificación por email.`)
+        } else if (data.existing_user) {
+          toast.success(`${target} ya tenía cuenta. Lo agregamos al equipo y le enviamos una notificación por email.`)
+        } else {
+          toast.success(`Invitación enviada a ${target}. Recibirá un email para crear su cuenta.`)
+        }
         setEmail('')
         setRole('')
         setFullName('')

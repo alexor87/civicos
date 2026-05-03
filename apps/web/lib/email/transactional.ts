@@ -5,6 +5,10 @@ import {
   buildInviteSubject,
   type InviteRole,
 } from './templates/invite-email'
+import {
+  AccessGrantedEmail,
+  buildAccessGrantedSubject,
+} from './templates/access-granted-email'
 import { PasswordResetEmail } from './templates/password-reset-email'
 import { VerificationEmail } from './templates/verification-email'
 
@@ -71,6 +75,56 @@ export async function sendInviteEmail(params: SendInviteParams): Promise<SendRes
     return { ok: true, id: data?.id }
   } catch (err) {
     console.error('[transactional] Unexpected invite send error:', err)
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    }
+  }
+}
+
+export interface SendAccessGrantedParams {
+  to: string
+  inviteeName: string
+  inviterName: string
+  tenantName: string
+  role: InviteRole
+  campaignNames: string[]
+}
+
+export async function sendAccessGrantedEmail(
+  params: SendAccessGrantedParams
+): Promise<SendResult> {
+  const resend = getResendClient()
+  if (!resend) {
+    console.error('[transactional] RESEND_API_KEY not configured')
+    return { ok: false, error: 'Email service not configured' }
+  }
+
+  const html = await render(
+    AccessGrantedEmail({
+      inviteeName:   params.inviteeName,
+      inviterName:   params.inviterName,
+      tenantName:    params.tenantName,
+      role:          params.role,
+      campaignNames: params.campaignNames,
+      actionLink:    `${getAppUrl()}/dashboard`,
+    })
+  )
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from:    getNotificationsFrom(),
+      to:      params.to,
+      subject: buildAccessGrantedSubject(params.tenantName),
+      html,
+    })
+    if (error) {
+      console.error('[transactional] Resend access-granted error:', error)
+      return { ok: false, error: error.message || 'Resend error' }
+    }
+    return { ok: true, id: data?.id }
+  } catch (err) {
+    console.error('[transactional] Unexpected access-granted send error:', err)
     return {
       ok: false,
       error: err instanceof Error ? err.message : 'Unknown error',
