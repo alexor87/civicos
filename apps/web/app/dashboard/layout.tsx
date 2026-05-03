@@ -23,7 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // Fetch profile and tenant
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*, tenants(name, slug, plan)')
+    .select('*, tenants!profiles_tenant_id_fkey(name, slug, plan)')
     .eq('id', user.id)
     .single()
 
