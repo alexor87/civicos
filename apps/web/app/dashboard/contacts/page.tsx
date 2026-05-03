@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { ContactsTable } from '@/components/dashboard/ContactsTable'
 import { GeoZoneFilter } from '@/components/dashboard/GeoZoneFilter'
 import { Button } from '@/components/ui/button'
@@ -16,13 +17,8 @@ export default async function ContactsPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
   const pageSize = 50
 
   // ── Geo units for cascade filter ────────────────────────────────────────────

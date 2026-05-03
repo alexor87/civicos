@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Badge } from '@/components/ui/badge'
 import { Brain, TrendingUp, Users, MapPin, UserCircle, Smile, Download, Zap, Clock } from 'lucide-react'
 import { RealtimeKPIs } from '@/components/dashboard/RealtimeKPIs'
@@ -9,15 +10,10 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
+  const { activeCampaignId, role: activeRole } = await getActiveCampaignContext(supabase, user.id)
+  if (!activeRole) return null
 
-  if (!profile) return null
-
-  const campaignId = profile.campaign_ids?.[0]
+  const campaignId = activeCampaignId
 
   // M-3: use pre-computed campaign_stats (O(1)) instead of 4 COUNT queries
   const [
