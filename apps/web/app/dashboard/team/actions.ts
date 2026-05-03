@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { getAppUrl, sendInviteEmail } from '@/lib/email/transactional'
 import { addExistingUserToTenant, type AddExistingUserResult } from '@/lib/team/add-existing-user-to-tenant'
 import type { InviteRole } from '@/lib/email/templates/invite-email'
@@ -83,13 +84,17 @@ export async function inviteTeamMember(formData: FormData): Promise<TeamActionRe
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role, full_name')
-    .eq('id', user.id)
-    .single()
+  const { activeTenantId, campaignIds, role: activeRole } = await getActiveCampaignContext(supabase, user.id)
 
-  const canInvite = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  // full_name is profile-level; fetch it slim (it's not tenant-scoped).
+  const { data: profileSlim } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single<{ full_name: string | null }>()
+  const inviterName = profileSlim?.full_name?.trim() || 'Tu equipo'
+
+  const canInvite = ['super_admin', 'campaign_manager'].includes(activeRole ?? '')
   if (!canInvite) return
 
   const fullName = (formData.get('full_name') as string)?.trim()
@@ -104,22 +109,22 @@ export async function inviteTeamMember(formData: FormData): Promise<TeamActionRe
     fullName,
     phone,
     role: role as InviteRole,
-    tenantId: profile?.tenant_id,
-    campaignIds: profile?.campaign_ids ?? [],
-    inviterName: profile?.full_name?.trim() || 'Tu equipo',
+    tenantId: activeTenantId,
+    campaignIds,
+    inviterName,
   })
 
   if (result.error) {
     if (result.error.toLowerCase().includes('already been registered')) {
-      const targetTenantId = profile?.tenant_id
+      const targetTenantId = activeTenantId
       if (!targetTenantId) return { error: 'No se pudo determinar el tenant destino' }
 
       return await addExistingUserToTenant({
         inviteeEmail:      email,
         inviteeName:       fullName,
-        inviterName:       profile?.full_name?.trim() || 'Tu equipo',
+        inviterName,
         targetTenantId,
-        targetCampaignIds: profile?.campaign_ids ?? [],
+        targetCampaignIds: campaignIds,
         role:              role as InviteRole,
       })
     }
@@ -140,13 +145,15 @@ export async function promoteContactToMember(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado' }
 
-  const { data: profile } = await supabase
+  const { activeTenantId, campaignIds, role: activeRole } = await getActiveCampaignContext(supabase, user.id)
+  const { data: profileSlim } = await supabase
     .from('profiles')
-    .select('tenant_id, campaign_ids, role, full_name')
+    .select('full_name')
     .eq('id', user.id)
-    .single()
+    .single<{ full_name: string | null }>()
+  const inviterName = profileSlim?.full_name?.trim() || 'Tu equipo'
 
-  const canInvite = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  const canInvite = ['super_admin', 'campaign_manager'].includes(activeRole ?? '')
   if (!canInvite) return { error: 'Sin permisos' }
 
   const { data: contact } = await supabase
@@ -166,22 +173,22 @@ export async function promoteContactToMember(
     fullName,
     phone: contact.phone ?? null,
     role: role as InviteRole,
-    tenantId: profile?.tenant_id,
-    campaignIds: profile?.campaign_ids ?? [],
-    inviterName: profile?.full_name?.trim() || 'Tu equipo',
+    tenantId: activeTenantId,
+    campaignIds,
+    inviterName,
   })
 
   if (result.error) {
     if (result.error.toLowerCase().includes('already been registered')) {
-      const targetTenantId = profile?.tenant_id
+      const targetTenantId = activeTenantId
       if (!targetTenantId) return { error: 'No se pudo determinar el tenant destino' }
 
       return await addExistingUserToTenant({
         inviteeEmail:      contact.email,
         inviteeName:       fullName,
-        inviterName:       profile?.full_name?.trim() || 'Tu equipo',
+        inviterName,
         targetTenantId,
-        targetCampaignIds: profile?.campaign_ids ?? [],
+        targetCampaignIds: campaignIds,
         role:              role as InviteRole,
       })
     }
