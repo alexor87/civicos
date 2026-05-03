@@ -89,6 +89,12 @@ export interface SendAccessGrantedParams {
   tenantName: string
   role: InviteRole
   campaignNames: string[]
+  /**
+   * URL the email CTA points to. Should be a Supabase magic-link URL so the
+   * recipient establishes their own session (replacing any other active
+   * session in their browser). Falls back to /dashboard if not provided.
+   */
+  actionLink?: string
 }
 
 export async function sendAccessGrantedEmail(
@@ -107,7 +113,7 @@ export async function sendAccessGrantedEmail(
       tenantName:    params.tenantName,
       role:          params.role,
       campaignNames: params.campaignNames,
-      actionLink:    `${getAppUrl()}/dashboard`,
+      actionLink:    params.actionLink ?? `${getAppUrl()}/dashboard`,
     })
   )
 
