@@ -5,14 +5,24 @@ const {
   mockGetUser,
   mockProfileSingle,
   mockCampaignSingle,
+  mockContactSingle,
   mockGenerateLink,
+  mockListUsers,
+  mockTenantUsersMaybeSingle,
+  mockTenantUsersInsert,
+  mockTenantUsersUpdate,
   mockSendInviteEmail,
 } = vi.hoisted(() => ({
-  mockGetUser:         vi.fn(),
-  mockProfileSingle:   vi.fn(),
-  mockCampaignSingle:  vi.fn(),
-  mockGenerateLink:    vi.fn(),
-  mockSendInviteEmail: vi.fn(),
+  mockGetUser:                 vi.fn(),
+  mockProfileSingle:           vi.fn(),
+  mockCampaignSingle:          vi.fn(),
+  mockContactSingle:           vi.fn(),
+  mockGenerateLink:            vi.fn(),
+  mockListUsers:               vi.fn(),
+  mockTenantUsersMaybeSingle:  vi.fn(),
+  mockTenantUsersInsert:       vi.fn(),
+  mockTenantUsersUpdate:       vi.fn(),
+  mockSendInviteEmail:         vi.fn(),
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -33,6 +43,15 @@ vi.mock('@/lib/supabase/server', () => ({
           })),
         }
       }
+      if (table === 'contacts') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              is: vi.fn(() => ({ single: mockContactSingle })),
+            })),
+          })),
+        }
+      }
       return {}
     }),
   })),
@@ -43,8 +62,27 @@ vi.mock('@/lib/supabase/admin', () => ({
     auth: {
       admin: {
         generateLink: mockGenerateLink,
+        listUsers:    mockListUsers,
       },
     },
+    from: vi.fn((table: string) => {
+      if (table === 'tenant_users') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({ maybeSingle: mockTenantUsersMaybeSingle })),
+            })),
+          })),
+          insert: mockTenantUsersInsert,
+          update: vi.fn((payload: Record<string, unknown>) => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => mockTenantUsersUpdate(payload)),
+            })),
+          })),
+        }
+      }
+      return {}
+    }),
   })),
 }))
 
@@ -57,7 +95,7 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn((url: string) => { throw new Error(`REDIRECT:${url}`) }),
 }))
 
-import { inviteTeamMember } from '@/app/dashboard/team/actions'
+import { inviteTeamMember, promoteContactToMember } from '@/app/dashboard/team/actions'
 
 function makeFormData(data: Record<string, string>) {
   const fd = new FormData()
@@ -225,5 +263,72 @@ describe('inviteTeamMember', () => {
     expect(mockSendInviteEmail).toHaveBeenCalledWith(
       expect.objectContaining({ campaignName: 'tu campaña' })
     )
+  })
+})
+
+describe('promoteContactToMember — multi-tenant', () => {
+  const callerProfile = {
+    tenant_id: 't_target',
+    campaign_ids: ['c_target_1'],
+    role: 'super_admin',
+    full_name: 'Inviter Admin',
+  }
+  const existingContact = {
+    first_name: 'Alexander',
+    last_name: 'Ortiz',
+    email: 'alexor87@gmail.com',
+    phone: '573004941054',
+  }
+  const existingUserId = '69d0fb8e-2060-430a-a5c2-c456853db5b3'
+
+  function setupBaseMocks() {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'caller_user' } } })
+    mockProfileSingle.mockResolvedValueOnce({ data: callerProfile })
+    mockContactSingle.mockResolvedValueOnce({ data: existingContact })
+    // generateLink returns the "already registered" error to force the multi-tenant branch
+    mockGenerateLink.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'A user with this email address has already been registered' },
+    })
+    mockListUsers.mockResolvedValueOnce({
+      data: { users: [{ id: existingUserId, email: existingContact.email }] },
+    })
+  }
+
+  it('inserts a new tenant_users row when the user belongs to a different tenant (no error returned)', async () => {
+    setupBaseMocks()
+    // No existing membership in the target tenant
+    mockTenantUsersMaybeSingle.mockResolvedValueOnce({ data: null })
+    mockTenantUsersInsert.mockResolvedValueOnce({ error: null })
+
+    const result = await promoteContactToMember('contact_id_1', 'volunteer')
+
+    expect(result).toEqual({})
+    expect(result.error).toBeUndefined()
+    expect(mockTenantUsersInsert).toHaveBeenCalledWith({
+      user_id:      existingUserId,
+      tenant_id:    't_target',
+      role:         'volunteer',
+      campaign_ids: ['c_target_1'],
+    })
+    expect(mockTenantUsersUpdate).not.toHaveBeenCalled()
+  })
+
+  it('updates the existing tenant_users row when the user is already in the same tenant (merges campaigns, no insert)', async () => {
+    setupBaseMocks()
+    // Existing membership with another campaign_id already attached
+    mockTenantUsersMaybeSingle.mockResolvedValueOnce({
+      data: { campaign_ids: ['c_existing'], role: 'volunteer' },
+    })
+    mockTenantUsersUpdate.mockReturnValueOnce(Promise.resolve({ error: null }))
+
+    const result = await promoteContactToMember('contact_id_1', 'field_coordinator')
+
+    expect(result).toEqual({})
+    expect(mockTenantUsersInsert).not.toHaveBeenCalled()
+    expect(mockTenantUsersUpdate).toHaveBeenCalledWith({
+      role: 'field_coordinator',
+      campaign_ids: expect.arrayContaining(['c_existing', 'c_target_1']),
+    })
   })
 })
