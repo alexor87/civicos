@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,15 +48,48 @@ export default async function TeamPage({
   const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
   const campaignId = activeCampaignId
 
+  // Cross-tenant members: tenant_users es la fuente de verdad de membresía.
+  // RLS de profiles bloquea profiles cuyo home_tenant_id ≠ activeTenantId, así
+  // que usamos admin client estrictamente acotado por tenant_id activo.
+  const admin = createAdminClient()
+  const { data: memberships } = await admin
+    .from('tenant_users')
+    .select('user_id, role, custom_role_id, campaign_ids, created_at')
+    .eq('tenant_id', activeTenantId ?? '')
+    .order('created_at', { ascending: true })
+
+  const memberRows = (memberships ?? []) as Array<{
+    user_id:        string
+    role:           string
+    custom_role_id: string | null
+    campaign_ids:   string[] | null
+    created_at:     string
+  }>
+  const memberIds = memberRows.map(m => m.user_id)
+
+  const { data: profilesData } = memberIds.length > 0
+    ? await admin.from('profiles').select('id, full_name, avatar_url').in('id', memberIds)
+    : { data: [] as Array<{ id: string; full_name: string | null; avatar_url: string | null }> }
+
+  const profileById = new Map(
+    (profilesData ?? []).map(p => [p.id, p as { id: string; full_name: string | null; avatar_url: string | null }])
+  )
+
+  // Merge: el ROL viene de tenant_users (NO de profile.role, que es del HOME).
+  const allMembers = memberRows.map(m => ({
+    id:           m.user_id,
+    full_name:    profileById.get(m.user_id)?.full_name ?? 'Sin nombre',
+    avatar_url:   profileById.get(m.user_id)?.avatar_url ?? null,
+    role:         m.role,
+    custom_role_id: m.custom_role_id,
+    campaign_ids: m.campaign_ids ?? [],
+    created_at:   m.created_at,
+  }))
+
   const [
-    { data: allMembers },
     { data: visits },
     { data: assignments },
   ] = await Promise.all([
-    supabase.from('profiles')
-      .select('*')
-      .eq('tenant_id', activeTenantId ?? '')
-      .order('created_at', { ascending: true }),
     supabase.from('canvass_visits')
       .select('volunteer_id, status, result')
       .eq('campaign_id', campaignId),
