@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft } from 'lucide-react'
@@ -22,14 +23,9 @@ export default async function VisitsHistoryPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
-  const canApprove = ['super_admin', 'campaign_manager', 'field_coordinator'].includes(profile?.role ?? '')
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
+  const canApprove = ['super_admin', 'campaign_manager', 'field_coordinator'].includes(role ?? '')
 
   const params      = await searchParams
   const resultFilter    = params.result    ?? ''

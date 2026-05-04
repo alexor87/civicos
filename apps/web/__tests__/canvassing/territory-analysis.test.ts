@@ -9,6 +9,7 @@ const {
   mockTerritoriesQuery,
   mockVolunteersQuery,
   mockClaudeCreate,
+  mockGetActiveCampaignContext,
 } = vi.hoisted(() => ({
   mockGetUser:         vi.fn(),
   mockProfileSingle:   vi.fn(),
@@ -17,6 +18,11 @@ const {
   mockTerritoriesQuery:vi.fn(),
   mockVolunteersQuery: vi.fn(),
   mockClaudeCreate:    vi.fn(),
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -104,6 +110,13 @@ beforeEach(() => {
   mockProfileSingle.mockResolvedValue({
     data: { tenant_id: 'tenant1', campaign_ids: ['camp1'], role: 'campaign_manager' },
   })
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   'tenant1',
+    campaignIds:      ['camp1'],
+    activeCampaignId: 'camp1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
   mockCampaignSingle.mockResolvedValue({ data: { id: 'camp1', name: 'Campaña Test' } })
   mockVisitsQuery.mockResolvedValue({ data: MOCK_VISITS })
   mockTerritoriesQuery.mockResolvedValue({ data: MOCK_TERRITORIES })
@@ -121,8 +134,12 @@ describe('analyzeTerritoryAction', () => {
   })
 
   it('returns error when user has no campaign', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { tenant_id: 'tenant1', campaign_ids: [], role: 'campaign_manager' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant1',
+      campaignIds:      [],
+      activeCampaignId: '',
+      role:             'campaign_manager',
+      customRoleId:     null,
     })
     const result = await analyzeTerritoryAction()
     expect(result.error).toBe('No hay campaña activa')

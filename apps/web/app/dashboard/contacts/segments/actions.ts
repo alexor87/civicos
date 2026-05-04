@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import type { SegmentFilter } from '@/lib/types/database'
 
 // ── applyFilters ─────────────────────────────────────────────────────────────
@@ -87,11 +88,7 @@ export async function createSegment(formData: FormData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids')
-    .eq('id', user.id)
-    .single()
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
 
   const name = (formData.get('name') as string)?.trim()
   if (!name) return
@@ -106,8 +103,8 @@ export async function createSegment(formData: FormData): Promise<void> {
   const { data, error } = await supabase
     .from('contact_segments')
     .insert({
-      tenant_id: profile?.tenant_id,
-      campaign_id: profile?.campaign_ids?.[0] ?? null,
+      tenant_id: activeTenantId,
+      campaign_id: activeCampaignId || null,
       name,
       description: (formData.get('description') as string) || null,
       filters,
@@ -128,12 +125,11 @@ export async function deleteSegment(id: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles').select('campaign_ids').eq('id', user.id).single()
+  const { campaignIds } = await getActiveCampaignContext(supabase, user.id)
 
   const { data: segment } = await supabase
     .from('contact_segments').select('campaign_id').eq('id', id).single()
-  if (!segment || !profile?.campaign_ids?.includes(segment.campaign_id)) redirect('/dashboard/contacts/segments')
+  if (!segment || !campaignIds.includes(segment.campaign_id)) redirect('/dashboard/contacts/segments')
 
   await supabase.from('contact_segments').delete().eq('id', id)
   redirect('/dashboard/contacts/segments')

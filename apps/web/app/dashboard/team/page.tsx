@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,13 +44,8 @@ export default async function TeamPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0] ?? ''
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
 
   const [
     { data: allMembers },
@@ -58,7 +54,7 @@ export default async function TeamPage({
   ] = await Promise.all([
     supabase.from('profiles')
       .select('*')
-      .eq('tenant_id', profile?.tenant_id ?? '')
+      .eq('tenant_id', activeTenantId ?? '')
       .order('created_at', { ascending: true }),
     supabase.from('canvass_visits')
       .select('volunteer_id, status, result')

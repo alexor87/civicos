@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { ReportesCharts } from '@/components/dashboard/ReportesCharts'
 import { ReportesExportButtons } from '@/components/dashboard/ReportesExportButtons'
 import { SMS_CHANNEL_ENABLED } from '@/lib/features/messaging-channels'
@@ -8,13 +9,8 @@ export default async function ReportesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0] ?? ''
+  const { activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
 
   // ── Parallel queries ────────────────────────────────────────────────────────
   const [

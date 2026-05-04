@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { checkPermission } from '@/lib/auth/check-permission'
 import { TaskListView } from '@/components/operations/TaskListView'
 
@@ -12,21 +12,7 @@ export default async function ListPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, tenant_id, campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) redirect('/login')
-
-  // Determine active campaign
-  const cookieStore = await cookies()
-  const cookieCampaignId = cookieStore.get('active_campaign_id')?.value
-  const campaignIds: string[] = profile.campaign_ids ?? []
-  const activeCampaignId = (cookieCampaignId && campaignIds.includes(cookieCampaignId))
-    ? cookieCampaignId
-    : campaignIds[0] ?? ''
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
 
   // Permission check
   const adminSupabase = createAdminClient()
@@ -49,7 +35,7 @@ export default async function ListPage() {
     adminSupabase
       .from('profiles')
       .select('id, full_name, role, avatar_url')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', activeTenantId ?? '')
       .order('full_name'),
   ])
 

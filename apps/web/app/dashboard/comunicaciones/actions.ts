@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Resend } from 'resend'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
 import { buildResendFrom } from '@/lib/email/build-resend-from'
@@ -16,13 +17,8 @@ export async function createCampaign(formData: FormData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { activeTenantId, activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) return
 
   const name        = (formData.get('name') as string)?.trim()
@@ -38,8 +34,8 @@ export async function createCampaign(formData: FormData): Promise<void> {
   const { data, error } = await supabase
     .from('email_campaigns')
     .insert({
-      tenant_id:       profile?.tenant_id,
-      campaign_id:     profile?.campaign_ids?.[0] ?? null,
+      tenant_id:       activeTenantId,
+      campaign_id:     activeCampaignId || null,
       name,
       subject,
       body_html,
@@ -69,13 +65,8 @@ export async function updateCampaign(campaignId: string, formData: FormData): Pr
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) return
 
   const name      = (formData.get('name') as string)?.trim()
@@ -111,13 +102,8 @@ export async function sendCampaign(campaignId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canSend = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  const ctx = await getActiveCampaignContext(supabase, user.id)
+  const canSend = ['super_admin', 'campaign_manager'].includes(ctx.role ?? '')
   if (!canSend) return { error: 'No tienes permiso para enviar campañas' }
 
   const { data: emailCampaign } = await supabase
@@ -129,7 +115,7 @@ export async function sendCampaign(campaignId: string) {
   if (!emailCampaign) return { error: 'Campaña no encontrada' }
   if (emailCampaign.status === 'sent') return { error: 'Esta campaña ya fue enviada' }
 
-  const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
+  const activeCampaignId = ctx.activeCampaignId
 
   // Get contacts — manual IDs > segment > all
   let contacts: { id: string; email: string | null; first_name: string; last_name: string }[] = []
@@ -172,7 +158,7 @@ export async function sendCampaign(campaignId: string) {
 
   // Get Resend API key from tenant integrations
   const adminSupabase = createAdminClient()
-  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
+  const integrationConfig = await getIntegrationConfig(supabase, ctx.activeTenantId!, activeCampaignId)
   let resendApiKey = ''
   if (integrationConfig?.resend_api_key) {
     const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.resend_api_key })
@@ -248,14 +234,17 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role, full_name')
-    .eq('id', user.id)
-    .single()
-
-  const canSend = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const ctx = await getActiveCampaignContext(supabase, user.id)
+  const canSend = ['super_admin', 'campaign_manager', 'analyst'].includes(ctx.role ?? '')
   if (!canSend) return { error: 'No tienes permiso para enviar emails de prueba' }
+
+  // full_name is needed for the {nombre}/{apellido} template replacement.
+  // It's a profile-level field (not tenant-scoped), so a slim fetch is fine.
+  const { data: profileSlim } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single<{ full_name: string | null }>()
 
   const { data: emailCampaign } = await supabase
     .from('email_campaigns')
@@ -266,12 +255,12 @@ export async function sendTestEmail(campaignId: string, toEmail: string) {
   if (!emailCampaign) return { error: 'Campaña no encontrada' }
 
   const previewHtml = emailCampaign.body_html
-    .replace(/\{nombre\}/gi, profile?.full_name?.split(' ')[0] ?? 'Usuario')
-    .replace(/\{apellido\}/gi, profile?.full_name?.split(' ')[1] ?? '')
+    .replace(/\{nombre\}/gi, profileSlim?.full_name?.split(' ')[0] ?? 'Usuario')
+    .replace(/\{apellido\}/gi, profileSlim?.full_name?.split(' ')[1] ?? '')
 
-  const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
+  const activeCampaignId = ctx.activeCampaignId
   const adminSupabase = createAdminClient()
-  const integrationConfig = await getIntegrationConfig(supabase, profile!.tenant_id, activeCampaignId)
+  const integrationConfig = await getIntegrationConfig(supabase, ctx.activeTenantId!, activeCampaignId)
   let resendApiKey = ''
   if (integrationConfig?.resend_api_key) {
     const { data: decrypted } = await adminSupabase.rpc('decrypt_integration_key', { encrypted: integrationConfig.resend_api_key })
@@ -304,13 +293,8 @@ export async function duplicateCampaign(sourceId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { activeTenantId, activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) return
 
   const { data: source } = await supabase
@@ -324,8 +308,8 @@ export async function duplicateCampaign(sourceId: string) {
   const { data, error } = await supabase
     .from('email_campaigns')
     .insert({
-      tenant_id: profile?.tenant_id,
-      campaign_id: profile?.campaign_ids?.[0] ?? null,
+      tenant_id: activeTenantId,
+      campaign_id: activeCampaignId || null,
       name: `Copia de ${source.name}`,
       subject: source.subject,
       body_html: source.body_html,
@@ -351,12 +335,11 @@ export async function deleteCampaign(id: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles').select('campaign_ids').eq('id', user.id).single()
+  const { campaignIds } = await getActiveCampaignContext(supabase, user.id)
 
   const { data: campaign } = await supabase
     .from('email_campaigns').select('campaign_id').eq('id', id).single()
-  if (!campaign || !profile?.campaign_ids?.includes(campaign.campaign_id)) redirect('/dashboard/comunicaciones')
+  if (!campaign || !campaignIds.includes(campaign.campaign_id)) redirect('/dashboard/comunicaciones')
 
   await supabase.from('email_campaigns').delete().eq('id', id)
   redirect('/dashboard/comunicaciones')

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Plus, Zap } from 'lucide-react'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { FlowsList } from '@/components/dashboard/flows/FlowsList'
 import type { AutomationFlow } from '@/components/dashboard/flows/flowTypes'
 
@@ -12,15 +13,11 @@ export default async function AutomatizacionesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids')
-    .eq('id', user.id)
-    .single()
+  const { activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
 
   let flows: AutomationFlow[] = []
 
-  const campaignId = profile?.campaign_ids?.[0]
+  const campaignId = activeCampaignId
   if (campaignId) {
     const { data } = await adminSupabase
       .from('automation_flows')

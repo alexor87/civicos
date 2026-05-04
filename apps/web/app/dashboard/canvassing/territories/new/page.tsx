@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Button } from '@/components/ui/button'
 import { SubmitButton } from '@/components/ui/SubmitButton'
 import { Input } from '@/components/ui/input'
@@ -49,14 +50,9 @@ export default async function NewTerritoryPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0]
-  const tenantId = profile?.tenant_id
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
+  const tenantId = activeTenantId
   if (!campaignId || !tenantId) notFound()
 
   const { data: geoUnitsRaw } = await supabase

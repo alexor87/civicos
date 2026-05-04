@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { getMessagingProvider } from '@/lib/messaging/dispatcher'
 import { MessagingConfigError } from '@/lib/messaging/types'
 import { applyFilters } from '@/app/dashboard/contacts/segments/actions'
@@ -32,13 +33,8 @@ export async function createWhatsAppCampaign(formData: FormData): Promise<void> 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { activeTenantId, activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) return
 
   const name               = (formData.get('name') as string)?.trim()
@@ -55,8 +51,8 @@ export async function createWhatsAppCampaign(formData: FormData): Promise<void> 
   const { data, error } = await supabase
     .from('whatsapp_campaigns')
     .insert({
-      tenant_id:          profile?.tenant_id,
-      campaign_id:        profile?.campaign_ids?.[0] ?? null,
+      tenant_id:          activeTenantId,
+      campaign_id:        activeCampaignId || null,
       name,
       template_name,
       template_variables: parsedVariables,
@@ -83,13 +79,8 @@ export async function updateWhatsAppCampaign(campaignId: string, formData: FormD
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(profile?.role ?? '')
+  const { role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager', 'analyst'].includes(role ?? '')
   if (!canManage) return
 
   const name               = (formData.get('name') as string)?.trim()
@@ -127,13 +118,8 @@ export async function sendWhatsAppCampaign(campaignId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canSend = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  const ctx = await getActiveCampaignContext(supabase, user.id)
+  const canSend = ['super_admin', 'campaign_manager'].includes(ctx.role ?? '')
   if (!canSend) return { error: 'No tienes permiso para enviar campañas de WhatsApp' }
 
   const { data: waCampaign } = await supabase
@@ -145,14 +131,14 @@ export async function sendWhatsAppCampaign(campaignId: string) {
   if (!waCampaign) return { error: 'Campaña de WhatsApp no encontrada' }
   if (waCampaign.status === 'sent') return { error: 'Esta campaña ya fue enviada' }
 
-  const activeCampaignId = profile?.campaign_ids?.[0] ?? ''
+  const activeCampaignId = ctx.activeCampaignId
 
   let provider
   try {
     provider = await getMessagingProvider(
       supabase,
       createAdminClient(),
-      profile!.tenant_id,
+      ctx.activeTenantId!,
       activeCampaignId || null,
       'whatsapp'
     )
@@ -210,7 +196,7 @@ export async function sendWhatsAppCampaign(campaignId: string) {
 
     if (result.ok) {
       await supabase.from('whatsapp_conversations').insert({
-        tenant_id:           profile!.tenant_id,
+        tenant_id:           ctx.activeTenantId!,
         campaign_id:         activeCampaignId,
         whatsapp_campaign_id: campaignId,
         contact_id:          contact.id,
@@ -244,13 +230,12 @@ export async function deleteWhatsAppCampaign(id: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles').select('campaign_ids').eq('id', user.id).single()
+  const { campaignIds } = await getActiveCampaignContext(supabase, user.id)
 
   const { data: campaign } = await supabase
     .from('whatsapp_campaigns').select('campaign_id').eq('id', id).single()
 
-  if (!campaign || !profile?.campaign_ids?.includes(campaign.campaign_id)) {
+  if (!campaign || !campaignIds.includes(campaign.campaign_id)) {
     redirect('/dashboard/comunicaciones?tab=whatsapp')
   }
 
@@ -300,19 +285,14 @@ export async function upsertChatbotConfig(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
+  const { activeTenantId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager'].includes(role ?? '')
   if (!canManage) return { error: 'Sin permisos' }
 
   const { error } = await supabase
     .from('whatsapp_chatbot_config')
     .upsert({
-      tenant_id:        profile!.tenant_id,
+      tenant_id:        activeTenantId!,
       campaign_id:      campaignId,
       enabled:          config.enabled,
       system_prompt:    config.system_prompt,

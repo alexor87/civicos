@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getIntegrationConfig } from '@/lib/get-integration-config'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -34,14 +35,9 @@ export default async function ComunicacionesPage({ searchParams }: { searchParam
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0] ?? ''
-  const tenantId   = profile?.tenant_id
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
+  const tenantId   = activeTenantId
 
   // Fetch integration config from tenant_integrations
   const integrationConfig = tenantId

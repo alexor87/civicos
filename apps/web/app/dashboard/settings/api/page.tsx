@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { ApiKeysManager } from '@/components/settings/ApiKeysManager'
 import { ApiEndpointsDocs } from '@/components/settings/ApiEndpointsDocs'
 
@@ -8,14 +9,9 @@ export default async function ApiSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids, role')
-    .eq('id', user.id)
-    .single()
-
-  const canManage = ['super_admin', 'campaign_manager'].includes(profile?.role ?? '')
-  const campaignId = profile?.campaign_ids?.[0]
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
+  const canManage = ['super_admin', 'campaign_manager'].includes(role ?? '')
+  const campaignId = activeCampaignId
 
   const { data: keys } = campaignId
     ? await supabase

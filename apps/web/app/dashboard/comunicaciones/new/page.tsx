@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { EmailCampaignEditor } from '@/components/dashboard/EmailCampaignEditor'
 import { createCampaign } from '../actions'
 
@@ -13,13 +14,8 @@ export default async function NewCampaignPage({ searchParams }: { searchParams: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('campaign_ids')
-    .eq('id', user.id)
-    .single()
-
-  const campaignId = profile?.campaign_ids?.[0] ?? ''
+  const { activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
 
   const { data: segments } = await supabase
     .from('contact_segments')

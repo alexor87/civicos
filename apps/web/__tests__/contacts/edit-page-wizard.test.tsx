@@ -27,6 +27,16 @@ vi.mock('@/components/contacts/ContactGeoSelector', () => ({
   ContactGeoSelector: () => <div data-testid="geo-selector">GeoSelector</div>,
 }))
 
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: vi.fn(async () => ({
+    activeTenantId:   't1',
+    campaignIds:      ['c1'],
+    activeCampaignId: 'c1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })),
+}))
+
 const mockFrom = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({

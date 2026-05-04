@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { PublicRegistrationSettingsForm } from '@/components/settings/PublicRegistrationSettingsForm'
 
 const ALLOWED_ROLES = ['super_admin', 'campaign_manager']
@@ -9,17 +10,13 @@ export default async function PublicRegistrationSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id, role, campaign_ids')
-    .eq('id', user.id)
-    .single()
+  const { activeCampaignId, role } = await getActiveCampaignContext(supabase, user.id)
 
-  if (!profile || !ALLOWED_ROLES.includes(profile.role)) {
+  if (!role || !ALLOWED_ROLES.includes(role)) {
     redirect('/dashboard/settings')
   }
 
-  const campaignId = profile.campaign_ids?.[0]
+  const campaignId = activeCampaignId
   if (!campaignId) redirect('/dashboard/settings')
 
   // Get campaign name for slug suggestion

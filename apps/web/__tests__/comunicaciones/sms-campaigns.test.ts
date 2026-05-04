@@ -14,6 +14,7 @@ const {
   mockContactsQuery,
   mockContactsByIds,
   mockTwilioCreate,
+  mockGetActiveCampaignContext,
 } = vi.hoisted(() => ({
   mockGetUser:        vi.fn(),
   mockProfileSingle:  vi.fn(),
@@ -31,6 +32,11 @@ const {
   mockContactsQuery:  vi.fn(),
   mockContactsByIds:  vi.fn(),
   mockTwilioCreate:   vi.fn().mockResolvedValue({ sid: 'SM123' }),
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -150,6 +156,13 @@ beforeEach(() => {
   mockUpdate.mockResolvedValue({ error: null })
   mockDelete.mockResolvedValue({ error: null })
   mockTwilioCreate.mockResolvedValue({ sid: 'SM_123' })
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   't1',
+    campaignIds:      ['c1'],
+    activeCampaignId: 'c1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
 })
 
 // ── createSmsCampaign ─────────────────────────────────────────────────────────
@@ -164,8 +177,12 @@ describe('createSmsCampaign', () => {
 
   it('returns without redirect when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'volunteer' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'volunteer',
+      customRoleId:     null,
     })
     const result = await createSmsCampaign(makeFormData({ name: 'Test', body_text: 'Hola' }))
     expect(result).toBeUndefined()
@@ -286,8 +303,12 @@ describe('sendSmsCampaign', () => {
 
   it('returns error when analyst role tries to send', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'analyst' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'analyst',
+      customRoleId:     null,
     })
     const result = await sendSmsCampaign('sms1')
     expect(result).toEqual({ error: 'No tienes permiso para enviar campañas SMS' })
@@ -369,7 +390,13 @@ describe('updateSmsCampaign', () => {
 
   it('returns without redirect when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { role: 'volunteer' } })
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'volunteer',
+      customRoleId:     null,
+    })
     const result = await updateSmsCampaign('sms1', makeFormData({ name: 'Test', body_text: 'Hola' }))
     expect(result).toBeUndefined()
   })
@@ -408,7 +435,13 @@ describe('sendTestSms', () => {
 
   it('returns error when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', role: 'volunteer', full_name: 'Ana Pérez', campaign_ids: ['c1'] } })
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'volunteer',
+      customRoleId:     null,
+    })
     const result = await sendTestSms('sms1', '+573001234567')
     expect(result).toEqual({ error: 'No tienes permiso para enviar SMS de prueba' })
   })
