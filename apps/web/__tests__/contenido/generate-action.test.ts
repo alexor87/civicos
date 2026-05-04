@@ -6,11 +6,17 @@ const {
   mockProfileSingle,
   mockCampaignSingle,
   mockClaudeCreate,
+  mockGetActiveCampaignContext,
 } = vi.hoisted(() => ({
   mockGetUser:        vi.fn(),
   mockProfileSingle:  vi.fn(),
   mockCampaignSingle: vi.fn(),
   mockClaudeCreate:   vi.fn(),
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -78,6 +84,13 @@ beforeEach(() => {
   mockProfileSingle.mockResolvedValue({
     data: { tenant_id: 'tenant1', campaign_ids: ['camp1'], role: 'campaign_manager' },
   })
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   'tenant1',
+    campaignIds:      ['camp1'],
+    activeCampaignId: 'camp1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
   mockCampaignSingle.mockResolvedValue({
     data: { id: 'camp1', name: 'Campaña María González', candidate_name: 'María González', key_topics: ['empleo', 'salud'], description: 'Campaña presidencial 2026' },
   })
@@ -94,8 +107,12 @@ describe('generateContent', () => {
   })
 
   it('returns error when user has no campaign', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { tenant_id: 'tenant1', campaign_ids: [], role: 'campaign_manager' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant1',
+      campaignIds:      [],
+      activeCampaignId: '',
+      role:             'campaign_manager',
+      customRoleId:     null,
     })
     const result = await generateContent('email', 'Mitin', 'formal')
     expect(result.error).toBe('No hay campaña activa')

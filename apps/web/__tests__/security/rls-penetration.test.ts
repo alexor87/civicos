@@ -25,6 +25,7 @@ const {
   mockSegmentDelete,
   mockVisitsSelect,
   mockResendSend,
+  mockGetActiveCampaignContext,
 } = vi.hoisted(() => ({
   mockGetUser:         vi.fn(),
   mockProfileSingle:   vi.fn(),
@@ -39,6 +40,11 @@ const {
   mockSegmentDelete:   vi.fn(),
   mockVisitsSelect:    vi.fn(),
   mockResendSend:      vi.fn(),
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -160,6 +166,13 @@ beforeEach(() => {
   // Default: attacking user is authenticated as tenant A
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user_a' } } })
   mockProfileSingle.mockResolvedValue({ data: TENANT_A_PROFILE })
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   'tenant_a',
+    campaignIds:      ['campaign_a'],
+    activeCampaignId: 'campaign_a',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
   mockResendSend.mockResolvedValue({ id: 'email_ok' })
 })
 
@@ -199,8 +212,12 @@ describe('RLS — email campaigns cross-tenant isolation', () => {
   })
 
   it('sendTestEmail: unpermitted role cannot send test emails', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { ...TENANT_A_PROFILE, role: 'volunteer' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant_a',
+      campaignIds:      ['campaign_a'],
+      activeCampaignId: 'campaign_a',
+      role:             'volunteer',
+      customRoleId:     null,
     })
 
     const result = await sendTestEmail('campaign_a_id', 'attacker@tenant-a.com')
@@ -235,8 +252,12 @@ describe('RLS — email campaigns cross-tenant isolation', () => {
   })
 
   it('updateCampaign: volunteer role is blocked before any DB write', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { ...TENANT_A_PROFILE, role: 'volunteer' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant_a',
+      campaignIds:      ['campaign_a'],
+      activeCampaignId: 'campaign_a',
+      role:             'volunteer',
+      customRoleId:     null,
     })
 
     const result = await updateCampaign(
@@ -255,8 +276,12 @@ describe('RLS — email campaigns cross-tenant isolation', () => {
 
 describe('RLS — campaign role escalation attempts', () => {
   it('sendCampaign: analyst role cannot send campaigns', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { ...TENANT_A_PROFILE, role: 'analyst' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant_a',
+      campaignIds:      ['campaign_a'],
+      activeCampaignId: 'campaign_a',
+      role:             'analyst',
+      customRoleId:     null,
     })
 
     const result = await sendCampaign('campaign_a_id')
@@ -266,8 +291,12 @@ describe('RLS — campaign role escalation attempts', () => {
   })
 
   it('sendCampaign: field_coordinator role cannot send campaigns', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { ...TENANT_A_PROFILE, role: 'field_coordinator' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant_a',
+      campaignIds:      ['campaign_a'],
+      activeCampaignId: 'campaign_a',
+      role:             'field_coordinator',
+      customRoleId:     null,
     })
 
     const result = await sendCampaign('campaign_a_id')
@@ -275,8 +304,12 @@ describe('RLS — campaign role escalation attempts', () => {
   })
 
   it('sendCampaign: volunteer role cannot send campaigns', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { ...TENANT_A_PROFILE, role: 'volunteer' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant_a',
+      campaignIds:      ['campaign_a'],
+      activeCampaignId: 'campaign_a',
+      role:             'volunteer',
+      customRoleId:     null,
     })
 
     const result = await sendCampaign('campaign_a_id')
@@ -296,8 +329,12 @@ describe('RLS — campaign role escalation attempts', () => {
 
 describe('RLS — team invitation isolation', () => {
   it('volunteer cannot invite new team members', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { ...TENANT_A_PROFILE, role: 'volunteer' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant_a',
+      campaignIds:      ['campaign_a'],
+      activeCampaignId: 'campaign_a',
+      role:             'volunteer',
+      customRoleId:     null,
     })
 
     const result = await inviteTeamMember(
@@ -307,8 +344,12 @@ describe('RLS — team invitation isolation', () => {
   })
 
   it('analyst cannot invite new team members', async () => {
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { ...TENANT_A_PROFILE, role: 'analyst' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   'tenant_a',
+      campaignIds:      ['campaign_a'],
+      activeCampaignId: 'campaign_a',
+      role:             'analyst',
+      customRoleId:     null,
     })
 
     const result = await inviteTeamMember(

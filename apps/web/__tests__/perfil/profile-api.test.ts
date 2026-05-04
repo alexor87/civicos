@@ -2,15 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const { mockGetUser, mockFrom, mockSelect, mockEq, mockSingle, mockUpdate } = vi.hoisted(() => {
+const { mockGetUser, mockFrom, mockSelect, mockEq, mockSingle, mockUpdate, mockGetActiveCampaignContext } = vi.hoisted(() => {
   const mockSingle = vi.fn()
   const mockEq = vi.fn().mockReturnValue({ single: mockSingle })
   const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
   const mockUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ single: mockSingle }) }) })
   const mockFrom = vi.fn()
   const mockGetUser = vi.fn()
-  return { mockGetUser, mockFrom, mockSelect, mockEq, mockSingle, mockUpdate }
+  const mockGetActiveCampaignContext = vi.fn()
+  return { mockGetUser, mockFrom, mockSelect, mockEq, mockSingle, mockUpdate, mockGetActiveCampaignContext }
 })
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
+}))
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue({
@@ -50,6 +55,13 @@ describe('GET /api/profile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockGetActiveCampaignContext.mockResolvedValue({
+      activeTenantId:   'tenant-1',
+      campaignIds:      ['camp-1'],
+      activeCampaignId: 'camp-1',
+      role:             'super_admin',
+      customRoleId:     null,
+    })
   })
 
   it('returns 401 if not authenticated', async () => {

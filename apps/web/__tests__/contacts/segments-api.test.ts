@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Hoist mocks so they're available before module imports ────────────────────
-const { mockGetUser, mockProfileSingle, mockInsertSingle, mockDeleteEq, mockSegmentSingle } = vi.hoisted(() => ({
+const { mockGetUser, mockProfileSingle, mockInsertSingle, mockDeleteEq, mockSegmentSingle, mockGetActiveCampaignContext } = vi.hoisted(() => ({
   mockGetUser:       vi.fn(),
   mockProfileSingle: vi.fn(),
   mockInsertSingle:  vi.fn(),
   mockDeleteEq:      vi.fn(),
   mockSegmentSingle: vi.fn(),
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -53,6 +58,13 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockInsertSingle.mockResolvedValue({ data: { id: 'seg-1' }, error: null })
   mockDeleteEq.mockResolvedValue({ error: null })
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   't1',
+    campaignIds:      ['c1'],
+    activeCampaignId: 'c1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
 })
 
 describe('createSegment', () => {

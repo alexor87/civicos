@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// ── Active tenant/campaign context (multi-tenant helper) ──────────────────────
+const { mockGetActiveCampaignContext } = vi.hoisted(() => ({
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
+}))
+
 // ── Supabase mock ──────────────────────────────────────────────────────────────
 const mockInsert        = vi.fn().mockResolvedValue({ error: null })
 const mockGetUser       = vi.fn()
@@ -106,6 +114,13 @@ beforeEach(() => {
   mockInsert.mockResolvedValue({ error: null })
   mockEmailList.mockResolvedValue({ data: [], error: null })
   mockContactsList.mockResolvedValue({ data: [], error: null })
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   't1',
+    campaignIds:      ['c1'],
+    activeCampaignId: 'c1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
 })
 
 describe('analyzeSmartComms', () => {
@@ -118,8 +133,12 @@ describe('analyzeSmartComms', () => {
 
   it('returns error when user has no campaign', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { tenant_id: 't1', campaign_ids: [], role: 'campaign_manager' }, error: null,
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      [],
+      activeCampaignId: '',
+      role:             'campaign_manager',
+      customRoleId:     null,
     })
     const result = await analyzeSmartComms()
     expect(result.error).toBeTruthy()

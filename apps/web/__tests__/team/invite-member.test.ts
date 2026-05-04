@@ -15,6 +15,7 @@ const {
   mockAdminCampaignsIn,
   mockSendInviteEmail,
   mockSendAccessGrantedEmail,
+  mockGetActiveCampaignContext,
 } = vi.hoisted(() => ({
   mockGetUser:                 vi.fn(),
   mockProfileSingle:           vi.fn(),
@@ -29,6 +30,11 @@ const {
   mockAdminCampaignsIn:        vi.fn(),
   mockSendInviteEmail:         vi.fn(),
   mockSendAccessGrantedEmail:  vi.fn(),
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -137,6 +143,15 @@ beforeEach(() => {
   })
   mockCampaignSingle.mockResolvedValue({ data: { name: 'Campaña Bogotá 2026' } })
   mockSendInviteEmail.mockResolvedValue({ ok: true, id: 'msg_1' })
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   't1',
+    campaignIds:      ['c1'],
+    activeCampaignId: 'c1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
+  // profile slim fetch returns full_name (used by inviteTeamMember/promoteContactToMember)
+  mockProfileSingle.mockResolvedValue({ data: { full_name: 'Alex' } })
 })
 
 describe('inviteTeamMember', () => {
@@ -149,8 +164,12 @@ describe('inviteTeamMember', () => {
 
   it('returns without redirect when user is not an admin/manager', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'volunteer', full_name: 'Alex' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'volunteer',
+      customRoleId:     null,
     })
     const result = await inviteTeamMember(makeFormData({ full_name: 'Ana', email: 'ana@test.com', role: 'volunteer' }))
     expect(result).toBeUndefined()
@@ -267,13 +286,12 @@ describe('inviteTeamMember', () => {
 
   it('falls back to "tu campaña" when profile has no campaigns', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({
-      data: {
-        tenant_id: 't1',
-        campaign_ids: [],
-        role: 'campaign_manager',
-        full_name: 'Alex',
-      },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      [],
+      activeCampaignId: '',
+      role:             'campaign_manager',
+      customRoleId:     null,
     })
 
     await expect(
@@ -304,7 +322,16 @@ describe('promoteContactToMember — multi-tenant', () => {
 
   function setupBaseMocks() {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'caller_user' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: callerProfile })
+    // Caller is super_admin with one home campaign
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't_target',
+      campaignIds:      ['c_target_1'],
+      activeCampaignId: 'c_target_1',
+      role:             'super_admin',
+      customRoleId:     null,
+    })
+    // promoteContactToMember slim-fetches profile.full_name
+    mockProfileSingle.mockResolvedValueOnce({ data: { full_name: callerProfile.full_name } })
     mockContactSingle.mockResolvedValueOnce({ data: existingContact })
     // generateLink returns the "already registered" error to force the multi-tenant branch
     mockGenerateLink.mockResolvedValueOnce({
@@ -433,7 +460,15 @@ describe('inviteTeamMember — multi-tenant fallback for existing users', () => 
 
   function setupExistingUserMocks() {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'caller_user' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: callerProfile })
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't_target',
+      campaignIds:      ['c_target_1'],
+      activeCampaignId: 'c_target_1',
+      role:             'super_admin',
+      customRoleId:     null,
+    })
+    // inviteTeamMember slim-fetches profile.full_name
+    mockProfileSingle.mockResolvedValueOnce({ data: { full_name: callerProfile.full_name } })
     mockGenerateLink.mockResolvedValueOnce({
       data: null,
       error: { message: 'A user with this email address has already been registered' },

@@ -11,6 +11,7 @@ const {
   mockSegmentSingle,
   mockContactsQuery,
   mockResendSend,
+  mockGetActiveCampaignContext,
 } = vi.hoisted(() => ({
   mockGetUser:       vi.fn(),
   mockProfileSingle: vi.fn(),
@@ -21,6 +22,11 @@ const {
   mockSegmentSingle: vi.fn(),
   mockContactsQuery: vi.fn(),
   mockResendSend:    vi.fn(),
+  mockGetActiveCampaignContext: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/active-campaign-context', () => ({
+  getActiveCampaignContext: mockGetActiveCampaignContext,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -113,6 +119,15 @@ beforeEach(() => {
   mockUpdate.mockResolvedValue({ error: null })
   mockDelete.mockResolvedValue({ error: null })
   mockResendSend.mockResolvedValue({ id: 'email_123' })
+  // Default active-tenant context — matches the t1/c1/campaign_manager fixture
+  // used in most tests. Override per-test for non-default roles or empty campaigns.
+  mockGetActiveCampaignContext.mockResolvedValue({
+    activeTenantId:   't1',
+    campaignIds:      ['c1'],
+    activeCampaignId: 'c1',
+    role:             'campaign_manager',
+    customRoleId:     null,
+  })
 })
 
 // ── createCampaign ─────────────────────────────────────────────────────────────
@@ -127,8 +142,12 @@ describe('createCampaign', () => {
 
   it('returns without redirect when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'volunteer' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'volunteer',
+      customRoleId:     null,
     })
     const result = await createCampaign(makeFormData({ name: 'Test', subject: 'Hi', body_html: '<p>Hi</p>' }))
     expect(result).toBeUndefined()
@@ -250,8 +269,12 @@ describe('updateCampaign', () => {
 
   it('returns without redirect when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({
-      data: { role: 'volunteer' },
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'volunteer',
+      customRoleId:     null,
     })
     const result = await updateCampaign('ec1', makeFormData({ name: 'Test', subject: 'Hi', body_html: '<p>Hi</p>' }))
     expect(result).toBeUndefined()
@@ -291,7 +314,13 @@ describe('sendTestEmail', () => {
 
   it('returns error when user has no permission', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
-    mockProfileSingle.mockResolvedValueOnce({ data: { tenant_id: 't1', campaign_ids: ['c1'], role: 'volunteer', full_name: 'Ana Pérez' } })
+    mockGetActiveCampaignContext.mockResolvedValueOnce({
+      activeTenantId:   't1',
+      campaignIds:      ['c1'],
+      activeCampaignId: 'c1',
+      role:             'volunteer',
+      customRoleId:     null,
+    })
     const result = await sendTestEmail('ec1', 'test@example.com')
     expect(result).toEqual({ error: 'No tienes permiso para enviar emails de prueba' })
   })
