@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCampaignContext } from '@/lib/auth/active-campaign-context'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -60,27 +62,48 @@ export default async function VolunteerProfilePage({ params }: { params: Promise
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: currentProfile } = await supabase
-    .from('profiles')
-    .select('campaign_ids')
-    .eq('id', user.id)
-    .single()
+  const { activeTenantId, activeCampaignId } = await getActiveCampaignContext(supabase, user.id)
+  const campaignId = activeCampaignId
 
-  const campaignId = currentProfile?.campaign_ids?.[0] ?? ''
+  // Auth gate cross-tenant: el target debe ser miembro del tenant activo.
+  // tenant_users es la fuente de verdad de membresía y rol scoped al tenant.
+  const admin = createAdminClient()
+  const { data: targetMembership } = await admin
+    .from('tenant_users')
+    .select('role, custom_role_id, campaign_ids')
+    .eq('user_id', id)
+    .eq('tenant_id', activeTenantId ?? '')
+    .maybeSingle<{ role: string; custom_role_id: string | null; campaign_ids: string[] | null }>()
 
-  // Load target member profile
-  const { data: member } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-  if (!member) {
+  if (!targetMembership) {
     return (
       <div className="p-6">
         <p className="text-sm text-muted-foreground">Miembro no encontrado.</p>
       </div>
     )
+  }
+
+  // Profile via admin client: RLS de profiles bloquea reads cuyo home tenant ≠ activo.
+  const { data: profileData } = await admin
+    .from('profiles')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (!profileData) {
+    return (
+      <div className="p-6">
+        <p className="text-sm text-muted-foreground">Miembro no encontrado.</p>
+      </div>
+    )
+  }
+
+  // Rol mostrado = el del tenant activo, no el del HOME.
+  const member = {
+    ...profileData,
+    role:           targetMembership.role,
+    custom_role_id: targetMembership.custom_role_id,
+    campaign_ids:   targetMembership.campaign_ids ?? [],
   }
 
   // Load stats in parallel
